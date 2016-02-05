@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Goto src directory
+cd /home/trinity/src;
+
+sleep 2
+
+# Configure the ostree path
+./configure --ostree=$HOME/root/
+sleep 2
+
+# Config the VM option
+cd ./kern/conf/
+# modify config file when necessary
+sleep 2
+./config DUMBVM
+cd ../compile/DUMBVM/
+#bmake clean
+sleep 2
+
+# build dependencies and install
+bmake depend
+bmake
+bmake install
+sleep 2
+# Modify the sys.conf file when necessary
+# Especially the ramsize and cpus 
+
+# Launch the compiled kernel
+cd $HOME/root/
+sleep 2
+sys161 kernel
