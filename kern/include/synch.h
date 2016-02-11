@@ -36,6 +36,7 @@
 
 
 #include <spinlock.h>
+#include <current.h> //Sunandan 09 Feb 2016, included to reference curThread
 
 /*
  * Dijkstra-style semaphore.
@@ -76,6 +77,16 @@ struct lock {
         char *lk_name;
         // add what you need here
         // (don't forget to mark things volatile as needed)
+        //Sunandan 09 Feb 2016
+       /* this variables keeps the state of lock, 1= locked, 0 = unlocked 
+        This is done to supprot re-entrant locking mechanism */
+        volatile int counter;  //NOT SURE why, but marked it volatile to be on the safe side
+        /*This variable will store the curThread which is holding the condition variable*/
+        struct thread* lockHolder;
+        //spinlock to ensure atomicity of lock_acquire & lock_release         
+        struct spinlock lock_spinlock;
+		//lock_wchan is the wait channel for the lock structure
+		struct wchan *lock_wchan;        
 };
 
 struct lock *lock_create(const char *name);
@@ -113,8 +124,14 @@ bool lock_do_i_hold(struct lock *);
 
 struct cv {
         char *cv_name;
+
         // add what you need here
         // (don't forget to mark things volatile as needed)
+        //Sunandan 09 Feb 2016
+        //This variable will store the currentThread which is holding the condition variable
+        struct wchan *cv_wchan;
+		struct spinlock cv_spinlock;
+		
 };
 
 struct cv *cv_create(const char *name);
