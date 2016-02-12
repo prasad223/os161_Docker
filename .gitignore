@@ -9,3 +9,5 @@ build
 /root/
 *.swo
 *.swp
+.tags*
+tags
