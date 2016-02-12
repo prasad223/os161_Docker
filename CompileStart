@@ -19,14 +19,15 @@ cd ../compile/DUMBVM/
 sleep 2
 
 # build dependencies and install
+bmake clean
 bmake depend
 bmake
 bmake install
 sleep 2
 # Modify the sys.conf file when necessary
 # Especially the ramsize and cpus 
-
+# bmake -h when you modify userland
 # Launch the compiled kernel
 cd $HOME/root/
 sleep 2
-sys161 kernel
+#sys161 kernel
