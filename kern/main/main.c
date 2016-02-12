@@ -101,7 +101,7 @@ boot(void)
 	kprintf("%s", harvard_copyright);
 	kprintf("\n");
 
-	kprintf("Put-your-group-name-here's system version %s (%s #%d)\n",
+	kprintf("OS161 Docker system version %s (%s #%d)\n",
 		GROUP_VERSION, buildconfig, buildversion);
 	kprintf("\n");
 
@@ -209,7 +209,7 @@ void
 kmain(char *arguments)
 {
 	boot();
-
+	
 	menu(arguments);
 
 	/* Should not get here */
