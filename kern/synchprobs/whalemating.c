@@ -40,11 +40,28 @@
 #include <test.h>
 #include <synch.h>
 
+static struct lock* male_lock;
+static struct lock* female_lock;
+static struct lock* matchMaker_lock;
+
+static volatile int male_count;
+static volatile int female_count;
+static volatile int matchmaker_count;
+
 /*
  * Called by the driver during initialization.
  */
 
 void whalemating_init() {
+
+	male_count = 0;
+	female_count = 0;
+	matchmaker_count = 0;
+
+	male_lock = lock_create("Male lock");
+	female_lock = lock_create("Female lock");
+	matchMaker_lock = lock_create("matchmaker lock");
+
 	return;
 }
 
@@ -54,6 +71,11 @@ void whalemating_init() {
 
 void
 whalemating_cleanup() {
+
+	lock_destroy(male_lock);
+	lock_destroy(female_lock);
+	lock_destroy(matchMaker_lock);
+
 	return;
 }
 
@@ -61,10 +83,15 @@ void
 male(uint32_t index)
 {
 	(void)index;
-	/*
-	 * Implement this function by calling male_start and male_end when
-	 * appropriate.
-	 */
+	male_start(index);
+
+	lock_acquire(male_lock);	
+	male_count++;
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
+	male_end(index);
+	lock_release(male_lock);
 	return;
 }
 
@@ -72,10 +99,15 @@ void
 female(uint32_t index)
 {
 	(void)index;
-	/*
-	 * Implement this function by calling female_start and female_end when
-	 * appropriate.
-	 */
+	female_start(index);
+
+	lock_acquire(female_lock);	
+	female_count++;
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
+	female_end(index);
+	lock_release(female_lock);
 	return;
 }
 
@@ -83,9 +115,14 @@ void
 matchmaker(uint32_t index)
 {
 	(void)index;
-	/*
-	 * Implement this function by calling matchmaker_start and matchmaker_end
-	 * when appropriate.
-	 */
+	matchmaker_start(index);
+
+	lock_acquire(matchMaker_lock);	
+	matchmaker_count++;
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
+	matchmaker_end(index);
+	lock_release(matchMaker_lock);
 	return;
 }
