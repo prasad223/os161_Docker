@@ -69,12 +69,26 @@
 #include <test.h>
 #include <synch.h>
 
+
+
+// Global and quadrant locks
+
+static struct lock* intersectionLock;
+
+
 /*
  * Called by the driver during initialization.
  */
 
 void
 stoplight_init() {
+
+	KASSERT(intersectionLock == NULL);
+	intersectionLock = lock_create("Global Signal lock");
+	if(intersectionLock == NULL){
+		panic("Lock creation failed\n");
+	}
+	kprintf("Stoplight Init\n");
 	return;
 }
 
@@ -83,6 +97,8 @@ stoplight_init() {
  */
 
 void stoplight_cleanup() {
+	lock_destroy(intersectionLock);
+	kprintf("Stoplight cleanup\n");
 	return;
 }
 
@@ -94,6 +110,12 @@ turnright(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
+	kprintf("in turnright: quadrant: %d, index: %d\n",direction, index);
+	lock_acquire(intersectionLock);
+	inQuadrant(direction, index);
+	leaveIntersection(index);
+	lock_release(intersectionLock);
+
 	return;
 }
 void
@@ -104,6 +126,12 @@ gostraight(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
+	kprintf("in gostraight: quadrant: %d, index: %d\n",direction, index);
+	lock_acquire(intersectionLock);
+	inQuadrant(direction, index);
+	inQuadrant((direction+3)%4,index);
+	leaveIntersection(index);
+	lock_release(intersectionLock);
 	return;
 }
 void
@@ -114,5 +142,12 @@ turnleft(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
+	kprintf("in turnleft: quadrant: %d, index: %d\n",direction, index);
+	lock_acquire(intersectionLock);
+	inQuadrant(direction, index);
+	inQuadrant((direction+3)%4, index);
+	inQuadrant((direction+2)%4, index);
+	leaveIntersection(index);
+	lock_release(intersectionLock);
 	return;
 }
