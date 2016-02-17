@@ -168,6 +168,13 @@ struct rwlock {
         char *rwlock_name;
         // add what you need here
         // (don't forget to mark things volatile as needed)
+		/** See usage of volatile keyword in http://stackoverflow.com/a/2485009 
+		Volatile mandates no shared variable be cached in register, thus all threads can see the updated values from main memory immediately**/
+		struct lock* lock;
+		struct cv* cv;
+		volatile int reader_count; 
+		volatile int writer_count;
+		volatile int writer_request_count;	
 };
 
 struct rwlock * rwlock_create(const char *);

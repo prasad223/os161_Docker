@@ -1,0 +1,6 @@
+cd kern/compile/DUMBVM
+bmake clean
+bmake -j8 depend
+bmake -j8
+bmake -j8 install
+cd $HOME/os161/root/
