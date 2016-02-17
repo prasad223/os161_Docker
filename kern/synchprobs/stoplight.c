@@ -69,12 +69,30 @@
 #include <test.h>
 #include <synch.h>
 
+#define NUM_QUADRANTS 4
+
+// Global and quadrant locks
+
+static struct lock* quadrant_locks[NUM_QUADRANTS];
+
+
 /*
  * Called by the driver during initialization.
  */
 
 void
 stoplight_init() {
+
+	char name[32];
+	int i;
+	for(i=0; i < NUM_QUADRANTS; i++){
+		KASSERT(quadrant_locks[i] == NULL);
+		snprintf(name, sizeof(name), "quadrant lock:%d", i);
+		quadrant_locks[i] = lock_create(name);
+		if(quadrant_locks[i] == NULL){
+			panic("Lock creation failed\n");
+		}
+	}
 	return;
 }
 
@@ -83,6 +101,10 @@ stoplight_init() {
  */
 
 void stoplight_cleanup() {
+	int i;
+	for(i=0; i< NUM_QUADRANTS; i++){
+		lock_destroy(quadrant_locks[i]);
+	}
 	return;
 }
 
@@ -94,6 +116,12 @@ turnright(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
+	kprintf("car %d in quadrant %d and turn 2 \n",index, direction);
+	lock_acquire(quadrant_locks[direction]);
+	inQuadrant(direction, index);
+	leaveIntersection(index);
+	lock_release(quadrant_locks[direction]);
+
 	return;
 }
 void
@@ -104,7 +132,19 @@ gostraight(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
-	return;
+	kprintf("car %d in quadrant %d and turn 0\n",index, direction);
+	int num1 = direction;
+	int num2 = (direction+3) % NUM_QUADRANTS;
+	int pos1 = num1 < num2 ? num1 : num2;
+	int pos2 = num1 > num2 ? num1 : num2;
+	lock_acquire(quadrant_locks[pos1]);
+	lock_acquire(quadrant_locks[pos2]);
+	inQuadrant(num1, index);
+	inQuadrant(num2,index);
+	leaveIntersection(index);
+	lock_acquire(quadrant_locks[pos2]);
+	lock_release(quadrant_locks[pos1]);
+ 	return;
 }
 void
 turnleft(uint32_t direction, uint32_t index)
@@ -114,5 +154,26 @@ turnleft(uint32_t direction, uint32_t index)
 	/*
 	 * Implement this function.
 	 */
+	kprintf("car %d in quadrant %d and turn 1 \n",index, direction);
+	int num1 = direction;
+	int num2 = (direction+3) % NUM_QUADRANTS;
+	int num3 = (direction+2) % NUM_QUADRANTS;
+	
+	int lock_position1 = (num1 < num2) ? ((num1 < num3) ? num1 : num3) : (num2 < num3) ? num2 : num3;
+	int lock_position2 = (num1 < num2) ? (num1 > num3 ? num1: num3) : ( num2 > num3 ? num2 : num3);
+	int lock_position3 = (num1 > num2) ? ((num1 > num3) ? num1 : num3 ) : ((num3 > num2)? num3 : num2);
+
+	lock_acquire(quadrant_locks[lock_position1]);
+	lock_acquire(quadrant_locks[lock_position2]);
+	lock_acquire(quadrant_locks[lock_position3]);
+
+	inQuadrant(num1, index);
+	inQuadrant(num2, index);
+	inQuadrant(num3, index);
+	leaveIntersection(index);
+	
+	lock_release(quadrant_locks[lock_position1]);
+	lock_release(quadrant_locks[lock_position2]);
+	lock_release(quadrant_locks[lock_position3]);
 	return;
 }
