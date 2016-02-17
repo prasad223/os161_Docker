@@ -35,10 +35,10 @@ rwlocktest2(void *junk, unsigned long num)  {
 		if (test_status) {
 			break;	
 		}
-		kprintf_n("Acquiring lock by thread %d iteration %d",num,i);
+		kprintf_n("Acquiring lock by thread %2lu iteration %d\n",num,i);
 		rwlock_acquire_read(rwlock);
-		random_yield(4);
-		kprintf_n("Thread %d done iteration %d lockCount %d",num,i,rwlock->reader_count);
+		random_yielder(4);
+		kprintf_n("Thread %2lu done iteration %d lockCount %d\n",num,i,rwlock->reader_count);
 		if (rwlock->reader_count == NTHREADS * NLOCKLOOPS) {
 			kprintf_n("Lock status achieved");
 			test_status = SUCCESS;
@@ -47,11 +47,11 @@ rwlocktest2(void *junk, unsigned long num)  {
 		
 	}
 	for(i=0; i < NLOCKLOOPS; i++) {
-		kprintf_n("Release of lock by thread %d iteration %d",num,i);
-		rwlock_read_release(rwlock);
-		random_yield(4);
-		kprintf_n("Thread %d done iteration %d lockCount %d",num,i,rwlock->reader_count);
-		if (rwlock->reader_count = 0) {
+		kprintf_n("Release of lock by thread %2lu iteration %d\n",num,i);
+		rwlock_release_read(rwlock);
+		random_yielder(4);
+		kprintf_n("Thread %2lu done iteration %d lockCount %d\n",num,i,rwlock->reader_count);
+		if (rwlock->reader_count == 0) {
 			test_status = test_status && SUCCESS; // both acquiring locks & releasing locks must work properly
 			break;
 		}
@@ -79,7 +79,7 @@ int rwtest2(int nargs, char **args) {
 			      strerror(result));				
 		}
 	}
-		
+	kprintf_n("\nOut of thread loop");	
 	kprintf_t("\n");
 	success(test_status, SECRET, "rwt2");
 
