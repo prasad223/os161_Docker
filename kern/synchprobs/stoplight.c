@@ -141,9 +141,11 @@ gostraight(uint32_t direction, uint32_t index)
 	lock_acquire(quadrant_locks[pos2]);
 	inQuadrant(num1, index);
 	inQuadrant(num2,index);
+	lock_release(quadrant_locks[num1]);
 	leaveIntersection(index);
-	lock_acquire(quadrant_locks[pos2]);
-	lock_release(quadrant_locks[pos1]);
+	lock_release(quadrant_locks[num2]);
+	//lock_acquire(quadrant_locks[pos2]);
+	//lock_release(quadrant_locks[pos1]);
  	return;
 }
 void
@@ -151,9 +153,7 @@ turnleft(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
-	/*
-	 * Implement this function.
-	 */
+
 	kprintf("car %d in quadrant %d and turn 1 \n",index, direction);
 	int num1 = direction;
 	int num2 = (direction+3) % NUM_QUADRANTS;
@@ -169,11 +169,14 @@ turnleft(uint32_t direction, uint32_t index)
 
 	inQuadrant(num1, index);
 	inQuadrant(num2, index);
+	lock_release(quadrant_locks[num1]);
 	inQuadrant(num3, index);
+	lock_release(quadrant_locks[num2]);
 	leaveIntersection(index);
+	lock_release(quadrant_locks[num3]);
 	
-	lock_release(quadrant_locks[lock_position1]);
-	lock_release(quadrant_locks[lock_position2]);
-	lock_release(quadrant_locks[lock_position3]);
+//	lock_release(quadrant_locks[lock_position1]);
+//	lock_release(quadrant_locks[lock_position2]);
+//	lock_release(quadrant_locks[lock_position3]);
 	return;
 }
