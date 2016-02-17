@@ -51,16 +51,6 @@ static volatile int matchmaker_count;
 /*
  * Called by the driver during initialization.
  */
-
-
-/*
- *  This code currently spins till each one of male, female and matchmaker whales are available
- *  We can reduce this by making them sleep and awake when a matchmaker is available
- *  Also this test passes only when its run for the first time
- *  Need to check whats the problem, with the TAs during office hours
- *  This can be done much simpler and better
- *  The test fails with males not being matched, investigate this
- */
 void whalemating_init() {
 
 	male_count = 0;
@@ -99,8 +89,8 @@ male(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	male_end(index);
 	lock_release(male_lock);
+	male_end(index);
 	return;
 }
 
@@ -115,8 +105,8 @@ female(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	female_end(index);
 	lock_release(female_lock);
+	female_end(index);
 	return;
 }
 
@@ -131,7 +121,7 @@ matchmaker(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	matchmaker_end(index);
 	lock_release(matchMaker_lock);
+	matchmaker_end(index);
 	return;
 }
