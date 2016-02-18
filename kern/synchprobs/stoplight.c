@@ -71,10 +71,18 @@
 
 #define NUM_QUADRANTS 4
 
-// Global and quadrant locks
-
 static struct lock* quadrant_locks[NUM_QUADRANTS];
 
+static int min(int, int);
+static int max(int, int);
+
+int  min(int a,int b){
+	return (a < b ? a :b);
+}
+
+int max(int a, int b){
+	return ( a > b ? a : b);
+}
 
 /*
  * Called by the driver during initialization.
@@ -111,62 +119,49 @@ void stoplight_cleanup() {
 void
 turnright(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-	/*
-	 * Implement this function.
-	 */
 	kprintf("car %d in quadrant %d and turn 2 \n",index, direction);
 	lock_acquire(quadrant_locks[direction]);
 	inQuadrant(direction, index);
 	leaveIntersection(index);
 	lock_release(quadrant_locks[direction]);
-
 	return;
 }
 void
 gostraight(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-	/*
-	 * Implement this function.
-	 */
 	kprintf("car %d in quadrant %d and turn 0\n",index, direction);
 	int num1 = direction;
 	int num2 = (direction+3) % NUM_QUADRANTS;
-	int pos1 = num1 < num2 ? num1 : num2;
-	int pos2 = num1 > num2 ? num1 : num2;
+	int pos1 = min(num1, num2);
+	int pos2 = max(num1, num2);
 	lock_acquire(quadrant_locks[pos1]);
 	lock_acquire(quadrant_locks[pos2]);
+
 	inQuadrant(num1, index);
 	inQuadrant(num2,index);
+
 	lock_release(quadrant_locks[num1]);
 	leaveIntersection(index);
 	lock_release(quadrant_locks[num2]);
-	//lock_acquire(quadrant_locks[pos2]);
-	//lock_release(quadrant_locks[pos1]);
+
  	return;
 }
 void
 turnleft(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-
 	kprintf("car %d in quadrant %d and turn 1 \n",index, direction);
 	int num1 = direction;
 	int num2 = (direction+3) % NUM_QUADRANTS;
 	int num3 = (direction+2) % NUM_QUADRANTS;
 	
-	int lock_position1 = (num1 < num2) ? ((num1 < num3) ? num1 : num3) : (num2 < num3) ? num2 : num3;
-	int lock_position2 = (num1 < num2) ? (num1 > num3 ? num1: num3) : ( num2 > num3 ? num2 : num3);
-	int lock_position3 = (num1 > num2) ? ((num1 > num3) ? num1 : num3 ) : ((num3 > num2)? num3 : num2);
-
+	int lock_position1 = min(min(num1, num2),num3);
+	int lock_position3 = max(max(num1, num2),num3);
+	int lock_position2 = max(min(num1,num2), min(max(num1, num2),num3));
+	
+	kprintf("n1:%d n2:%d n3:%d\t  l1:%d l2:%d l3:%d\n",num1, num2, num3, lock_position1, lock_position2, lock_position3);
 	lock_acquire(quadrant_locks[lock_position1]);
 	lock_acquire(quadrant_locks[lock_position2]);
 	lock_acquire(quadrant_locks[lock_position3]);
-
 	inQuadrant(num1, index);
 	inQuadrant(num2, index);
 	lock_release(quadrant_locks[num1]);
@@ -174,9 +169,5 @@ turnleft(uint32_t direction, uint32_t index)
 	lock_release(quadrant_locks[num2]);
 	leaveIntersection(index);
 	lock_release(quadrant_locks[num3]);
-	
-//	lock_release(quadrant_locks[lock_position1]);
-//	lock_release(quadrant_locks[lock_position2]);
-//	lock_release(quadrant_locks[lock_position3]);
 	return;
 }
