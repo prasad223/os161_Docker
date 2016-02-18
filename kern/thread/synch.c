@@ -425,6 +425,10 @@ rwlock_destroy(struct rwlock * rwlock) {
 	KASSERT(rwlock->rwlock_name != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
+	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
+	KASSERT(rwlock->writer_count == 0 );
+	KASSERT(rwlock->reader_count == 0 );
+	KASSERT(rwlock->writer_request_count == 0 );
 	
 	/** Free all associated memory **/
 	rwlock->reader_count = 0;	
@@ -443,6 +447,7 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
+
 	/** **/
 	lock_acquire(rwlock->lock);
 	while(rwlock->writer_count > 0 || rwlock->writer_request_count > 0 ) { //hold off until all writers are done
@@ -457,7 +462,8 @@ rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
-	
+	KASSERT(rwlock->reader_count > 0); //if reader_count == 0, no sense in trying to releasing lock
+
 	lock_acquire(rwlock->lock);
 	rwlock->reader_count--;
 	if(rwlock->reader_count == 0) { //wake up one waiting write threads
@@ -487,6 +493,7 @@ rwlock_release_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->writer_count > 0 ) ; // release the writer lock only if acquired
 	
 	lock_acquire(rwlock->lock);
 	rwlock->writer_count--;
