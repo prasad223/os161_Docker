@@ -39,6 +39,7 @@
 #include <thread.h>
 #include <current.h>
 #include <synch.h>
+#include <clock.h>
 
 ////////////////////////////////////////////////////////////
 //
@@ -360,6 +361,11 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 }
 
 /** Reader writer locks 
+This reader-writer lock implementation tries to ensure fairness between reader-starvation and Writer-starvation
+scenario.
+Every 2000 cpu cycles, we will let in any pending reader. This ensures no reader starvation when there are
+continuous writers.
+
 The summary below explains the idea of reader-writer locks as implemented below
 
 Keeping the count of reader_count, writer_count & writer_request_count, we can keep track of the number of current readers, current writers,
@@ -410,7 +416,8 @@ rwlock * rwlock_create(const char *name) {
 		kfree(rwlock);
 		return NULL;
 	}
-	
+	rwlock->tsLastRead.tv_sec = 0;
+	rwlock->tsLastRead.tv_nsec= 0;
 	rwlock->cv = cv_create(rwlock->rwlock_name);
 	
 	rwlock->reader_count = 0;
@@ -433,7 +440,9 @@ rwlock_destroy(struct rwlock * rwlock) {
 	/** Free all associated memory **/
 	rwlock->reader_count = 0;	
 	rwlock->writer_count = 0;	
-	rwlock->writer_request_count = 0;	
+	rwlock->writer_request_count = 0;
+	rwlock->tsLastRead.tv_sec    = 0;	
+	rwlock->tsLastRead.tv_nsec   = 0;
 
 	lock_destroy(rwlock->lock);
 	cv_destroy(rwlock->cv);
@@ -447,12 +456,19 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
-
+	struct timespec tsNow;
 	/** **/
+
 	lock_acquire(rwlock->lock);
-	while(rwlock->writer_count > 0 || rwlock->writer_request_count > 0 ) { //hold off until all writers are done
-		cv_wait(rwlock->cv,rwlock->lock);
+	gettime(&tsNow); 
+	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
+	/* Require at least 2000 cpu cycles (we're 25mhz) */
+	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 40*2000) {
+		while(rwlock->writer_count > 0 || rwlock->writer_request_count > 0 ) { //hold off until all writers are done
+			cv_wait(rwlock->cv,rwlock->lock);
+		}
 	}	
+	gettime(&rwlock->tsLastRead);	
 	rwlock->reader_count++;
 	lock_release(rwlock->lock);
 }
@@ -465,6 +481,7 @@ rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock->reader_count > 0); //if reader_count == 0, no sense in trying to releasing lock
 
 	lock_acquire(rwlock->lock);
+
 	rwlock->reader_count--;
 	if(rwlock->reader_count == 0) { //wake up one waiting write threads
 		cv_signal(rwlock->cv,rwlock->lock);
