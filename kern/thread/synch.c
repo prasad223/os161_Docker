@@ -361,6 +361,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 }
 
 /** Reader writer locks 
+Idea taken from https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Implementation
 This reader-writer lock implementation tries to ensure fairness between reader-starvation and Writer-starvation
 scenario.
 Every 2000 cpu cycles, we will let in any pending reader. This ensures no reader starvation when there are
@@ -462,9 +463,13 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	lock_acquire(rwlock->lock);
 	gettime(&tsNow); 
 	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
+	while (rwlock->writer_count > 0) {
+		cv_wait(rwlock->cv,rwlock->lock);
+	}
 	/* Require at least 2000 cpu cycles (we're 25mhz) */
 	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 40*2000) {
-		while(rwlock->writer_count > 0 || rwlock->writer_request_count > 0 ) { //hold off until all writers are done
+
+		while(rwlock->writer_request_count > 0 ) { //hold off until all writers are done
 			cv_wait(rwlock->cv,rwlock->lock);
 		}
 	}	

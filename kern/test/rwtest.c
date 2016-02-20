@@ -12,16 +12,82 @@
 #include <kern/secret.h>
 #include <spinlock.h>
 
-#define NTHREADS      32
+#define NTHREADS      4
 #define NLOCKLOOPS    2
- #define CREATELOOPS  8
+#define CREATELOOPS  8
 static struct rwlock* rwlock = NULL;
 
 static struct semaphore *testsem = NULL;
 static struct semaphore *donesem = NULL;
 
 static volatile bool test_status = FAIL;
+static volatile bool test_status2= FAIL;
+struct spinlock status_lock;
 
+static 
+void
+rwlocktest1(void *junk, unsigned long num)  {
+	(void)junk;
+	//struct timespec tsNow , tsLastReadAttempt , tsLastWriteAttempt;
+	int i;
+	P(testsem);
+	for (i=0 ; i < NLOCKLOOPS; i++)  {
+
+		if (num %2 == 0 ) { //readers
+			kprintf_n("Thread %2lu in reader mode\n",num);
+			rwlock_acquire_read(rwlock);
+			random_yielder(4);
+			kprintf_n("Thread %2lu in reader mode woken up\n",num);
+			spinlock_acquire(&status_lock);
+
+			kprintf_n("Status update %2lu rw =%d writer=%d writer_request=%d\n",num,rwlock->reader_count,rwlock->writer_count,rwlock->writer_request_count);
+			kprintf_n("Thread %2lu in reader mode in spinlock\n",num);
+			if (rwlock->writer_count > 0 ) { // did not provide mutual exclusion for reader-writer
+				test_status = FAIL;
+			} else {
+				test_status = test_status && SUCCESS; //did provide mutual exclusion
+			}
+			if (rwlock->reader_count >= 1) { // any one thread finds concurrrent access, we are good
+				test_status2 = SUCCESS;
+			}
+			spinlock_release(&status_lock);
+			random_yielder(4);
+			rwlock_release_read(rwlock);
+			kprintf_n("Thread %2lu in reader mode released lock\n",num);
+			if (rwlock->reader_count < 0) {
+				test_status = FAIL;
+			}
+
+		} else { //writers
+			kprintf_n("Thread %2lu in writer mode\n",num);
+			rwlock_acquire_write(rwlock);
+			random_yielder(4);
+			kprintf_n("Thread %2lu in writer mode woken up\n",num);
+			spinlock_acquire(&status_lock);
+
+			kprintf_n("Status update %2lu rw =%d writer=%d writer_request=%d\n",num,rwlock->reader_count,rwlock->writer_count,rwlock->writer_request_count);
+			kprintf_n("Thread %2lu in writer mode in spinlock\n",num);
+			if (rwlock->reader_count >= 1 || rwlock->writer_count > 1) { //test mutual exclusion
+				test_status = FAIL;
+			} 
+			spinlock_release(&status_lock);
+			rwlock_release_write(rwlock);
+			kprintf_n("Thread %2lu in writer mode released lock\n",num);
+			random_yielder(4);
+			if (rwlock->writer_count < 0) {
+				test_status = FAIL;
+			}
+		}
+
+	}
+	spinlock_acquire(&status_lock);
+	test_status = test_status && test_status2;
+	spinlock_release(&status_lock);
+
+	kprintf_n("Thread %2lu finished \n",num);
+	V(donesem); //indicate main thread that we are done
+	return;
+}
 /** 
 Each thread will simply loop  120 times
 Try to acquire rwlock in read mode, & if acquired, will yield() to a random thread
@@ -96,8 +162,11 @@ int rwtest2(int nargs, char **args) {
 	if (donesem == NULL) {
 		panic("sem_rwtest_donesem : sem_create failed");
 	}
-	P(testsem);
-	P(testsem); // to hold off the main thread
+
+	for(i= 0 ; i < NTHREADS; i++) {
+		P(testsem); // hold off the main thread
+	}
+	
 	for(i =0 ; i < NTHREADS; i++) {
 		result = thread_fork("rwlocktest",NULL,rwlocktest2, NULL, i);
 		if (result) {
@@ -107,8 +176,11 @@ int rwtest2(int nargs, char **args) {
 	}
 	for(i =0 ; i < NTHREADS; i++) {
 		V(testsem);	//launch one thread
+	}
+	for(i = 0 ; i < NTHREADS ; i++) {
 		P(donesem); //hold off main thread until thread has finished execution
 	}
+	
 	sem_destroy(testsem);
 	sem_destroy(donesem);
 	testsem = NULL;
@@ -131,8 +203,49 @@ int rwtest(int nargs, char **args) {
 	(void)nargs;
 	(void)args;
 
-	kprintf_n("rwt1 unimplemented\n");
-	success(FAIL, SECRET, "rwt1");
+	int i,result;
+	kprintf_n("Starting rwt1...\n");
+	spinlock_init(&status_lock);
+	test_status = SUCCESS;	
+	rwlock = rwlock_create("rwlocktest");
+	
+	if (rwlock == NULL ) {
+		panic("rwt1: rwlock_create failed\n");	
+	}
+	testsem = sem_create("sem_rwtest_testsem",NTHREADS);
+	if (testsem == NULL ) {
+		panic("sem_rwtest_testsem : sem_create failed\n");	
+	}
+
+	donesem = sem_create("sem_rwtest_donesem",0);
+	if (donesem == NULL) {
+		panic("sem_rwtest_donesem : sem_create failed");
+	}
+	for(i =0 ; i < NTHREADS; i++) {
+		P(testsem); // to hold off the main thread
+	}	
+	for(i =0 ; i < NTHREADS; i++) {
+		result = thread_fork("rwlocktest",NULL,rwlocktest1, NULL, i);
+		if (result) {
+			panic("rwt1: thread_fork failed: %s\n",
+			      strerror(result));				
+		}
+	}
+	for(i =0 ; i < NTHREADS; i++) {
+		V(testsem);	//launch one thread
+	}
+	for(i =0 ; i < NTHREADS; i++) {	
+		P(donesem); //hold off main thread until thread has finished execution
+	}
+	sem_destroy(testsem);
+	sem_destroy(donesem);
+
+	testsem = NULL;
+	donesem = NULL;
+	
+	//kprintf_n("\nOut of thread loop");	
+	kprintf_t("\n");
+	success(test_status, SECRET, "rwt1");
 
 	return 0;
 }
