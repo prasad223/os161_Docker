@@ -417,10 +417,12 @@ rwlock * rwlock_create(const char *name) {
 		kfree(rwlock);
 		return NULL;
 	}
-	rwlock->tsLastRead.tv_sec = 0;
-	rwlock->tsLastRead.tv_nsec= 0;
+	//rwlock->tsLastRead.tv_sec = 0;
+	//rwlock->tsLastRead.tv_nsec= 0;
 	rwlock->cv = cv_create(rwlock->rwlock_name);
-	
+	KASSERT(rwlock->cv != NULL);
+
+	rwlock->cont_writer_count = 0;
 	rwlock->reader_count = 0;
 	rwlock->writer_count = 0;
 	rwlock->writer_request_count = 0; 
@@ -442,8 +444,9 @@ rwlock_destroy(struct rwlock * rwlock) {
 	rwlock->reader_count = 0;	
 	rwlock->writer_count = 0;	
 	rwlock->writer_request_count = 0;
-	rwlock->tsLastRead.tv_sec    = 0;	
-	rwlock->tsLastRead.tv_nsec   = 0;
+	rwlock->cont_writer_count = 0;
+//	rwlock->tsLastRead.tv_sec    = 0;	
+//	rwlock->tsLastRead.tv_nsec   = 0;
 
 	lock_destroy(rwlock->lock);
 	cv_destroy(rwlock->cv);
@@ -457,28 +460,36 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
-	struct timespec tsNow;
+//	struct timespec tsNow;
 	/** **/
 
 	lock_acquire(rwlock->lock);
-	gettime(&tsNow); 
+	if (rwlock->cont_writer_count <= 3) 
+	{
+		while (rwlock->writer_count > 0 || rwlock->writer_request_count > 0) {
+			cv_wait(rwlock->cv,rwlock->lock);
+		}
+
+	}
+	rwlock->cont_writer_count = 0; //reset
+	/*gettime(&tsNow); 
 	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
 	while (rwlock->writer_count > 0) {
 		cv_wait(rwlock->cv,rwlock->lock);
-	}
+	}*/
 	/* 80,000 ns  = 2000 cpu cycles
 	1 cpu cycle   = 40 ns
 	*/
 	/* Require at least 2000 cpu cycles (we're 25mhz) */
-	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
+	//if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
 	//if (rwlock->writer_request_count )
-	{
+//
 
-		while(rwlock->writer_request_count > 0 ) { //hold off until all writers are done
-			cv_wait(rwlock->cv,rwlock->lock);
-		}
-	}	
-	gettime(&rwlock->tsLastRead);	
+//while(rwlock->writer_request_count > 0 ) { //hold off until all writers are done
+//	cv_wait(rwlock->cv,rwlock->lock);
+//}
+//	
+//ettime(&rwlock->tsLastRead);	
 	rwlock->reader_count++;
 	lock_release(rwlock->lock);
 }
@@ -510,6 +521,7 @@ rwlock_acquire_write(struct rwlock *rwlock) {
 	while(rwlock->writer_count > 0 || rwlock->reader_count > 0) {
 		cv_wait(rwlock->cv,rwlock->lock);
 	}
+	rwlock->cont_writer_count++;
 	rwlock->writer_request_count--;
 	rwlock->writer_count++;
 	lock_release(rwlock->lock);

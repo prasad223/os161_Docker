@@ -172,7 +172,8 @@ struct rwlock {
         Volatile mandates no shared variable be cached in register, thus all threads can see the updated values from main memory immediately**/
         struct lock* lock;
         struct cv* cv;
-        struct timespec tsLastRead;
+        //struct timespec tsLastRead;
+        volatile int cont_writer_count;
         volatile int reader_count; 
         volatile int writer_count;
         volatile int writer_request_count;  
