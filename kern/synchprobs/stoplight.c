@@ -119,7 +119,6 @@ void stoplight_cleanup() {
 void
 turnright(uint32_t direction, uint32_t index)
 {
-	kprintf("car %d in quadrant %d and turn 2 \n",index, direction);
 	lock_acquire(quadrant_locks[direction]);
 	inQuadrant(direction, index);
 	leaveIntersection(index);
@@ -129,7 +128,6 @@ turnright(uint32_t direction, uint32_t index)
 void
 gostraight(uint32_t direction, uint32_t index)
 {
-	kprintf("car %d in quadrant %d and turn 0\n",index, direction);
 	int num1 = direction;
 	int num2 = (direction+3) % NUM_QUADRANTS;
 	int pos1 = min(num1, num2);
@@ -149,7 +147,6 @@ gostraight(uint32_t direction, uint32_t index)
 void
 turnleft(uint32_t direction, uint32_t index)
 {
-	kprintf("car %d in quadrant %d and turn 1 \n",index, direction);
 	int num1 = direction;
 	int num2 = (direction+3) % NUM_QUADRANTS;
 	int num3 = (direction+2) % NUM_QUADRANTS;
@@ -158,7 +155,6 @@ turnleft(uint32_t direction, uint32_t index)
 	int lock_position3 = max(max(num1, num2),num3);
 	int lock_position2 = max(min(num1,num2), min(max(num1, num2),num3));
 	
-	kprintf("n1:%d n2:%d n3:%d\t  l1:%d l2:%d l3:%d\n",num1, num2, num3, lock_position1, lock_position2, lock_position3);
 	lock_acquire(quadrant_locks[lock_position1]);
 	lock_acquire(quadrant_locks[lock_position2]);
 	lock_acquire(quadrant_locks[lock_position3]);
