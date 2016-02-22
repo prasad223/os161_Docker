@@ -43,8 +43,6 @@
 static struct lock* male_lock;
 static struct lock* female_lock;
 static struct lock* matchMaker_lock;
-static struct lock* pair_lock;
-static struct cv* pair_cv;
 
 static volatile int male_count;
 static volatile int female_count;
@@ -62,8 +60,7 @@ void whalemating_init() {
 	male_lock = lock_create("Male lock");
 	female_lock = lock_create("Female lock");
 	matchMaker_lock = lock_create("matchmaker lock");
-	mate_lock = lock_create("pair lock");
-	pair_cv = cv_create("One pair lock");
+
 	return;
 }
 
@@ -89,12 +86,9 @@ male(uint32_t index)
 
 	lock_acquire(male_lock);	
 	male_count++;
-	lock_acquire(pair_lock);
-	if(male_count == female_count && male_count == matchmaker_count)
-		cv_broadcast(pair_cv, pair_lock);
-	else
-		cv_wait(pair_cv, pair_lock);
-	lock_release(pair_lock);
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
 	lock_release(male_lock);
 	male_end(index);
 	return;
@@ -108,12 +102,9 @@ female(uint32_t index)
 
 	lock_acquire(female_lock);	
 	female_count++;
-	lock_acquire(pair_lock);
-	if(male_count == female_count && male_count == matchmaker_count)
-		cv_broadcast(pair_cv, pair_lock);
-	else
-		cv_wait(pair_cv, pair_lock);
-	lock_release(pair_lock);
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
 	lock_release(female_lock);
 	female_end(index);
 	return;
@@ -127,12 +118,9 @@ matchmaker(uint32_t index)
 
 	lock_acquire(matchMaker_lock);	
 	matchmaker_count++;
-	lock_acquire(pair_lock);
-	if(male_count == female_count && male_count == matchmaker_count)
-		cv_broadcast(pair_cv, pair_lock);
-	else
-		cv_wait(pair_cv, pair_lock);
-	lock_release(pair_lock);
+	while(!(male_count == female_count && male_count == matchmaker_count)){
+		;
+	}
 	lock_release(matchMaker_lock);
 	matchmaker_end(index);
 	return;
