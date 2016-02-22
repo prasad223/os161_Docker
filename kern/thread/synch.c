@@ -362,6 +362,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
 /** Reader writer locks 
 Idea taken from https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Implementation
+and	 https://en.wikipedia.org/wiki/Readers–writers_problem
 This reader-writer lock implementation tries to ensure fairness between reader-starvation and Writer-starvation
 scenario.
 Every 2000 cpu cycles, we will let in any pending reader. This ensures no reader starvation when there are
