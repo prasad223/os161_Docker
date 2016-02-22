@@ -411,6 +411,7 @@ rwlock * rwlock_create(const char *name) {
 		kfree(rwlock);
 		return NULL;
 	}
+	rwlock->readCount = 0;
 	rwlock->resourceAccess = sem_create(rwlock->rwlock_name,1);
 	KASSERT(rwlock->resourceAccess != NULL);
 
