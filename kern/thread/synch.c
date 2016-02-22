@@ -428,7 +428,7 @@ rwlock_destroy(struct rwlock * rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->rwlock_name != NULL);
 	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
-	//KASSERT(rwlock->readCount == 0);
+	KASSERT(rwlock->readCount == 0);
 
 	/** Free all associated memory **/
 	sem_destroy(rwlock->serviceQueue);
@@ -445,7 +445,7 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	P(rwlock->serviceQueue);
 	P(rwlock->readCountAccess);
 
-	if (rwlock->readCount == 0 ) {
+	if (rwlock->readCount == 0) {
 		P(rwlock->resourceAccess);
 	}	
 	rwlock->readCount++;
