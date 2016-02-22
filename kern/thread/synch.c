@@ -467,7 +467,7 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
-	struct timespec tsNow;
+//	struct timespec tsNow;
 	/** **/
 
 	lock_acquire(rwlock->lock);
@@ -503,7 +503,7 @@ void
 rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->reader_cv != NULL);
+	KASSERT(rwlock->cv != NULL);
 	KASSERT(rwlock->reader_count > 0); //if reader_count == 0, no sense in trying to releasing lock
 
 	lock_acquire(rwlock->lock);
@@ -519,7 +519,7 @@ void
 rwlock_acquire_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->writer_cv != NULL);
+	KASSERT(rwlock->cv != NULL);
 	
 	lock_acquire(rwlock->lock);
 	//rwlock->writer_request_pending = true;
@@ -539,7 +539,7 @@ void
 rwlock_release_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->writer_cv != NULL);
+	KASSERT(rwlock->cv != NULL);
 	KASSERT(rwlock->writer_request_pending == true) ; // release the writer lock only if acquired
 	
 	lock_acquire(rwlock->lock);
