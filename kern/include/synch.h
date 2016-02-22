@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
- *	The President and Fellows of Harvard College.
+ *  The President and Fellows of Harvard College.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,10 +45,10 @@
  * internally.
  */
 struct semaphore {
-	char *sem_name;
-	struct wchan *sem_wchan;
-	struct spinlock sem_lock;
-	volatile unsigned sem_count;
+    char *sem_name;
+    struct wchan *sem_wchan;
+    struct spinlock sem_lock;
+    volatile unsigned sem_count;
 };
 
 struct semaphore *sem_create(const char *name, unsigned initial_count);
@@ -85,8 +85,8 @@ struct lock {
         struct thread* lockHolder;
         //spinlock to ensure atomicity of lock_acquire & lock_release         
         struct spinlock lock_spinlock;
-		//lock_wchan is the wait channel for the lock structure
-		struct wchan *lock_wchan;        
+        //lock_wchan is the wait channel for the lock structure
+        struct wchan *lock_wchan;        
 };
 
 struct lock *lock_create(const char *name);
@@ -130,8 +130,8 @@ struct cv {
         //Sunandan 09 Feb 2016
         //This variable will store the currentThread which is holding the condition variable
         struct wchan *cv_wchan;
-		struct spinlock cv_spinlock;
-		
+        struct spinlock cv_spinlock;
+        
 };
 
 struct cv *cv_create(const char *name);
@@ -168,16 +168,14 @@ struct rwlock {
         char *rwlock_name;
         // add what you need here
         // (don't forget to mark things volatile as needed)
-		/** See usage of volatile keyword in http://stackoverflow.com/a/2485009 
-		Volatile mandates no shared variable be cached in register, thus all threads can see the updated values from main memory immediately**/
-		struct lock* lock;
-		struct cv* cv;
-        //struct cv* writer_cv;
+        /** See usage of volatile keyword in http://stackoverflow.com/a/2485009 
+        Volatile mandates no shared variable be cached in register, thus all threads can see the updated values from main memory immediately**/
+        struct lock* lock;
+        struct cv* cv;
         struct timespec tsLastRead;
-		volatile int reader_count; 
-        volatile bool writer_request_pending;
-		volatile int writer_count;
-		//volatile int writer_request_count;	
+        volatile int reader_count; 
+        volatile int writer_count;
+        volatile int writer_request_count;  
 };
 
 struct rwlock * rwlock_create(const char *);
