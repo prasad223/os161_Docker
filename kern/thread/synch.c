@@ -470,7 +470,7 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	1 cpu cycle   = 40 ns
 	*/
 	/* Require at least 2000 cpu cycles (we're 25mhz) */
-	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
+	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 400) 
 	//if (rwlock->writer_request_count )
 	{
 
