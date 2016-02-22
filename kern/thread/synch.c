@@ -530,7 +530,7 @@ rwlock_acquire_write(struct rwlock *rwlock) {
 	//while(rwlock->writer_count > 0 || rwlock->reader_count > 0) {
 	//	cv_wait(rwlock->cv,rwlock->lock);
 	//}
-	rwlock->writer_request_pending = false;
+	rwlock->writer_request_pending = true;
 	//rwlock->writer_count++;
 	lock_release(rwlock->lock);
 }
@@ -540,7 +540,7 @@ rwlock_release_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
 	KASSERT(rwlock->cv != NULL);
-//	KASSERT(rwlock->writer_request_pending == true) ; // release the writer lock only if acquired
+	KASSERT(rwlock->writer_request_pending == true) ; // release the writer lock only if acquired
 	
 	lock_acquire(rwlock->lock);
 	//rwlock->writer_count--;
