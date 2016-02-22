@@ -419,11 +419,16 @@ rwlock * rwlock_create(const char *name) {
 	}
 	rwlock->tsLastRead.tv_sec = 0;
 	rwlock->tsLastRead.tv_nsec= 0;
-	rwlock->cv = cv_create(rwlock->rwlock_name);
+	rwlock->reader_cv = cv_create(rwlock->rwlock_name);
+	KASSERT(rwlock->reader_cv != NULL);
+
+	rwlock->writer_cv = cv_create(rwlock->rwlock_name);
+	KASSERT(rwlock->writer_cv != NULL);
 	
 	rwlock->reader_count = 0;
-	rwlock->writer_count = 0;
-	rwlock->writer_request_count = 0; 
+	rwlock->writer_request_pending = false;
+//	rwlock->writer_count = 0;
+//	rwlock->writer_request_count = 0; 
 	return rwlock;
 }
 
@@ -432,16 +437,21 @@ rwlock_destroy(struct rwlock * rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->rwlock_name != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->reader_cv != NULL);
+	KASSERT(rwlock->writer_cv != NULL);
 	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
-	KASSERT(rwlock->writer_count == 0 );
+//	KASSERT(rwlock->writer_count == 0 );
+
+
 	KASSERT(rwlock->reader_count == 0 );
-	KASSERT(rwlock->writer_request_count == 0 );
+	KASSERT(rwlock->writer_request_pending == false);
+//	KASSERT(rwlock->writer_request_count == 0 );
 	
 	/** Free all associated memory **/
 	rwlock->reader_count = 0;	
-	rwlock->writer_count = 0;	
-	rwlock->writer_request_count = 0;
+	rwlock->writer_request_pending = false;
+//	rwlock->writer_count = 0;	
+//	rwlock->writer_request_count = 0;
 	rwlock->tsLastRead.tv_sec    = 0;	
 	rwlock->tsLastRead.tv_nsec   = 0;
 
@@ -461,24 +471,27 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	/** **/
 
 	lock_acquire(rwlock->lock);
-	gettime(&tsNow); 
-	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
-	while (rwlock->writer_count > 0) {
-		cv_wait(rwlock->cv,rwlock->lock);
+//	gettime(&tsNow); 
+//	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
+	while(rwlock->writer_request_pending) {
+		cv_wait(rwlock->reader_cv,rwlock->lock);
 	}
+	/*while (rwlock->writer_count > 0) {
+		cv_wait(rwlock->cv,rwlock->lock);
+	}*/
 	/* 80,000 ns  = 2000 cpu cycles
 	1 cpu cycle   = 40 ns
 	*/
 	/* Require at least 2000 cpu cycles (we're 25mhz) */
-	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
+	/*if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
 	//if (rwlock->writer_request_count )
 	{
 
 		while(rwlock->writer_request_count > 0 ) { //hold off until all writers are done
 			cv_wait(rwlock->cv,rwlock->lock);
 		}
-	}	
-	gettime(&rwlock->tsLastRead);	
+	}	*/
+//	gettime(&rwlock->tsLastRead);	
 	rwlock->reader_count++;
 	lock_release(rwlock->lock);
 }
@@ -487,14 +500,14 @@ void
 rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->reader_cv != NULL);
 	KASSERT(rwlock->reader_count > 0); //if reader_count == 0, no sense in trying to releasing lock
 
 	lock_acquire(rwlock->lock);
 
 	rwlock->reader_count--;
 	if(rwlock->reader_count == 0) { //wake up one waiting write threads
-		cv_signal(rwlock->cv,rwlock->lock);
+		cv_signal(rwlock->writer_cv,rwlock->lock);
 	}
 	lock_release(rwlock->lock);
 }
@@ -503,14 +516,18 @@ void
 rwlock_acquire_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->writer_cv != NULL);
 	
 	lock_acquire(rwlock->lock);
-	rwlock->writer_request_count++;
+	rwlock->writer_request_pending = true;
 	while(rwlock->writer_count > 0 || rwlock->reader_count > 0) {
-		cv_wait(rwlock->cv,rwlock->lock);
+		cv_wait(rwlock->writer_cv,rwlock->lock);
 	}
-	rwlock->writer_request_count--;
+	//rwlock->writer_request_count++;
+	//while(rwlock->writer_count > 0 || rwlock->reader_count > 0) {
+	//	cv_wait(rwlock->cv,rwlock->lock);
+	//}
+	rwlock->writer_request_pending = false;
 	rwlock->writer_count++;
 	lock_release(rwlock->lock);
 }
@@ -519,13 +536,13 @@ void
 rwlock_release_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->writer_cv != NULL);
 	KASSERT(rwlock->writer_count > 0 ) ; // release the writer lock only if acquired
 	
 	lock_acquire(rwlock->lock);
 	rwlock->writer_count--;
 	if(rwlock->writer_count == 0) { // wake up all sleeping threads, since the sleeping threads can consist of both write & read threads
-		cv_broadcast(rwlock->cv,rwlock->lock);
+		cv_signal(rwlock->reader_cv,rwlock->lock);
 	}
 	lock_release(rwlock->lock);
 }
