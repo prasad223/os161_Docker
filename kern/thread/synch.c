@@ -466,8 +466,13 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 	while (rwlock->writer_count > 0) {
 		cv_wait(rwlock->cv,rwlock->lock);
 	}
+	/* 80,000 ns  = 2000 cpu cycles
+	1 cpu cycle   = 40 ns
+	*/
 	/* Require at least 2000 cpu cycles (we're 25mhz) */
-	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 40*2000) {
+	if (tsNow.tv_sec == 0 && tsNow.tv_nsec < 3*2000) 
+	//if (rwlock->writer_request_count )
+	{
 
 		while(rwlock->writer_request_count > 0 ) { //hold off until all writers are done
 			cv_wait(rwlock->cv,rwlock->lock);
