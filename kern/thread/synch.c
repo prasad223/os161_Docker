@@ -445,7 +445,7 @@ rwlock_destroy(struct rwlock * rwlock) {
 	//KASSERT(rwlock->lock != NULL);
 	//KASSERT(rwlock->cv != NULL);
 	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
-	KASSERT(rwlock->readCount == 0);
+	//KASSERT(rwlock->readCount == 0);
 	/*KASSERT(rwlock->writer_count == 0 );
 	KASSERT(rwlock->reader_count == 0 );
 	KASSERT(rwlock->writer_request_count == 0 );*/
