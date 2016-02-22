@@ -410,22 +410,31 @@ rwlock * rwlock_create(const char *name) {
 		kfree(rwlock);
 		return NULL;
 	}
-	rwlock->lock = lock_create(rwlock->rwlock_name);
+	/*rwlock->lock = lock_create(rwlock->rwlock_name);
 	
 	if (rwlock->lock == NULL ) {
 		kfree(rwlock->rwlock_name);
 		kfree(rwlock);
 		return NULL;
-	}
+	}*/
+	rwlock->resourceAccess = sem_create(rwlock->rwlock_name,1);
+	KASSERT(rwlock->resourceAccess != NULL);
+
+	rwlock->readCountAccess = sem_create(rwlock->rwlock_name,1);
+	KASSERT(rwlock->readCountAccess != NULL);
+
+	rwlock->serviceQueue = sem_create(rwlock->rwlock_name,1);
+	KASSERT(rwlock->serviceQueue != NULL);
+
 	//rwlock->tsLastRead.tv_sec = 0;
 	//rwlock->tsLastRead.tv_nsec= 0;
-	rwlock->cv = cv_create(rwlock->rwlock_name);
+	/*rwlock->cv = cv_create(rwlock->rwlock_name);
 	KASSERT(rwlock->cv != NULL);
-
-	rwlock->cont_writer_count = 0;
+*/
+/*	rwlock->cont_writer_count = 0;
 	rwlock->reader_count = 0;
 	rwlock->writer_count = 0;
-	rwlock->writer_request_count = 0; 
+	rwlock->writer_request_count = 0; */
 	return rwlock;
 }
 
@@ -433,23 +442,28 @@ void
 rwlock_destroy(struct rwlock * rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->rwlock_name != NULL);
-	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+	//KASSERT(rwlock->lock != NULL);
+	//KASSERT(rwlock->cv != NULL);
 	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
-	KASSERT(rwlock->writer_count == 0 );
+	KASSERT(rwlock->readCount == 0);
+	/*KASSERT(rwlock->writer_count == 0 );
 	KASSERT(rwlock->reader_count == 0 );
-	KASSERT(rwlock->writer_request_count == 0 );
+	KASSERT(rwlock->writer_request_count == 0 );*/
 	
 	/** Free all associated memory **/
-	rwlock->reader_count = 0;	
+	/*rwlock->reader_count = 0;	
 	rwlock->writer_count = 0;	
 	rwlock->writer_request_count = 0;
-	rwlock->cont_writer_count = 0;
+	rwlock->cont_writer_count = 0;*/
 //	rwlock->tsLastRead.tv_sec    = 0;	
 //	rwlock->tsLastRead.tv_nsec   = 0;
 
-	lock_destroy(rwlock->lock);
-	cv_destroy(rwlock->cv);
+	sem_destroy(rwlock->serviceQueue);
+	sem_destroy(rwlock->resourceAccess);
+	sem_destroy(rwlock->readCountAccess);
+
+//	lock_destroy(rwlock->lock);
+//	cv_destroy(rwlock->cv);
 	
 	kfree(rwlock->rwlock_name);
 	kfree(rwlock);
@@ -458,20 +472,32 @@ rwlock_destroy(struct rwlock * rwlock) {
 void 
 rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
-	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+//	KASSERT(rwlock->lock != NULL);
+	//KASSERT(rwlock->cv != NULL);
 //	struct timespec tsNow;
 	/** **/
 
-	lock_acquire(rwlock->lock);
-	if (rwlock->cont_writer_count <= 3) 
+	//lock_acquire(rwlock->lock);
+
+	P(rwlock->serviceQueue);
+	P(rwlock->readCountAccess);
+
+	if (rwlock->readCount == 0 ) {
+		P(rwlock->resourceAccess);
+	}	
+	rwlock->readCount++;
+
+	V(rwlock->serviceQueue);
+	V(rwlock->readCountAccess);
+	
+	/*if (rwlock->cont_writer_count <= 3) 
 	{
 		while (rwlock->writer_count > 0 || rwlock->writer_request_count > 0) {
 			cv_wait(rwlock->cv,rwlock->lock);
 		}
 
-	}
-	rwlock->cont_writer_count = 0; //reset
+	}*/
+	//rwlock->cont_writer_count = 0; //reset
 	/*gettime(&tsNow); 
 	timespec_sub(&tsNow, &rwlock->tsLastRead, &tsNow);
 	while (rwlock->writer_count > 0) {
@@ -490,54 +516,71 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 //}
 //	
 //ettime(&rwlock->tsLastRead);	
-	rwlock->reader_count++;
-	lock_release(rwlock->lock);
+	//rwlock->readCount++;
+	//lock_release(rwlock->lock);
 }
 
 void 
 rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
-	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
-	KASSERT(rwlock->reader_count > 0); //if reader_count == 0, no sense in trying to releasing lock
+//	KASSERT(rwlock->lock != NULL);
+//	KASSERT(rwlock->cv != NULL);
+	KASSERT(rwlock->readCount > 0); //if reader_count == 0, no sense in trying to releasing lock
 
-	lock_acquire(rwlock->lock);
+	P(rwlock->readCountAccess);
 
-	rwlock->reader_count--;
+	rwlock->readCount--;
+	if (rwlock->readCount == 0) {
+		V(rwlock->resourceAccess);
+	}
+	V(rwlock->readCountAccess);
+	//lock_acquire(rwlock->lock);
+
+	/*rwlock->reader_count--;
 	if(rwlock->reader_count == 0) { //wake up one waiting write threads
 		cv_signal(rwlock->cv,rwlock->lock);
 	}
-	lock_release(rwlock->lock);
+	lock_release(rwlock->lock);*/
 }
 
 void 
 rwlock_acquire_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
-	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
+//	KASSERT(rwlock->lock != NULL);
+//	KASSERT(rwlock->cv != NULL);
 	
-	lock_acquire(rwlock->lock);
-	rwlock->writer_request_count++;
+	//lock_acquire(rwlock->lock);
+	P(rwlock->serviceQueue);
+	P(rwlock->resourceAccess);
+
+	V(rwlock->serviceQueue);
+
+
+	/*rwlock->writer_request_count++;
 	while(rwlock->writer_count > 0 || rwlock->reader_count > 0) {
 		cv_wait(rwlock->cv,rwlock->lock);
 	}
 	rwlock->cont_writer_count++;
 	rwlock->writer_request_count--;
-	rwlock->writer_count++;
-	lock_release(rwlock->lock);
+	rwlock->writer_count++;*/
+	//Entered
+
+	//lock_release(rwlock->lock);
 }
 
 void
 rwlock_release_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
-	KASSERT(rwlock->lock != NULL);
-	KASSERT(rwlock->cv != NULL);
-	KASSERT(rwlock->writer_count > 0 ) ; // release the writer lock only if acquired
+//	KASSERT(rwlock->lock != NULL);
+	//KASSERT(rwlock->cv != NULL);
+	//KASSERT(rwlock->writer_count > 0 ) ; // release the writer lock only if acquired
 	
-	lock_acquire(rwlock->lock);
-	rwlock->writer_count--;
-	if(rwlock->writer_count == 0) { // wake up all sleeping threads, since the sleeping threads can consist of both write & read threads
+//	lock_acquire(rwlock->lock);
+	
+	V(rwlock->resourceAccess);
+	//rwlock->writer_count--;
+	/*if(rwlock->writer_count == 0) { // wake up all sleeping threads, since the sleeping threads can consist of both write & read threads
 		cv_broadcast(rwlock->cv,rwlock->lock);
-	}
-	lock_release(rwlock->lock);
+	}*/
+	//lock_release(rwlock->lock);
 }
