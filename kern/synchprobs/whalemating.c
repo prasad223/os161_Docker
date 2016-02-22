@@ -89,8 +89,8 @@ male(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	male_end(index);
 	lock_release(male_lock);
+	male_end(index);
 	return;
 }
 
@@ -105,8 +105,8 @@ female(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	female_end(index);
 	lock_release(female_lock);
+	female_end(index);
 	return;
 }
 
@@ -121,7 +121,7 @@ matchmaker(uint32_t index)
 	while(!(male_count == female_count && male_count == matchmaker_count)){
 		;
 	}
-	matchmaker_end(index);
 	lock_release(matchMaker_lock);
+	matchmaker_end(index);
 	return;
 }
