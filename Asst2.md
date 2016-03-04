@@ -26,6 +26,8 @@ The steps (as shown in recitation video) to add a new system call are listed :
 6. Include file_syscall.h in kern/arch/mips/syscall/syscall.c
 7. Add sys_open switch statement in syscall.c
 
+***
+Major inspiration is taken from [jhshi blog](http://jhshi.me/blog/tag/syscall/index.html) . Huge thanks to him/her !
 
 **Section for file system calls design**
 
@@ -85,3 +87,35 @@ Q. Where to initialize the t_fdtable array for the processes ?
 The best place to do that is in runprogram.c where the first user thread is born. Initialization of the three file descriptors for STDIN, STDOUT, and STDERR (defined in unistd.h) is done here.
 
 NOTE : In C, declaring a function with no parameters as "foo()" actually means that foo() can take variable number of arguments. Hence **always** remember to declare it as "foo(void)" when requiring a function with no arguments.
+
+
+***
+
+###### Console file descriptors
+These are initialized with system call vfs_open , where we can pass in our vnode required. This are Initialized only once, and forked user programs inherit them. Kernel does not require these console files to print to the console.
+Since vfs_open takes care of all the internal error scenarios for us (at least all that we can think of), thus we are only handling the return code from vfs_open to see the err / success status of our own FD creation calls.
+
+If the call is a success, then we allocate memory to t_fdtable[counter] { counter can be 0,1, or 2}, and assign the required fields, such as vnode(which is returned on success to us by vfs_open) etc.
+
+Interesting thing we do is initialize the refCount to **1** even before any process has referred to it. This is because since this file descriptors will be only shared afterward, i.e. no process is allowed to update them, thus it is critical to do all book-keeping before hand. User processes, if allowed to tinker with these handles, might mess up everything.
+
+###### sys_close
+This is the system call that I started with, as this looked easiest. The user passes a file descriptor to us, which are supposed to close. There are some error scenarios to check out for :
+
+1. Remember, that each process can open at most OPEN_MAX files, and obviously, the handle has to be non-negative. This is also corroborated by the t_fdtable[] array in thread.
+
+2. Second, the location pointed 'to' by the fileHandle must have some descriptor i.e. a non-null location.
+
+3. Third, even if the location is non-null, the vnode must be not null as well.
+
+Error number is EBADF in these cases.
+After all these cases are passed, we are now ready to close out the file descriptor. First, we will decrement refCount and see that the refCount has reached 1
+
+Following memory areas are to be freed if refCount == 1:
+
+1. use vfs_close to close the vnode . (We can also do VOP_CLOSE , but in the source code it is discouraged. Hence this)
+2. free the associated lock
+3. reset all other values to 0
+4. Free the memory allocated and reset location to NULL
+
+That's it. Our sys_close is done :)

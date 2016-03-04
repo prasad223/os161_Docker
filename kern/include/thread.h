@@ -40,6 +40,9 @@
 #include <spinlock.h>
 #include <threadlist.h>
 
+#include <limits.h>
+#include <kern/file_syscalls.h>
+
 struct cpu;
 
 /* get machine-dependent defs */
@@ -106,6 +109,7 @@ struct thread {
 	 */
 
 	/* add more here as needed */
+	struct file_descriptor* t_fdtable[OPEN_MAX];
 };
 
 /*

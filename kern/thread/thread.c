@@ -117,7 +117,7 @@ struct thread *
 thread_create(const char *name)
 {
 	struct thread *thread;
-
+	int i;
 	DEBUGASSERT(name != NULL);
 
 	thread = kmalloc(sizeof(*thread));
@@ -147,7 +147,9 @@ thread_create(const char *name)
 	thread->t_iplhigh_count = 1; /* corresponding to t_curspl */
 
 	/* If you add to struct thread, be sure to initialize here */
-
+	for(i= 0;i < OPEN_MAX; i++) {
+		thread->t_fdtable[i] = NULL;
+	}
 	return thread;
 }
 

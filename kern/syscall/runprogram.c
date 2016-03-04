@@ -44,6 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <kern/file_syscalls.h>
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -59,6 +60,14 @@ runprogram(char *progname)
 	vaddr_t entrypoint, stackptr;
 	int result;
 
+  /** Initialize the file descriptors for console**/
+	if (curthread->t_fdtable[0] == NULL) {
+			result = init_file_descriptor();
+			if (result ) { // file descriptors not initialized
+				 kprintf_n("init_file_descriptor failed");
+				 return result;
+			}
+	}
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
@@ -106,4 +115,3 @@ runprogram(char *progname)
 	panic("enter_new_process returned\n");
 	return EINVAL;
 }
-
