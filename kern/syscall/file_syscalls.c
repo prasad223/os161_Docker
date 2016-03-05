@@ -20,7 +20,8 @@
 #include <kern/errno.h>
 #include <copyinout.h>
 #include <kern/stat.h>
-
+#include <uio.h>
+#include <proc.h>
 /**
 *  This is called by runprogram.c and we are creating three file descriptors for STDIN, STDOUT, STDERR
 * and save them in positions 0, 1 and 2, respectively.
@@ -38,7 +39,7 @@ init_file_descriptor(void) {
   out         = kstrdup("con:");
   err         = kstrdup("con:");
 
-  if (vfs_open(in,O_RDONLY,0, &vin)) {
+  if (vfs_open(in,O_RDONLY,0664, &vin)) {
     kfree(in);
     kfree(out);
     kfree(err);
@@ -61,7 +62,7 @@ init_file_descriptor(void) {
   curthread->t_fdtable[0]->lk        = lock_create(in);
   curthread->t_fdtable[0]->offset    = 0;
 
-  if (vfs_open(out,O_WRONLY,0, &vout)) {
+  if (vfs_open(out,O_WRONLY,0664, &vout)) {
     kfree(in);
     kfree(out);
     kfree(err);
@@ -93,7 +94,7 @@ init_file_descriptor(void) {
   curthread->t_fdtable[1]->lk        = lock_create(out);
   curthread->t_fdtable[1]->offset = 0;
 
-  if (vfs_open(err,O_WRONLY,0, &verr)) {
+  if (vfs_open(err,O_WRONLY,0664, &verr)) {
     kfree(in);
     kfree(out);
     kfree(err);
@@ -144,11 +145,11 @@ In case of success, save the success status in retval**/
 /** System call for opening the file name provided with given flags & modes **/
 int
 sys_open(const char *filename, int flags, mode_t mode, int *retval) {
-  int index = 0, result;
+  int index = 0,result;
   char* kbuff;
   struct vnode* vn;
   int readMode = 0;
-  struct stat file_stat;
+  struct stat *file_stat;
   (void)mode; // suppress warning, mode is unused
 
   kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
@@ -198,7 +199,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     return EMFILE; /* Too many open files */
   }
   // create the vnode
-  if (vfs_open(kbuff,flags,0, &vn)) {
+  if (vfs_open(kbuff,flags,0664, &vn)) {
     kprintf_n("Could not open vnode for sys_open\n");
     kfree(kbuff);
     return EFAULT;
@@ -216,9 +217,9 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   curthread->t_fdtable[index]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
   curthread->t_fdtable[index]->lk        = lock_create(kbuff); // never trust user buffers, always use kbuff
   if (flags && O_APPEND == O_APPEND) { //set offset to end of file
-    result = VOP_STAT(curthread->t_fdtable[index]->vn,&file_stat);
-    if (result) {
-      kprintf_n("Unable to stat file for getting offset\n");
+    file_stat = (struct stat *)kmalloc(sizeof(struct stat));
+    if (file_stat == NULL) {
+      kprintf_n("Unable to allocate memory for stat\n");
       kfree(kbuff);
       lock_destroy(curthread->t_fdtable[index]->lk);
       vfs_close(curthread->t_fdtable[index]->vn);
@@ -226,13 +227,25 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
       curthread->t_fdtable[index] = NULL;
       return EFAULT;
     }
-    curthread->t_fdtable[index]->offset    = file_stat.st_size; // gives file size ** TODO : Test this ** /
+    result = VOP_STAT(curthread->t_fdtable[index]->vn,file_stat);
+    if (result) {
+      kprintf_n("Unable to stat file for getting offset\n");
+      kfree(kbuff);
+      kfree(file_stat);
+      lock_destroy(curthread->t_fdtable[index]->lk);
+      vfs_close(curthread->t_fdtable[index]->vn);
+      kfree(curthread->t_fdtable[index]);
+      curthread->t_fdtable[index] = NULL;
+      return EFAULT;
+    }
+    curthread->t_fdtable[index]->offset    = file_stat->st_size; // gives file size ** TODO : Test this ** /
   } else {
     curthread->t_fdtable[index]->offset    = 0;
   }
 
   *retval = index; /** return file handle on success**/
   kfree(kbuff);
+  kfree(file_stat);
   return 0;
 }
 
@@ -240,7 +253,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
 int
 sys_close(int fHandle,int *retval) {
   int result = 1;
-  if (fHandle > OPEN_MAX || fHandle < 0) {
+  if (fHandle >= OPEN_MAX || fHandle < 0) {
     *retval = 1; // for any future uses
     return EBADF;
   }
@@ -265,4 +278,74 @@ sys_close(int fHandle,int *retval) {
   *retval = 0;
   result  = 0;
   return result;
+}
+
+/** Function similiar to uio_kinit, only difference is this will initialize a uio for usage with user-space
+* Important parameters are detailed below :
+* iov_ubase : Points to a user-supplied buffer
+* uio_segflg: UIO_USERSPACE to show we are dealing with userspace data
+* uio_offset: This will be supplied by the File descriptor calling the funcition. The file descriptor will supply its own
+*             offset value here
+* uio_resid : The amount of data to transfer
+* uio_space : current process's address space
+*/
+void
+uio_uinit(struct iovec *iov, struct uio *uio,
+	       void *kbuff, size_t len, off_t pos, enum uio_rw rw) {
+  iov->iov_ubase = (userptr_t)kbuff;
+  iov->iov_len   = len;
+  uio->uio_iov   = iov;
+  uio->uio_iovcnt= 1;
+  uio->uio_segflg= UIO_USERSPACE;
+  uio->uio_rw    = rw;
+  uio->uio_offset= pos;
+  uio->uio_resid = len;
+  uio->uio_space = curthread->t_proc->p_addrspace;
+}
+/** system call function for  sys_write
+* Note : ssize_t is a typecast for int
+*/
+ssize_t
+sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
+  int result;
+  if (fd < 0 || fd >= OPEN_MAX) {
+    return EBADF;
+  }
+  if (curthread->t_fdtable[fd] == NULL) {
+    return EBADF;
+  }
+  if (curthread->t_fdtable[fd]->openFlags && O_RDONLY == O_RDONLY) { // inappropriate permissions
+    return EBADF;
+  }
+  void *kbuff;
+  /**this is a clever way to get around the fact that we are not aware
+  * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
+  * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
+  kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
+  if (kbuff == NULL) {
+    kprintf_n("Could not allocate kbuff to sys_write\n");
+    return EFAULT;
+  }
+
+  if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
+    kprintf_n("Could not copy the buffer to kbuff in sys_write\n");
+    return EFAULT; /* filename was an invalid pointer */
+  }
+  lock_acquire(curthread->t_fdtable[fd]->lk);
+  struct iovec iov;
+  struct uio user_uio;
+
+  /** Write nbytes to UIO**/
+  uio_uinit(&iov,&user_uio,kbuff,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
+  result = VOP_WRITE(curthread->t_fdtable[fd]->vn,&user_uio);
+  if (result) {
+      kfree(kbuff);
+      lock_release(curthread->t_fdtable[fd]->lk);
+      return result;
+  }
+  *retval = nbytes - user_uio.uio_resid;
+  curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
+  kfree(kbuff);
+  lock_release(curthread->t_fdtable[fd]->lk);
+  return 0;
 }

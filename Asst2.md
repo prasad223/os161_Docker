@@ -27,7 +27,7 @@ The steps (as shown in recitation video) to add a new system call are listed :
 7. Add sys_open switch statement in syscall.c
 
 ***
-Major inspiration is taken from [jhshi blog](http://jhshi.me/blog/tag/syscall/index.html) . Huge thanks to him/her !
+Major inspiration is taken from [jhshi blog](http://jhshi.me/blog/tag/syscall/index.html) . Huge thanks to him!
 
 **Section for file system calls design**
 
@@ -59,7 +59,7 @@ struct lock* lk; // to protect FD when it will be shared
 
 Q. How to relate the file descriptor with the processes in os161 ?
 
-We make use of the fact that process:thread is a 1:1 mapping in os161 by default. Thus, each process is essentially a process, thus we can add a file descriptor table to the ```struct thread``` data structure. The number of maximum open processes is limited by __OPEN_MAX ( defined in limits.h), and we can use the static limit defined by the OS to also create our own statically allocated array to store all the FD related to a process.
+We make use of the fact that process:thread is a 1:1 mapping in os161 by default. Thus, each process is essentially a process, thus we can add a file descriptor table to the ```struct thread``` data structure. The number of maximum open processes is limited by ```__OPEN_MAX``` ( defined in limits.h), and we can use the static limit defined by the OS to also create our own statically allocated array to store all the FD related to a process.
 
 ##### Now we are ready to define our system calls for file system related operations.
 
@@ -69,18 +69,6 @@ The v0 register is used to give the return value back to user process, this can 
 a3 is simply used to indicate failure (1) or success (0).
 
 Thus, our system calls headers need to be defined accordingly, each of the functions returning "int" indicating success/failure, and an extra parameter ( in addition to what is defined in the man pages) to get the returned value from kernel.
-
-Following is referred from [here](https://www.student.cs.uwaterloo.ca/~cs350/F09/a2-hints.html).
-
-```
-A uio structure essentially describes a data transfer between the console (or some other file or device) and a buffer in the kernel or user part of the address space. You need to create and initialize the uio structure prior to calling VOP_WRITE or VOP_READ.
-In a nutshell:
-uio_iovec : describes the location and length of the buffer that is being transferred to or from. This buffer can be in the application part of the kernel address space or in the kernel's part.
-uio_resid : describes the amount of data to transfer
-uio_rw    : identifies whether the transfer is from the file/device or to the file/device,
-uio_segflag : indicates whether the buffer is in the user (application) part of the address space or the kernel's part of the address space.
-uio_space : points to the addrspace object of the process that is doing the VOP_WRITE or VOP_READ. This is only used if the buffer is is in the user part of the address space - otherwise, it should be set to NULL.
-```
 
 Q. Where to initialize the t_fdtable array for the processes ?
 
@@ -108,7 +96,7 @@ Note : We also allow processes to close their own individual FD 0,1 and 2. This 
 
 2. Second, the location pointed 'to' by the fileHandle must have some descriptor i.e. a non-null location.
 
-3. Third, even if the location is non-null, the vnode must be not null as well.
+3. Third, even if the location is non-null, the vnode must be non-null as well.
 
 Error number is EBADF in these cases.
 After all these cases are passed, we are now ready to close out the file descriptor. First, we will decrement refCount and see that the refCount has reached 1
@@ -138,9 +126,55 @@ The first available slot is picked up. If no slot is free, then process has exce
 
 **TODO : Not sure yet about valid combinations of the open flags. Wrote some combinations, but not sure what scenarios to test them with**
 
-NOTE : the parameter "_mode_" is ignored as suggested in man pages.
+NOTE : the parameter ```_mode_``` is ignored as suggested in man pages.
 
 4.  Allocate memory to the file descriptor and move on.
 
 5. Trick here is to allocate offset correctly. For read mode, we can set it to 0. However, in write mode if O_APPEND is passed, we don't want to overwrite any existing content, thus we need to set offset to file end in such case.
 This is done using VOP_STAT function which gives me file stat, and we use the st_size for this purpose.
+
+This completes the design of sys_write
+
+###### sys_write
+
+Here comes the system call which will allow us to actually test whatever we have done so far. sys_write is used in **consoletest** to have a working console where the user space programs can write to.
+Again, referring to the man pages, we see that there are 3 parameters that we need to take care of :
+
+1. File descriptor : This is an integer value. Thus, common error checks such as non-negative, also must be less than OPEN_MAX constant. The file descriptor must point to a non-null location, also the file in the location must have been opened in read-only mode.
+
+2. Again, as in sys_open call, we need to transfer the user-supplied buffer to kernel space buffer using ```copyin```. If the ```copyin``` fails due to any reason, we cannot proceed. Return with the error code EINVAL in such cases.
+
+3. The ```UIO``` structure defined in ```uio.h``` is required for us to actually write to the file.
+
+Following is referred from [here](https://www.student.cs.uwaterloo.ca/~cs350/F09/a2-hints.html).
+
+```
+A uio structure essentially describes a data transfer between the console (or some other file or device) and a buffer in the kernel or user part of the address space. You need to create and initialize the uio structure prior to calling VOP_WRITE or VOP_READ.
+In a nutshell:
+uio_iovec : describes the location and length of the buffer that is being transferred to or from. This buffer can be in the application part of the kernel address space or in the kernel's part.
+uio_resid : describes the amount of data to transfer
+uio_rw    : identifies whether the transfer is from the file/device or to the file/device,
+uio_segflag : indicates whether the buffer is in the user (application) part of the address space or the kernel's part of the address space.
+uio_space : points to the addrspace object of the process that is doing the VOP_WRITE or VOP_READ. This is only used if the buffer is is in the user part of the address space - otherwise, it should be set to NULL.
+```
+
+Going through the definition above, it is clear that we need to assign the user-supplied buffer ```somehow``` to uio_iovec. The transferring again requires us to look through uio_iovec.
+There are 2 pointers in ```struct iovec``` , out of which we are going to use ```iov_ubase```, since the data we supply **comes** from userspace.
+
+uio_resid   : the buffer size
+uio_rw      : UIO_READ / UIO_WRITE dependent on what we want to do. For sys_write, we use UIO_WRITE
+uio_segflag : This can take values ```UIO_USERSPACE```, ```UIO_USERISPACE```, ```UIO_SYSSPACE``` . Since we are supplying user-space data, we go with UIO_USERSPACE
+uio_space   : curthread's address. This is found from curthreadd->t_proc->p_addrspace.
+
+Here, we must take of protecting the shared resources (file table is shareable, hence...). Since the file object states are changed, e.g. offset is increased by number of bytes written, all of these operations must be protected by lock.
+Also, kernel does not guarantee us atomicity in case of these operations (refer man pages), thus we are fulfilling our aims of atomicity and shared resources protection.
+
+Use VOP_WRITE() provided in vnode.h to write the uio information to the vnode
+There are two things we need to update before declaring our sys_write function  a success.
+1. Increment the current seek position of the file with the number of bytes written. A straight forward way to do this is to use the uio.uio_offset value to set the curthread->t_fdtable[fd]->offset value.
+
+2. We have to also return the number of bytes successfully written. We have two options to do this :-
+  a. Use new offset - old offset . This we did not use, as off_t is of type int64, and our return type can't fit this.
+  b. Use nbytes - uio.uio_resid value to get this. After the write is done, uio_resid contains number of bytes "left over" to write. If everything gets written to file successfully, then this field will be 0. In any case, this suits our requirement perfectly.
+This completes our sys_write system call.
+TODO : Testing tomorrow.

@@ -6,6 +6,7 @@
 
 #include <types.h>
 #include <limits.h>
+#include <uio.h>
 
 struct file_descriptor {
 	char fileName[__NAME_MAX] ; // the file name associated with the FD, can be used for debugging
@@ -26,5 +27,6 @@ int sys_chdir(const char *pathname, int *retval);
 int sys__getcwd(char *buf, size_t buflen, int *retval);
 
 int init_file_descriptor(void);
+void uio_uinit(struct iovec *iov, struct uio *uio, void *kbuff, size_t len, off_t pos, enum uio_rw rw);
 
 #endif /* _FILE_CALL_H_ */
