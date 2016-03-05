@@ -178,3 +178,35 @@ There are two things we need to update before declaring our sys_write function  
   b. Use nbytes - uio.uio_resid value to get this. After the write is done, uio_resid contains number of bytes "left over" to write. If everything gets written to file successfully, then this field will be 0. In any case, this suits our requirement perfectly.
 This completes our sys_write system call.
 TODO : Testing tomorrow.
+Testing result :
+
+###### sys_read
+
+Most of the things to be done in sys_read are **very** similiar to sys_write. All the error checks remain the same, also the uio & iovec usage pretty much remains the same. Only thing to change is do use ```VOP_READ```, and the uio passed into it needs to have ```UIO_READ``` flag set.
+
+For successful return values, we have to set two things :
+1. Use uio.offset value and set it in curthread->t_fdtable[fd]->offset (Again, same as sys_write)
+2. The number of bytes read, is to be returned. Here too,we follow the same logic as sys_write. uio.uio_resid will give us the number of bytes **which was not read**. If all the required bytes are read, then this parameter will have value 0 in it. Thus ```nbytes-uio.uio_resid``` gives us the result we need.
+
+That completes sys_read
+
+###### sys_chdir
+This is fairly simple to do. The VFS function ```vfs_chdir``` does the job for us. Only thing we do is take care of invalid pathname protection, which we can achieve by using ```copyin``` function. Success returns 0, failure returns according to the error seen.
+
+That completes sys_chdir calls implementation.
+
+###### sys_lseek
+
+There are a few tricks to do before lseek can be actually done. The regular file handle checks are required.
+Here, ```whence``` is a new parameter, which we deal with. It informs us the type of seek to be performed.
+It can take 3 values ONLY, all other values must be treated as EINVAL.
+
+For whence == SEEK_END, we need to set the file pointer to the new value file_end  + pos. The file pointer set PAST the end of file is a valid condition (refer man pages). For getting the file_end, we use VOP_STAT system call.
+The new offset calculated after all this, must be greater than 0. Else, we return with error EINVAL.
+Remember, that we are dealing with 32 bit registers, and the offset we just calculated is 64 bit. This 64 bit value is required to be split into two 32-bit registers, one in v0 (high32), and v1 (low32).
+
+This brings us to the syscall.c where we are required to add the system call in switch statement. Again, due to the restriction of having only 4 32-bit registers, we are required to pick up parameter ```whence``` from ```tf_sp + 16``` (refer to Ben Ali's recitation #1) . This is done using copyin command.
+
+The offset parameter ```pos``` to be passed to sys_lseek is joined using bitwise OR from tf_a2 and tf_a3 with tf_a2 containing the high32 bits and tf_a3 having the low32 bits.
+
+Also, the return is a little different, with retval1 as the new extra parameter that we need to save into register ```v1 ( the low32 bits of offset)```   

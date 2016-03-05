@@ -22,6 +22,7 @@
 #include <kern/stat.h>
 #include <uio.h>
 #include <proc.h>
+#include <kern/seek.h>
 /**
 *  This is called by runprogram.c and we are creating three file descriptors for STDIN, STDOUT, STDERR
 * and save them in positions 0, 1 and 2, respectively.
@@ -92,7 +93,7 @@ init_file_descriptor(void) {
   curthread->t_fdtable[1]->openFlags = O_WRONLY;
   curthread->t_fdtable[1]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
   curthread->t_fdtable[1]->lk        = lock_create(out);
-  curthread->t_fdtable[1]->offset = 0;
+  curthread->t_fdtable[1]->offset    = 0;
 
   if (vfs_open(err,O_WRONLY,0664, &verr)) {
     kfree(in);
@@ -139,6 +140,17 @@ init_file_descriptor(void) {
 }
 
 /** --------------------------------------------------------------------------**/
+int
+check_isFileHandleValid(int fHandle) {
+  if (fHandle >= OPEN_MAX || fHandle < 0) {
+    return EBADF;
+  }
+
+  if (curthread->t_fdtable[fHandle] == NULL) {
+    return EBADF;
+  }
+  return 0;
+}
 /** Remember, in case of failure, the return code must indicate error number
 In case of success, save the success status in retval**/
 
@@ -149,7 +161,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   char* kbuff;
   struct vnode* vn;
   int readMode = 0;
-  struct stat *file_stat;
+  struct stat file_stat;
   (void)mode; // suppress warning, mode is unused
 
   kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
@@ -159,15 +171,16 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   }
 
   if (copyin((const_userptr_t) filename, kbuff, PATH_MAX) ) {
+    kfree(kbuff);
     kprintf_n("Could not copy the filename to kbuff\n");
     return EFAULT; /* filename was an invalid pointer */
   }
   //check the flags
   if (flags < 0) {
-    kprintf_n("\n");
+    kprintf_n("Flags cannot be negative\n");
     return EINVAL;
   }
-  if (flags && O_RDONLY == O_RDONLY) {
+  if (flags == O_RDONLY) {
     readMode  = 1;
   }
   if (flags && O_WRONLY == O_WRONLY) {
@@ -217,7 +230,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   curthread->t_fdtable[index]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
   curthread->t_fdtable[index]->lk        = lock_create(kbuff); // never trust user buffers, always use kbuff
   if (flags && O_APPEND == O_APPEND) { //set offset to end of file
-    file_stat = (struct stat *)kmalloc(sizeof(struct stat));
+    /*file_stat = (struct stat *)kmalloc(sizeof(struct stat));
     if (file_stat == NULL) {
       kprintf_n("Unable to allocate memory for stat\n");
       kfree(kbuff);
@@ -226,26 +239,26 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
       kfree(curthread->t_fdtable[index]);
       curthread->t_fdtable[index] = NULL;
       return EFAULT;
-    }
-    result = VOP_STAT(curthread->t_fdtable[index]->vn,file_stat);
+    }*/
+    result = VOP_STAT(curthread->t_fdtable[index]->vn,&file_stat);
     if (result) {
       kprintf_n("Unable to stat file for getting offset\n");
       kfree(kbuff);
-      kfree(file_stat);
+      //kfree(file_stat);
       lock_destroy(curthread->t_fdtable[index]->lk);
       vfs_close(curthread->t_fdtable[index]->vn);
       kfree(curthread->t_fdtable[index]);
       curthread->t_fdtable[index] = NULL;
       return EFAULT;
     }
-    curthread->t_fdtable[index]->offset    = file_stat->st_size; // gives file size ** TODO : Test this ** /
+    curthread->t_fdtable[index]->offset    = file_stat.st_size; // gives file size ** TODO : Test this ** /
   } else {
     curthread->t_fdtable[index]->offset    = 0;
   }
 
   *retval = index; /** return file handle on success**/
   kfree(kbuff);
-  kfree(file_stat);
+  //kfree(file_stat);
   return 0;
 }
 
@@ -253,7 +266,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
 int
 sys_close(int fHandle,int *retval) {
   int result = 1;
-  if (fHandle >= OPEN_MAX || fHandle < 0) {
+  /*if (fHandle >= OPEN_MAX || fHandle < 0) {
     *retval = 1; // for any future uses
     return EBADF;
   }
@@ -261,6 +274,10 @@ sys_close(int fHandle,int *retval) {
   if (curthread->t_fdtable[fHandle] == NULL) {
     *retval = 1; // for any future uses
     return EBADF;
+  }*/
+  result = check_isFileHandleValid(fHandle);
+  if (result > 0) {
+    return result;
   }
   if (curthread->t_fdtable[fHandle]->vn == NULL) {
     *retval = 1; // for any future uses
@@ -288,6 +305,7 @@ sys_close(int fHandle,int *retval) {
 *             offset value here
 * uio_resid : The amount of data to transfer
 * uio_space : current process's address space
+* TODO      : Calling this function did not give me proper result . Investigate
 */
 void
 uio_uinit(struct iovec *iov, struct uio *uio,
@@ -308,13 +326,17 @@ uio_uinit(struct iovec *iov, struct uio *uio,
 ssize_t
 sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   int result;
-  if (fd < 0 || fd >= OPEN_MAX) {
+  /*if (fd < 0 || fd >= OPEN_MAX) {
     return EBADF;
   }
   if (curthread->t_fdtable[fd] == NULL) {
     return EBADF;
+  }*/
+  result = check_isFileHandleValid(fd);
+  if (result > 0) {
+    return result;
   }
-  if (curthread->t_fdtable[fd]->openFlags && O_RDONLY == O_RDONLY) { // inappropriate permissions
+  if (curthread->t_fdtable[fd]->openFlags  == O_RDONLY) { // inappropriate permissions
     return EBADF;
   }
   void *kbuff;
@@ -336,7 +358,18 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   struct uio user_uio;
 
   /** Write nbytes to UIO**/
-  uio_uinit(&iov,&user_uio,kbuff,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
+  /** %%%%%%%%%%%%%%%%%%%%%%%%   **/
+  iov.iov_ubase = (userptr_t)buf; // why did this require buf & not kbuff
+  iov.iov_len   = nbytes;
+  user_uio.uio_iov   = &iov;
+  user_uio.uio_iovcnt= 1;
+  user_uio.uio_segflg= UIO_USERSPACE;
+  user_uio.uio_rw    = UIO_WRITE;
+  user_uio.uio_offset= curthread->t_fdtable[fd]->offset;
+  user_uio.uio_resid = nbytes;
+  user_uio.uio_space = curthread->t_proc->p_addrspace;
+  /** %%%%%%%%%%%%%%%%%%%%%%%%%%%%**/
+  //uio_uinit(&iov,&user_uio,(void *)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
   result = VOP_WRITE(curthread->t_fdtable[fd]->vn,&user_uio);
   if (result) {
       kfree(kbuff);
@@ -346,6 +379,147 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   *retval = nbytes - user_uio.uio_resid;
   curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
   kfree(kbuff);
+  lock_release(curthread->t_fdtable[fd]->lk);
+  return 0;
+}
+
+/** system call function for  sys_write
+* Note : ssize_t is a typecast for int
+*/
+ssize_t
+sys_read(int fd, void *buf, size_t nbytes, int *retval) {
+  int result;
+  /*if (fd < 0 || fd >= OPEN_MAX) {
+    return EBADF;
+  }
+  if (curthread->t_fdtable[fd] == NULL) {
+    return EBADF;
+  }*/
+  result = check_isFileHandleValid(fd);
+  if (result > 0) {
+    return result;
+  }
+  if (curthread->t_fdtable[fd]->openFlags  == O_WRONLY) { // inappropriate permissions
+    return EBADF;
+  }
+  void *kbuff;
+  /**this is a clever way to get around the fact that we are not aware
+  * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
+  * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
+  kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
+  if (kbuff == NULL) {
+    kprintf_n("Could not allocate kbuff to sys_read\n");
+    return EFAULT;
+  }
+  if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
+    kprintf_n("Could not copy the buffer to kbuff in sys_read\n");
+    return EFAULT; /* filename was an invalid pointer */
+  }
+  lock_acquire(curthread->t_fdtable[fd]->lk);
+  struct iovec iov;
+  struct uio user_uio;
+
+  /** Write nbytes to UIO**/
+  /** %%%%%%%%%%%%%%%%%%%%%%%%   **/
+  iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
+  iov.iov_len        = nbytes;
+  user_uio.uio_iov   = &iov;
+  user_uio.uio_iovcnt= 1;
+  user_uio.uio_segflg= UIO_USERSPACE;
+  user_uio.uio_rw    = UIO_READ;
+  user_uio.uio_offset= curthread->t_fdtable[fd]->offset;
+  user_uio.uio_resid = nbytes;
+  user_uio.uio_space = curthread->t_proc->p_addrspace;
+  /** %%%%%%%%%%%%%%%%%%%%%%%%%%%%**/
+  //uio_uinit(&iov,&user_uio,(void *)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
+  result = VOP_READ(curthread->t_fdtable[fd]->vn,&user_uio);
+  if (result) {
+      kfree(kbuff);
+      lock_release(curthread->t_fdtable[fd]->lk);
+      return result;
+  }
+  *retval = nbytes - user_uio.uio_resid;
+  curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
+  kfree(kbuff);
+  lock_release(curthread->t_fdtable[fd]->lk);
+  return 0;
+
+}
+
+/** System call for sys_chdir **/
+int sys_chdir(const char *pathname, int *retval) {
+  int result;
+  char *kbuff;
+  kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
+  if (kbuff == NULL) {
+    kprintf_n("Could not allocate kbuff to sys_open\n");
+    return EFAULT;
+  }
+
+  if (copyin((const_userptr_t) pathname, kbuff, PATH_MAX) ) {
+    kfree(kbuff);
+    kprintf_n("Could not copy the pathname to kbuff\n");
+    return EFAULT; /* filename was an invalid pointer */
+  }
+  result = vfs_chdir(kbuff);
+  if (result ) {
+    kfree(kbuff);
+    kprintf_n("vfs_chdir failed \n");
+    return result;
+  }
+  kfree(kbuff);
+  *retval = 0;
+  return 0;
+}
+
+/** System call for lseek**/
+off_t
+sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
+  int result;
+  result = check_isFileHandleValid(fd);
+  if (result > 0) {
+    return result;
+  }
+  if (fd == 0 || fd == 1 || fd == 2) { // all seeks on console handles fail
+    return ESPIPE;
+  }
+  if ((whence != SEEK_SET) && (whence != SEEK_CUR) && (whence != SEEK_END)) {
+    kprintf_n("Whence value is invalid\n");
+    return EINVAL;
+  }
+  /*offset itself can be negative. The resultant seek position however, cannot be. This is also verified in man
+  * pages "Note that pos is a signed quantity."*/
+  lock_acquire(curthread->t_fdtable[fd]->lk);
+  if (!VOP_ISSEEKABLE(curthread->t_fdtable[fd]->vn)) {
+    lock_release(curthread->t_fdtable[fd]->lk);
+    kprintf_n("File does not support seeking \n");
+    return ESPIPE;
+  }
+  struct stat file_stat;
+  off_t newPos;
+  if (whence == SEEK_SET) {
+    newPos = pos;
+  } else if (whence == SEEK_CUR) {
+    newPos = curthread->t_fdtable[fd]->offset + pos;
+  } else if (whence == SEEK_END) {
+    result = VOP_STAT(curthread->t_fdtable[fd]->vn,&file_stat);
+    if (result) {
+      kprintf_n("Unable to stat file for getting offset\n");
+      lock_release(curthread->t_fdtable[fd]->lk);
+      return result;
+    }
+    newPos = file_stat.st_size + pos;
+    //curthread->t_fdtable[fd]->offset =
+  }
+  if (newPos < (off_t)0) {
+    kprintf_n("Resulting seek would be negative\n");
+    lock_release(curthread->t_fdtable[fd]->lk);
+    return EINVAL;
+  }
+  curthread->t_fdtable[fd]->offset = newPos;
+  *retval1 = (uint32_t)((newPos & 0xFFFFFFFF00000000) >> 32); // higher 32 bits
+  *retval2 = (uint32_t)(newPos & 0x0FFFFFFFFF) ; //lower 32 bits
+
   lock_release(curthread->t_fdtable[fd]->lk);
   return 0;
 }
