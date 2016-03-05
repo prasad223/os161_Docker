@@ -104,6 +104,8 @@ This is the system call that I started with, as this looked easiest. The user pa
 
 1. Remember, that each process can open at most OPEN_MAX files, and obviously, the handle has to be non-negative. This is also corroborated by the t_fdtable[] array in thread.
 
+Note : We also allow processes to close their own individual FD 0,1 and 2. This is safe since during process init, the file table is "copied" from parent process.
+
 2. Second, the location pointed 'to' by the fileHandle must have some descriptor i.e. a non-null location.
 
 3. Third, even if the location is non-null, the vnode must be not null as well.
@@ -119,3 +121,26 @@ Following memory areas are to be freed if refCount == 1:
 4. Free the memory allocated and reset location to NULL
 
 That's it. Our sys_close is done :)
+
+###### sys_open
+
+Here, the primary error condition that we need to take care of, is that the file name can point to a garbage location, or may be NULL etc. To protect us from such conditions, we will rely on 'copyinstr' function ( this function copies user-space buffer to kernel-space buffer, and takes care of various error conditions that may occur)
+
+The following steps are to be done for sys_open :
+
+1. Copy the file name to kernel space buffer using copyinstr. This takes care of both copying memory to kernel space, & perform the error checking too. Sweet :)
+
+2. Next we must search through the file table for an empty slot. NOTE : We start search from index 3 and onwards. Again, this is done to ensure that the process never use any other file in these reserved descriptors positions 0,1, and 2.
+
+The first available slot is picked up. If no slot is free, then process has exceeded its quota, and is disallowed (Use error code EPERM in this case).
+
+3. Now, we check the open flags sent to the sys_open function. Basically, we want to disallow an invalid combination of the open flags.
+
+**TODO : Not sure yet about valid combinations of the open flags. Wrote some combinations, but not sure what scenarios to test them with**
+
+NOTE : the parameter "_mode_" is ignored as suggested in man pages.
+
+4.  Allocate memory to the file descriptor and move on.
+
+5. Trick here is to allocate offset correctly. For read mode, we can set it to 0. However, in write mode if O_APPEND is passed, we don't want to overwrite any existing content, thus we need to set offset to file end in such case.
+This is done using VOP_STAT function which gives me file stat, and we use the st_size for this purpose.
