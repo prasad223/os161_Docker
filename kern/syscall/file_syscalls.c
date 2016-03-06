@@ -189,6 +189,9 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
       kprintf_n("Both O_RDONLY and O_WRONLY flags passed\n");
       return EINVAL;
     }
+  } else if (readMode == 0 ) {
+    kprintf_n("Unable to open file. Bad flags passed \n");
+    return EINVAL;
   }
   if (readMode == 1 ) { // invalid flags with read_mode
     if ((flags && O_CREAT == O_CREAT) ||
@@ -213,6 +216,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   }
   // create the vnode
   if (vfs_open(kbuff,flags,0664, &vn)) {
+    kprintf_n("flags %d",flags  );
     kprintf_n("Could not open vnode for sys_open\n");
     kfree(kbuff);
     return EFAULT;
@@ -277,10 +281,12 @@ sys_close(int fHandle,int *retval) {
   }*/
   result = check_isFileHandleValid(fHandle);
   if (result > 0) {
+    kprintf_n("file handle passed in not valid in sys_close!\n");
     return result;
   }
   if (curthread->t_fdtable[fHandle]->vn == NULL) {
-    *retval = 1; // for any future uses
+    //*retval = 1; // for any future uses
+    kprintf_n("vnode is NULL in sys_close \n");
     return EBADF;
   }
   curthread->t_fdtable[fHandle]->refCount = curthread->t_fdtable[fHandle]->refCount-1;
@@ -467,8 +473,8 @@ int sys_chdir(const char *pathname, int *retval) {
     kprintf_n("vfs_chdir failed \n");
     return result;
   }
-  kfree(kbuff);
   *retval = 0;
+  kfree(kbuff);
   return 0;
 }
 
@@ -522,4 +528,106 @@ sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
 
   lock_release(curthread->t_fdtable[fd]->lk);
   return 0;
+}
+
+/** System call for dup2**/
+int
+sys_dup2(int oldfd, int newfd, int *retval) {
+  int result;
+  result = check_isFileHandleValid(oldfd);
+  if (result > 0) {
+    return result;
+  }
+  result = check_isFileHandleValid(newfd);
+  if (result > 0) {
+    return result;
+  }
+  if (oldfd == newfd) { //file handle are same, this has no effect, just return the new handle, and move on
+    *retval = newfd;
+    return 0;
+  }
+  int retval1, index;
+  lock_acquire(curthread->t_fdtable[oldfd]->lk);
+  index =0;
+  while(curthread->t_fdtable[index] != NULL) {
+    index++;
+  }
+  if (index >= OPEN_MAX) { // process specific file limit was reached
+    lock_release(curthread->t_fdtable[index]->lk  );
+    kprintf_n("Process file table is full in oldfd in sys_dup2\n");
+    return EMFILE;
+  }
+  if (curthread->t_fdtable[newfd] != NULL) {
+      result = sys_close(newfd,&retval1);
+      if (result) {
+        kprintf_n("Unable to close newfd handle in sys_dup2\n");
+        lock_release(curthread->t_fdtable[index]->lk  );
+        return EINVAL;
+      }
+  }
+  /** Allocate memory to newfd and copy everything from oldfd**/
+  curthread->t_fdtable[newfd] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curthread->t_fdtable[newfd] == NULL) {
+    kprintf_n("Could not create new file descriptor in sys_dup2\n");
+    lock_release(curthread->t_fdtable[oldfd]->lk);
+    return EFAULT;
+  }
+  strcpy(curthread->t_fdtable[newfd]->fileName, curthread->t_fdtable[oldfd]->fileName);
+  curthread->t_fdtable[newfd]->vn        = curthread->t_fdtable[oldfd]->vn;
+  curthread->t_fdtable[newfd]->openFlags = curthread->t_fdtable[oldfd]->openFlags;
+  curthread->t_fdtable[oldfd]->refCount  = curthread->t_fdtable[oldfd]->refCount + 1;
+  curthread->t_fdtable[newfd]->refCount  = 1;
+  curthread->t_fdtable[newfd]->lk        = lock_create(curthread->t_fdtable[newfd]->fileName); // never trust user buffers, always use kbuff
+
+  *retval = newfd;
+  lock_release(curthread->t_fdtable[oldfd]->lk);
+
+  return 0;
+}
+
+/** System call to get current direction and stored in buf**/
+int
+sys__getcwd(char *buf, size_t buflen, int *retval) {
+  int result;
+  char *kbuff;
+  kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
+  if (kbuff == NULL) {
+    kprintf_n("Could not allocate kbuff to sys_open\n");
+    return EFAULT;
+  }
+
+  if (copyin((const_userptr_t) buf, kbuff, PATH_MAX) ) {
+    kfree(kbuff);
+    kprintf_n("Could not copy the buf to kbuff in sys__getcwd\n");
+    return EFAULT; /* filename was an invalid pointer */
+  }
+  struct uio user_uio;
+  struct iovec iov;
+  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
+  iov.iov_len        = buflen -1 ; // last character is NULL terminator
+  user_uio.uio_iov   = &iov;
+  user_uio.uio_iovcnt= 1;
+  user_uio.uio_segflg= UIO_USERSPACE;
+  user_uio.uio_rw    = UIO_READ;
+  user_uio.uio_offset= 0;
+  user_uio.uio_resid = buflen -1 ;  // last character is NULL terminator
+  user_uio.uio_space = curthread->t_proc->p_addrspace;
+  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  result = vfs_getcwd(&user_uio);
+  if (result ) {
+    kfree(kbuff);
+    kprintf_n("Could not fetch current working directory\n");
+    return EINVAL;
+  }
+  /** We have to add a \0 terminator to the buffer that we pass as a result, as userspace library call getcwd expects
+  it as such**/
+  /* null terminate */
+
+	buf[sizeof(buf)-1-user_uio.uio_resid] = '\0';
+
+  *retval = strlen(buf);
+  kfree(buf);
+  return 0;
+
 }

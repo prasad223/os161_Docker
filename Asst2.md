@@ -210,3 +210,20 @@ This brings us to the syscall.c where we are required to add the system call in 
 The offset parameter ```pos``` to be passed to sys_lseek is joined using bitwise OR from tf_a2 and tf_a3 with tf_a2 containing the high32 bits and tf_a3 having the low32 bits.
 
 Also, the return is a little different, with retval1 as the new extra parameter that we need to save into register ```v1 ( the low32 bits of offset)```   
+
+###### sys_dup2
+
+Again ,we start with checking the error conditions for the oldfd and newfd. Other error checks are :
+Also, we make sure that we don't do anything when oldfd == newfd
+
+1. Process file table is not filled up. If it is, then ```dup2``` must fail with EMFILE.
+2. The file descriptor in newfd must be closed. We do this using our own sys_close
+3. The file descriptor in newfd is allocated memory, and the vnode is referred from oldfd descriptor. Since there is one more reference to oldfd descriptor, the reference count for oldfd is increased by 1.
+4. We return the newfd reference in retval.
+
+###### sys__getcwd
+
+This is an unique call, as this is actually going to server as a wrapper to user-space library call ```getcwd```. We use the copyin function to save our code from bad user pointers, initialize a user_uio structure, and use the call ```vfs_getcwd``` to get the data we want.
+Since user-space library expects buffer to be null-terminated, we will have to insert a '\0' character ourselves. (Refer menu.c for similar code). The number of bytes in the buffer i.e. ```strlen(buffer)``` is returned.
+
+***
