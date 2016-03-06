@@ -183,26 +183,28 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   if (flags == O_RDONLY) {
     readMode  = 1;
   }
-  if (flags && O_WRONLY == O_WRONLY) {
+
+  if (  ( (flags & O_WRONLY) == O_WRONLY )||
+        ( (flags & O_RDWR) == O_RDWR ) ) {
     if (readMode == 1)
     {
       kprintf_n("Both O_RDONLY and O_WRONLY flags passed\n");
       return EINVAL;
     }
-  } else if (readMode == 0 ) {
+  }  else if (readMode == 0 ) {
     kprintf_n("Unable to open file. Bad flags passed \n");
     return EINVAL;
   }
   if (readMode == 1 ) { // invalid flags with read_mode
-    if ((flags && O_CREAT == O_CREAT) ||
-        (flags && O_EXCL == O_EXCL)   ||
-        (flags && O_TRUNC == O_TRUNC) ||
-        (flags && O_APPEND == O_APPEND)) {
+    if ( ((flags & O_CREAT) == O_CREAT) ||
+        ((flags & O_EXCL) == O_EXCL)   ||
+        ((flags & O_TRUNC) == O_TRUNC) ||
+        ((flags & O_APPEND) == O_APPEND) ) {
       kprintf_n("Invalid flags passed with read mode\n");
       return EINVAL;
     }
   }
-  if ( (flags && O_EXCL == O_EXCL) && (flags && O_CREAT != O_CREAT) ) { // O_EXCL makes sense only with O_CREAT
+  if ( ( (flags & O_EXCL) == O_EXCL) && ( (flags & O_CREAT) != O_CREAT) ) { // O_EXCL makes sense only with O_CREAT
     kprintf_n("flag combinations wrong ! O_EXCL passed, but not O_CREAT");
     return EINVAL;
   }
@@ -270,15 +272,6 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
 int
 sys_close(int fHandle,int *retval) {
   int result = 1;
-  /*if (fHandle >= OPEN_MAX || fHandle < 0) {
-    *retval = 1; // for any future uses
-    return EBADF;
-  }
-
-  if (curthread->t_fdtable[fHandle] == NULL) {
-    *retval = 1; // for any future uses
-    return EBADF;
-  }*/
   result = check_isFileHandleValid(fHandle);
   if (result > 0) {
     kprintf_n("file handle passed in not valid in sys_close!\n");
@@ -364,18 +357,7 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   struct uio user_uio;
 
   /** Write nbytes to UIO**/
-  /** %%%%%%%%%%%%%%%%%%%%%%%%   **/
-  iov.iov_ubase = (userptr_t)buf; // why did this require buf & not kbuff
-  iov.iov_len   = nbytes;
-  user_uio.uio_iov   = &iov;
-  user_uio.uio_iovcnt= 1;
-  user_uio.uio_segflg= UIO_USERSPACE;
-  user_uio.uio_rw    = UIO_WRITE;
-  user_uio.uio_offset= curthread->t_fdtable[fd]->offset;
-  user_uio.uio_resid = nbytes;
-  user_uio.uio_space = curthread->t_proc->p_addrspace;
-  /** %%%%%%%%%%%%%%%%%%%%%%%%%%%%**/
-  //uio_uinit(&iov,&user_uio,(void *)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
+  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
   result = VOP_WRITE(curthread->t_fdtable[fd]->vn,&user_uio);
   if (result) {
       kfree(kbuff);
@@ -395,12 +377,6 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
 ssize_t
 sys_read(int fd, void *buf, size_t nbytes, int *retval) {
   int result;
-  /*if (fd < 0 || fd >= OPEN_MAX) {
-    return EBADF;
-  }
-  if (curthread->t_fdtable[fd] == NULL) {
-    return EBADF;
-  }*/
   result = check_isFileHandleValid(fd);
   if (result > 0) {
     return result;
@@ -425,19 +401,8 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
   struct iovec iov;
   struct uio user_uio;
 
-  /** Write nbytes to UIO**/
-  /** %%%%%%%%%%%%%%%%%%%%%%%%   **/
-  iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
-  iov.iov_len        = nbytes;
-  user_uio.uio_iov   = &iov;
-  user_uio.uio_iovcnt= 1;
-  user_uio.uio_segflg= UIO_USERSPACE;
-  user_uio.uio_rw    = UIO_READ;
-  user_uio.uio_offset= curthread->t_fdtable[fd]->offset;
-  user_uio.uio_resid = nbytes;
-  user_uio.uio_space = curthread->t_proc->p_addrspace;
-  /** %%%%%%%%%%%%%%%%%%%%%%%%%%%%**/
-  //uio_uinit(&iov,&user_uio,(void *)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
+  /** Read nbytes from UIO**/
+  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_READ);
   result = VOP_READ(curthread->t_fdtable[fd]->vn,&user_uio);
   if (result) {
       kfree(kbuff);
@@ -592,7 +557,7 @@ sys__getcwd(char *buf, size_t buflen, int *retval) {
   char *kbuff;
   kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
   if (kbuff == NULL) {
-    kprintf_n("Could not allocate kbuff to sys_open\n");
+    kprintf_n("Could not allocate kbuff to sys__getcwd\n");
     return EFAULT;
   }
 
@@ -604,7 +569,7 @@ sys__getcwd(char *buf, size_t buflen, int *retval) {
   struct uio user_uio;
   struct iovec iov;
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
+  /*iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
   iov.iov_len        = buflen -1 ; // last character is NULL terminator
   user_uio.uio_iov   = &iov;
   user_uio.uio_iovcnt= 1;
@@ -612,8 +577,10 @@ sys__getcwd(char *buf, size_t buflen, int *retval) {
   user_uio.uio_rw    = UIO_READ;
   user_uio.uio_offset= 0;
   user_uio.uio_resid = buflen -1 ;  // last character is NULL terminator
-  user_uio.uio_space = curthread->t_proc->p_addrspace;
+  user_uio.uio_space = curthread->t_proc->p_addrspace;*/
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  /** Read nbytes from UIO**/
+  uio_uinit(&iov,&user_uio,(userptr_t)buf,buflen-1,0,UIO_READ);
   result = vfs_getcwd(&user_uio);
   if (result ) {
     kfree(kbuff);
