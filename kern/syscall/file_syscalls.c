@@ -325,24 +325,20 @@ uio_uinit(struct iovec *iov, struct uio *uio,
 ssize_t
 sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   int result;
-  /*if (fd < 0 || fd >= OPEN_MAX) {
-    return EBADF;
-  }
-  if (curthread->t_fdtable[fd] == NULL) {
-    return EBADF;
-  }*/
   result = check_isFileHandleValid(fd);
   if (result > 0) {
+    kprintf_n("File handle is invalid in sys_write\n");
     return result;
   }
   if (curthread->t_fdtable[fd]->openFlags  == O_RDONLY) { // inappropriate permissions
+    kprintf_n("File permissions are invalid. Flags are read only in sys_write\n");
     return EBADF;
   }
-  void *kbuff;
+  //void *kbuff;
   /**this is a clever way to get around the fact that we are not aware
   * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
   * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
-  kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
+  /*kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
   if (kbuff == NULL) {
     kprintf_n("Could not allocate kbuff to sys_write\n");
     return EFAULT;
@@ -350,8 +346,8 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
 
   if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
     kprintf_n("Could not copy the buffer to kbuff in sys_write\n");
-    return EFAULT; /* filename was an invalid pointer */
-  }
+    return EFAULT;
+  }*/
   lock_acquire(curthread->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
@@ -360,13 +356,13 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
   uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
   result = VOP_WRITE(curthread->t_fdtable[fd]->vn,&user_uio);
   if (result) {
-      kfree(kbuff);
+      //kfree(kbuff);
       lock_release(curthread->t_fdtable[fd]->lk);
       return result;
   }
   *retval = nbytes - user_uio.uio_resid;
   curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
-  kfree(kbuff);
+  //kfree(kbuff);
   lock_release(curthread->t_fdtable[fd]->lk);
   return 0;
 }
@@ -379,24 +375,27 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
   int result;
   result = check_isFileHandleValid(fd);
   if (result > 0) {
+    kprintf_n("File handle invalid in sys_read\n");
     return result;
   }
-  if (curthread->t_fdtable[fd]->openFlags  == O_WRONLY) { // inappropriate permissions
+  kprintf_n("Flags passed are %d\n",curthread->t_fdtable[fd]->openFlags);
+  if ((curthread->t_fdtable[fd]->openFlags  != O_RDONLY) && (curthread->t_fdtable[fd]->openFlags  != O_RDWR)) { // inappropriate permissions
+    kprintf_n("Flags are invalid in sys_read %d\n",curthread->t_fdtable[fd]->openFlags);
     return EBADF;
   }
-  void *kbuff;
+  //void *kbuff;
   /**this is a clever way to get around the fact that we are not aware
   * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
   * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
-  kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
+  /*kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
   if (kbuff == NULL) {
     kprintf_n("Could not allocate kbuff to sys_read\n");
     return EFAULT;
   }
   if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
     kprintf_n("Could not copy the buffer to kbuff in sys_read\n");
-    return EFAULT; /* filename was an invalid pointer */
-  }
+    return EFAULT;
+  }*/
   lock_acquire(curthread->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
@@ -405,13 +404,13 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
   uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_READ);
   result = VOP_READ(curthread->t_fdtable[fd]->vn,&user_uio);
   if (result) {
-      kfree(kbuff);
+      //kfree(kbuff);
       lock_release(curthread->t_fdtable[fd]->lk);
       return result;
   }
   *retval = nbytes - user_uio.uio_resid;
   curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
-  kfree(kbuff);
+  //kfree(kbuff);
   lock_release(curthread->t_fdtable[fd]->lk);
   return 0;
 
@@ -554,7 +553,11 @@ sys_dup2(int oldfd, int newfd, int *retval) {
 int
 sys__getcwd(char *buf, size_t buflen, int *retval) {
   int result;
-  char *kbuff;
+  if (buf == NULL) {
+    kprintf_n("Invalid Buffer.\n");
+    return EINVAL;
+  }
+  /*char *kbuff;
   kbuff = (char *)kmalloc(sizeof(char)*PATH_MAX);
   if (kbuff == NULL) {
     kprintf_n("Could not allocate kbuff to sys__getcwd\n");
@@ -564,26 +567,16 @@ sys__getcwd(char *buf, size_t buflen, int *retval) {
   if (copyin((const_userptr_t) buf, kbuff, PATH_MAX) ) {
     kfree(kbuff);
     kprintf_n("Could not copy the buf to kbuff in sys__getcwd\n");
-    return EFAULT; /* filename was an invalid pointer */
-  }
+    return EFAULT;
+  }*/
   struct uio user_uio;
   struct iovec iov;
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  /*iov.iov_ubase      = (userptr_t)buf; // why did this require buf & not kbuff
-  iov.iov_len        = buflen -1 ; // last character is NULL terminator
-  user_uio.uio_iov   = &iov;
-  user_uio.uio_iovcnt= 1;
-  user_uio.uio_segflg= UIO_USERSPACE;
-  user_uio.uio_rw    = UIO_READ;
-  user_uio.uio_offset= 0;
-  user_uio.uio_resid = buflen -1 ;  // last character is NULL terminator
-  user_uio.uio_space = curthread->t_proc->p_addrspace;*/
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   /** Read nbytes from UIO**/
   uio_uinit(&iov,&user_uio,(userptr_t)buf,buflen-1,0,UIO_READ);
   result = vfs_getcwd(&user_uio);
   if (result ) {
-    kfree(kbuff);
+    //kfree(kbuff);
     kprintf_n("Could not fetch current working directory\n");
     return EINVAL;
   }
@@ -594,7 +587,7 @@ sys__getcwd(char *buf, size_t buflen, int *retval) {
 	buf[sizeof(buf)-1-user_uio.uio_resid] = '\0';
 
   *retval = strlen(buf);
-  kfree(buf);
+  //kfree(buf);
   return 0;
 
 }
