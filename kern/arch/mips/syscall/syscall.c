@@ -111,7 +111,25 @@ syscall(struct trapframe *tf)
 				 (userptr_t)tf->tf_a1);
 		break;
 
-	    /* Add stuff here */
+	    /* Start of process system calls */
+	    case SYS_fork:
+	    	err = sys_fork(tf, &retval);
+	    break;
+	    case SYS_execv:
+	    	//err = sys_execv();
+	    break;
+	    case SYS__exit:
+	    	
+	    break;
+	    case SYS_waitpid:
+
+	    break;
+	    case SYS_getpid:
+	    	err = sys_getpid(&retval);
+	    break;
+	    
+	    /* End of process system calls */
+
 		case SYS_open:
 			err = sys_open((char *)tf->tf_a0,tf->tf_a1,(mode_t)tf->tf_a2,&retval);
 		break;

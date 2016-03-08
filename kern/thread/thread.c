@@ -518,6 +518,13 @@ thread_fork(const char *name,
 	/* Thread subsystem fields */
 	newthread->t_cpu = curthread->t_cpu;
 
+	for(int i=0 ;i<OPEN_MAX;i++){  
+	  if(curthread->t_fdtable[i]!=NULL){
+		curthread->t_fdtable[i]->refCount = curthread->t_fdtable[i]->refCount+1;
+		newthread->t_fdtable[i] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+		memcpy(newthread->t_fdtable[i], curthread->t_fdtable[i], sizeof(struct file_descriptor));
+	  }
+	}
 	/* Attach the new thread to its process */
 	if (proc == NULL) {
 		proc = curthread->t_proc;
