@@ -81,8 +81,8 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 			break;
 		}
 	}
-	child_proc->exitsem = sem_create("exit semaphore",0);
-	
+	child_proc->exit_sem = sem_create("exit semaphore",0);
+
 	child_proc->ppid = curproc->pid;
 	lock_release(pid_lock);
 
@@ -117,5 +117,3 @@ void child_fork_entry(void *data1, unsigned long data2){
 	return;
 }
 
-
-int
