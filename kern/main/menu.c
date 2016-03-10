@@ -117,6 +117,8 @@ common_prog(int nargs, char **args)
 {
 	struct proc *proc;
 	int result;
+	userptr_t status = (userptr_t)kmalloc(sizeof(userptr_t));
+	int retval;
 
 	/* Create a process for the new program to run in. */
 	proc = proc_create_runprogram(args[0] /* name */);
@@ -128,10 +130,18 @@ common_prog(int nargs, char **args)
 			proc /* new process */,
 			cmd_progthread /* thread function */,
 			args /* thread arg */, nargs /* thread arg */);
+
+
+
 	if (result) {
 		kprintf("thread_fork failed: %s\n", strerror(result));
 		proc_destroy(proc);
 		return result;
+	}
+	result = sys_waitpid(proc->pid, status, 0 , &retval);
+	if (result ) {
+		kprintf_n("sys_waitpid done with result %d for pid %d \n",result,proc->pid );
+		//return 0;
 	}
 
 	/*
