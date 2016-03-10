@@ -170,9 +170,10 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     return EFAULT;
   }
 
-  if (copyin((const_userptr_t) filename, kbuff, PATH_MAX) ) {
+  result = copyin((const_userptr_t) filename, kbuff, PATH_MAX);
+  if (result) {
     kfree(kbuff);
-    kprintf_n("Could not copy the filename to kbuff\n");
+    kprintf_n("Could not copy the filename to kbuff error is %d\n",result);
     return EFAULT; /* filename was an invalid pointer */
   }
   //check the flags
@@ -384,6 +385,12 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
     kprintf_n("Could not copy the buffer to kbuff in sys_read\n");
     return EFAULT;
   }*/
+  /** check the flags **/
+  if ((curthread->t_fdtable[fd]->openFlags & O_WRONLY) == O_WRONLY) {
+    kprintf_n("File opened with write-only\n");
+    return EBADF;
+  }
+
   lock_acquire(curthread->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
@@ -486,10 +493,13 @@ sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
 int
 sys_dup2(int oldfd, int newfd, int *retval) {
   int result;
+  kprintf_n("sys_dup2 oldfd %d newfd %d newfd\n",oldfd,newfd);
+
   result = check_isFileHandleValid(oldfd);
   if (result > 0) {
     return result;
   }
+
   result = check_isFileHandleValid(newfd);
   if (result > 0) {
     return result;
@@ -498,9 +508,15 @@ sys_dup2(int oldfd, int newfd, int *retval) {
     *retval = newfd;
     return 0;
   }
-  int retval1, index;
+
+  /*if (oldfd == 0)
+  {
+    kprintf_n("Cannot dup on oldfd 0\n");
+    return EINVAL;
+  }*/
+  int retval1;
   lock_acquire(curthread->t_fdtable[oldfd]->lk);
-  index =0;
+  /*index =0;
   while(curthread->t_fdtable[index] != NULL) {
     index++;
   }
@@ -508,12 +524,12 @@ sys_dup2(int oldfd, int newfd, int *retval) {
     lock_release(curthread->t_fdtable[index]->lk  );
     kprintf_n("Process file table is full in oldfd in sys_dup2\n");
     return EMFILE;
-  }
+  }*/
+  kprintf_n("newfd is %d \n",newfd);
   if (curthread->t_fdtable[newfd] != NULL) {
       result = sys_close(newfd,&retval1);
       if (result) {
         kprintf_n("Unable to close newfd handle in sys_dup2\n");
-        lock_release(curthread->t_fdtable[index]->lk  );
         return EINVAL;
       }
   }
