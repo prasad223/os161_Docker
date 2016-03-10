@@ -117,3 +117,57 @@ void child_fork_entry(void *data1, unsigned long data2){
 	return;
 }
 
+
+
+void
+sys__exit(int _exitcode){
+
+	if(curproc->has_exited){
+		proc_destroy(curproc);
+	}
+	else{
+		curproc->has_exited = true;
+		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
+		thread_exit();
+		V(curproc->exit_sem);
+	}
+	return;
+}
+
+pid_t
+sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
+
+	if(options != 0){
+		return EINVAL;
+	}
+
+	if(pid < PID_MIN || pid > PID_MAX || *(process_list+pid) == NULL){
+		return ESRCH;
+	}
+
+	if(pid != curproc->ppid){
+		return ECHILD;
+	}
+
+	struct proc* pid_proc = *(process_list+pid);
+
+	if(!pid_proc->has_exited){
+		P(pid_proc->exit_sem);
+	}
+
+	if(status != NULL){
+		int error = copyout((const void*)curproc->exit_code,
+			status, sizeof(int));
+		if(error){
+			return EFAULT;
+		}
+	}
+
+	*retval = pid;
+	proc_destroy(pid_proc);
+	
+	lock_acquire(pid_lock);
+	*(process_list+pid) = NULL;
+	lock_release(pid_lock);
+	return 0;
+}
