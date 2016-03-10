@@ -128,8 +128,8 @@ sys__exit(int _exitcode){
 	else{
 		curproc->has_exited = true;
 		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
-		thread_exit();
 		V(curproc->exit_sem);
+		thread_exit();
 	}
 	return;
 }
@@ -138,18 +138,21 @@ pid_t
 sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
 
 	if(options != 0){
+		kprintf("Invalid options provided\n");
 		return EINVAL;
 	}
 
-	if(pid < PID_MIN || pid > PID_MAX || *(process_list+pid) == NULL){
+	if(pid < PID_MIN || pid > PID_MAX || *(process_list+pid) == NULL || pid == curproc->pid){
+		kprintf("Trying to wait invalid pid or self")
 		return ESRCH;
 	}
 
-	if(pid != curproc->ppid){
+	struct proc* pid_proc = *(process_list+pid);
+	if(curproc->pid != pid_proc->ppid){
+		kprintf("Trying to wait on a non-child process\n");
 		return ECHILD;
 	}
 
-	struct proc* pid_proc = *(process_list+pid);
 
 	if(!pid_proc->has_exited){
 		P(pid_proc->exit_sem);
@@ -159,15 +162,17 @@ sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
 		int error = copyout((const void*)curproc->exit_code,
 			status, sizeof(int));
 		if(error){
+			kprintf("Invalid status pointer\n");
 			return EFAULT;
 		}
 	}
 
 	*retval = pid;
-	proc_destroy(pid_proc);
 	
 	lock_acquire(pid_lock);
+	proc_destroy(pid_proc);
 	*(process_list+pid) = NULL;
 	lock_release(pid_lock);
+	
 	return 0;
 }
