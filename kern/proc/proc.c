@@ -49,6 +49,11 @@
 #include <addrspace.h>
 #include <vnode.h>
 
+# define MAX_PROCS 128
+
+static struct proc* process_list[MAX_PROCS];
+static struct lock* pid_lock;
+
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
@@ -81,6 +86,24 @@ proc_create(const char *name)
 
 	/* VFS fields */
 	proc->p_cwd = NULL;
+
+	if(strcmp("[kernel]",name)){
+		lock_acquire(pid_lock);
+		int i = PID_MIN;
+		for(;i<MAX_PROCS;i++){
+			if(*(process_list+i) == NULL){
+				proc->pid = i;
+				*(process_list+i) = proc;
+				break;
+			}
+		}
+		proc->exit_sem = sem_create("exit semaphore",0);
+		proc->ppid = curproc->pid;
+		lock_release(pid_lock);
+	}else{
+		proc->pid = 1;
+		proc->pid = 0;
+	}
 
 	return proc;
 }
@@ -169,7 +192,14 @@ proc_destroy(struct proc *proc)
 	spinlock_cleanup(&proc->p_lock);
 
 	kfree(proc->p_name);
+	
+	lock_acquire(pid_lock);
+	*(process_list+proc->pid) = NULL;
+	lock_release(pid_lock);
+	
 	kfree(proc);
+
+
 }
 
 /*
@@ -181,6 +211,30 @@ proc_bootstrap(void)
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
+	}
+	pid_allocation_bootstrap();
+}
+
+void
+pid_allocation_bootstrap(void){
+	KASSERT(pid_lock == NULL);
+	pid_lock = lock_create("pid_lock");
+	if(pid_lock == NULL){
+		kprintf("pid_lock creation failed\n");
+	}
+	int i=0;
+	for(;i<MAX_PROCS;i++){
+		*(process_list+i) = NULL;
+	}
+	return;
+}
+
+struct proc*
+get_pid_proc(pid_t pid){
+	if(pid >= PID_MIN && pid < MAX_PROCS){
+		return *(process_list+pid);
+	}else{
+		return NULL;
 	}
 }
 

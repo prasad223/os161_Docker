@@ -18,28 +18,9 @@
 #include <lib.h>
 #include <mips/trapframe.h>
 
-
-#define MAX_PROCS 128
-
-static struct proc* process_list[MAX_PROCS];
-static struct lock* pid_lock;
-
 /* called during system start up
  * to create empty process list
  */
-void
-user_process_bootstrap(void){
-	KASSERT(pid_lock == NULL);
-	pid_lock = lock_create("pid_lock");
-	if(pid_lock == NULL){
-		kprintf("pid_lock creation failed\n");
-	}
-	int i=0;
-	for(;i<MAX_PROCS;i++){
-		*(process_list+i) = NULL;
-	}
-	return;
-}
 
 
 int
@@ -71,20 +52,6 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		return ENOMEM;
 	}
 	memcpy(child_trapframe, parent_tf, sizeof(struct trapframe));
-
-	lock_acquire(pid_lock);
-	int i = PID_MIN;
-	for(;i<MAX_PROCS;i++){
-		if(*(process_list+i) == NULL){
-			child_proc->pid = i;
-			*(process_list+i) = child_proc;
-			break;
-		}
-	}
-	child_proc->exit_sem = sem_create("exit semaphore",0);
-
-	child_proc->ppid = curproc->pid;
-	lock_release(pid_lock);
 
 	error = thread_fork("Child proc", child_proc, child_fork_entry,
 		(void *)child_trapframe,(unsigned long)child_proc->p_addrspace);
@@ -142,12 +109,12 @@ sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
 		return EINVAL;
 	}
 
-	if(pid < PID_MIN || pid > PID_MAX || *(process_list+pid) == NULL || pid == curproc->pid){
-		kprintf("Trying to wait invalid pid or self")
+	struct proc* pid_proc = get_pid_proc(pid);
+	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid){
+		kprintf("Trying to wait invalid pid or self");
 		return ESRCH;
 	}
 
-	struct proc* pid_proc = *(process_list+pid);
 	if(curproc->pid != pid_proc->ppid){
 		kprintf("Trying to wait on a non-child process\n");
 		return ECHILD;
@@ -168,11 +135,6 @@ sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
 	}
 
 	*retval = pid;
-	
-	lock_acquire(pid_lock);
 	proc_destroy(pid_proc);
-	*(process_list+pid) = NULL;
-	lock_release(pid_lock);
-	
 	return 0;
 }

@@ -37,6 +37,8 @@
  */
 
 #include <spinlock.h>
+#include <lib.h>
+#include <synch.h>
 
 struct addrspace;
 struct thread;
@@ -84,6 +86,9 @@ extern struct proc *kproc;
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);
 
+/* called once during system startup to allocate pid list structures.  */
+void pid_allocation_bootstrap(void);
+
 /* Create a fresh process for use by runprogram(). */
 struct proc *proc_create_runprogram(const char *name);
 
@@ -102,5 +107,6 @@ struct addrspace *proc_getas(void);
 /* Change the address space of the current process, and return the old one. */
 struct addrspace *proc_setas(struct addrspace *);
 
+struct proc* get_pid_proc(pid_t pid);
 
 #endif /* _PROC_H_ */
