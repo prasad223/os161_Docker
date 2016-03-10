@@ -6,6 +6,7 @@
 
 #include <types.h>
 #include <limits.h>
+#include <syscall.h>
 #include <kern/wait.h>
 #include <copyinout.h>
 
@@ -16,8 +17,7 @@ void child_fork_entry(void *data1, unsigned long data2);
 int sys_fork(struct trapframe* tf, int* retval);
 int sys_getpid(int *retval);
 pid_t sys_waitpid(pid_t pid, int* status, int options, int *retval);
-int sys_execv(int fd, const void *buf, size_t nbytes, int *retval);
+int sys_execv(const char *program, char **uargs);
 void sys__exit(int _exitcode);
-int sys_kill_curthread(int *retval);
 
 #endif /* _PROC_CALL_H_ */

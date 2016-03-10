@@ -116,11 +116,10 @@ syscall(struct trapframe *tf)
 	    	err = sys_fork(tf, &retval);
 	    break;
 	    case SYS_execv:
-	    	//err = sys_execv();
+	    	err = sys_execv((const char*)tf->tf_a0,(char **) tf->tf_a1);
 	    break;
 	    case SYS__exit:
 	    	sys__exit(tf->tf_a0);
-
 	    break;
 	    case SYS_waitpid:
 	    	err =  sys_waitpid((pid_t)tf->tf_a0, (int *)tf->tf_a1, tf->tf_a2, &retval);
@@ -128,7 +127,7 @@ syscall(struct trapframe *tf)
 	    case SYS_getpid:
 	    	err = sys_getpid(&retval);
 	    break;
-	    
+
 	    /* End of process system calls */
 
 		case SYS_open:
@@ -144,10 +143,9 @@ syscall(struct trapframe *tf)
 			err = sys_read(tf->tf_a0,(void *) tf->tf_a1,(size_t)tf->tf_a2, &retval);
 		break;
 		case SYS_lseek:
-			//sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
 			pos =  (  (off_t)tf->tf_a2 << 32 | tf->tf_a3);
 			if (copyin((const_userptr_t) tf->tf_sp+16, &whence, sizeof(int)) ) {
-				//unsure how to handle this ?
+				err = EINVAL ; // definitely an error
 				break;
 			}
 			err = sys_lseek(tf->tf_a0, pos,whence, &retval, &retval1);

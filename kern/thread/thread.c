@@ -522,7 +522,6 @@ thread_fork(const char *name,
 	  if(curthread->t_fdtable[i]!=NULL){
 		curthread->t_fdtable[i]->refCount = curthread->t_fdtable[i]->refCount+1;
 		newthread->t_fdtable[i] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-		//memcpy(newthread->t_fdtable[i], curthread->t_fdtable[i], sizeof(struct file_descriptor));
 		newthread->t_fdtable[i] = curthread->t_fdtable[i];
 	  }
 	}

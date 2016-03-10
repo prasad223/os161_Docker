@@ -149,6 +149,9 @@ check_isFileHandleValid(int fHandle) {
   if (curthread->t_fdtable[fHandle] == NULL) {
     return EBADF;
   }
+  if (curthread->t_fdtable[fHandle]->refCount == 0 ) {
+    return EBADF;
+  }
   return 0;
 }
 /** Remember, in case of failure, the return code must indicate error number
@@ -286,6 +289,7 @@ sys_close(int fHandle,int *retval) {
   if (curthread->t_fdtable[fHandle]->refCount == 1) {
     vfs_close(curthread->t_fdtable[fHandle]->vn);
     lock_destroy(curthread->t_fdtable[fHandle]->lk);
+    curthread->t_fdtable[fHandle]->refCount  = 0;
     curthread->t_fdtable[fHandle]->openFlags = 0; // probably not required, but I like to clean up
     curthread->t_fdtable[fHandle]->offset    = 0;
     kfree(curthread->t_fdtable[fHandle]);
@@ -365,11 +369,11 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
     kprintf_n("File handle invalid in sys_read\n");
     return result;
   }
-  kprintf_n("Flags passed are %d\n",curthread->t_fdtable[fd]->openFlags);
-  if ((curthread->t_fdtable[fd]->openFlags  != O_RDONLY) && (curthread->t_fdtable[fd]->openFlags  != O_RDWR)) { // inappropriate permissions
+  //kprintf_n("Flags passed are %d\n",curthread->t_fdtable[fd]->openFlags);
+  /*if ((curthread->t_fdtable[fd]->openFlags  != O_RDONLY) && (curthread->t_fdtable[fd]->openFlags  != O_RDWR)) {
     kprintf_n("Flags are invalid in sys_read %d\n",curthread->t_fdtable[fd]->openFlags);
     return EBADF;
-  }
+  }*/
   //void *kbuff;
   /**this is a clever way to get around the fact that we are not aware
   * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive

@@ -17,11 +17,14 @@
 #include <synch.h>
 #include <lib.h>
 #include <mips/trapframe.h>
+#include <vfs.h>
+#include <vnode.h>
+#include <kern/fcntl.h>
 
-/* called during system start up
- * to create empty process list
+
+/*
+ * Largely inspired from jinghao's blog
  */
-
 
 int
 sys_getpid(int *retval){
@@ -29,9 +32,6 @@ sys_getpid(int *retval){
 	return 0;
 }
 
-/*
- * Largely inspired from jinghao's blog
- */
 
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
@@ -50,8 +50,7 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		return ENOMEM;
 	}
 	*child_trapframe = *parent_tf;
-	//memcpy(child_trapframe, parent_tf, sizeof(struct trapframe));
-
+	
 	error = thread_fork("Child proc", child_proc, child_fork_entry,
 		(struct trapframe *)child_trapframe,(unsigned long)child_proc->p_addrspace);
 
@@ -82,8 +81,6 @@ void child_fork_entry(void *data1, unsigned long data2){
 	mips_usermode(&temp_tf);
 	return;
 }
-
-
 
 void
 sys__exit(int _exitcode){
@@ -119,12 +116,19 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		P(pid_proc->exit_sem);
 	}
 	if(status != NULL){
+		if(pid_proc->pid == 2 && pid_proc->ppid == 1){
+			*status = pid_proc->exit_code;
+			kprintf("special case\n");
+		}else{
+
 		int error = copyout((const void*)&(pid_proc->exit_code),
 			(userptr_t)status, sizeof(int));
 		if(error){
+			kprintf("SYS_waitpid: pid:%d ppid:%d\n",pid_proc->pid, pid_proc->ppid);
 			kprintf("SYS_waitpid: Invalid status pointer\n");
 			*retval = -1;
 			return EFAULT;
+		}
 		}
 	}
 
@@ -132,3 +136,174 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	proc_destroy(pid_proc);
 	return 0;
 }
+
+int
+sys_execv(const char *program, char **uargs){
+ 
+ 	(void)program;
+ 	(void)uargs;
+ 	
+ 	int error = 0;
+	
+	if (program == NULL || uargs == NULL || uargs == (void *)0x80000000 || uargs == (void *) 0x40000000) {
+		// is the explicit address check required , won't copy in & out take care of it , 
+		// adding it for now as these addresses were mentioned in the recitation
+		return EFAULT;
+	}
+
+ 	if (strlen(program) == 0) { // see if you should increase this to 1
+		return EINVAL;
+	}
+	
+	char *program_name = (char *)kmalloc(NAME_MAX);
+	size_t prog_name_size;
+
+	// Copy program name from userspace and check for errors
+	error = copyinstr((const userptr_t) program, program_name, NAME_MAX, &prog_name_size);
+	if (error){
+		return error;
+	}
+	
+	kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
+	
+	char **args = (char **) kmalloc(sizeof(char **));
+
+	if(copyin((const_userptr_t) uargs, args, sizeof(char **))){
+		kfree(program_name);
+		kfree(args);
+		return EFAULT;
+	}
+
+	int i=0;
+	size_t size=0;
+
+	while (uargs[i] != NULL ) {
+		args[i] = (char *) kmalloc(sizeof(char) * NAME_MAX);
+		if (copyinstr((const_userptr_t) uargs[i], args[i], NAME_MAX,
+				&size)) {
+			kfree(program_name);
+			kfree(args);
+			return EFAULT;
+		}
+		i++;
+	}
+	args[i] = NULL;
+
+	//	 Open the file.
+	struct vnode *v_node;
+	vaddr_t entry_point, stack_ptr;
+	
+	error = vfs_open(program_name, O_RDONLY, 0, &v_node);
+	if (error) {
+		kfree(program_name);
+		kfree(args);
+		vfs_close(v_node);
+		return error;
+	}
+
+	if(curproc->p_addrspace != NULL){
+		as_destroy(curproc->p_addrspace);
+		curproc->p_addrspace = NULL;
+	}
+
+	KASSERT(curproc->p_addrspace == NULL);
+
+	curproc->p_addrspace = as_create();
+	if (curproc->p_addrspace == NULL) {
+		kfree(program_name);
+		kfree(args);
+		vfs_close(v_node);
+		return ENOMEM;
+	}
+
+	as_activate();
+
+	error = load_elf(v_node, &entry_point);
+	if (error) {
+		//thread_exit destroys curthread->t_addrspace
+		kfree(program_name);
+		kfree(args);
+		vfs_close(v_node);
+		return error;
+	}
+
+	vfs_close(v_node);
+
+	error = as_define_stack(curproc->p_addrspace, &stack_ptr);
+	if (error) {
+		//thread_exit destroys curthread->t_addrspace
+		kfree(program_name);
+		kfree(args);
+		vfs_close(v_node);
+		return error;
+	}
+
+	int j = 0 , arg_length=0;
+
+	while (args[j] != NULL ) {
+		char * arg;
+		arg_length = strlen(args[j])+1; // 1 for NULL
+		
+		int pad_length = arg_length;
+		if (arg_length % 4 != 0) {
+			arg_length = arg_length + (4 - arg_length % 4);
+		}
+
+		kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
+		arg = (char *)kmalloc(sizeof(arg_length));
+		arg = kstrdup(args[j]);
+		for (int i = 0; i < arg_length; i++) {
+
+			if (i >= pad_length)
+				arg[i] = '\0';
+			else
+				arg[i] = args[j][i];
+		}
+
+		stack_ptr -= arg_length;
+
+		error = copyout((const void *) arg, (userptr_t) stack_ptr,
+				(size_t) arg_length);
+		kprintf("copyout error stat: %d\n", error);
+		if (error) {
+			kfree(program_name);
+			kfree(args);
+			kfree(arg);
+			vfs_close(v_node);
+			return error;
+		}
+		kfree(arg);
+		args[j] = (char *) stack_ptr;
+		j++;
+	}
+
+	if (args[j] == NULL ) {
+		stack_ptr -= 4 * sizeof(char);
+	}
+
+	for (int i = (j - 1); i >= 0; i--) {
+		stack_ptr = stack_ptr - sizeof(char*);
+		error = copyout((const void *) (args + i), (userptr_t) stack_ptr,
+				(sizeof(char *)));
+		if (error) {
+			kfree(program_name);
+			kfree(args);
+			vfs_close(v_node);
+			return error;
+		}
+	}
+	kfree(program_name);
+	kfree(args);
+	
+	kprintf("passing following args: argc: %d, stack:%u  entry:%u",j,stack_ptr, entry_point);
+	enter_new_process(j /*argc*/,
+			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
+			entry_point);
+
+	//enter_new_process should not return.
+	panic("execv- problem in enter_new_process\n");
+	return EINVAL;
+ 
+}
+
+
