@@ -334,20 +334,7 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
     kprintf_n("File permissions are invalid. Flags are read only in sys_write\n");
     return EBADF;
   }
-  //void *kbuff;
-  /**this is a clever way to get around the fact that we are not aware
-  * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
-  * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
-  /*kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
-  if (kbuff == NULL) {
-    kprintf_n("Could not allocate kbuff to sys_write\n");
-    return EFAULT;
-  }
 
-  if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
-    kprintf_n("Could not copy the buffer to kbuff in sys_write\n");
-    return EFAULT;
-  }*/
   lock_acquire(curthread->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
