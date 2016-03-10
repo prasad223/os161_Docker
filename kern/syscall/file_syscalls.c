@@ -149,9 +149,6 @@ check_isFileHandleValid(int fHandle) {
   if (curthread->t_fdtable[fHandle] == NULL) {
     return EBADF;
   }
-  if (curthread->t_fdtable[fHandle]->refCount == 0 ) {
-    return EBADF;
-  }
   return 0;
 }
 /** Remember, in case of failure, the return code must indicate error number
@@ -286,7 +283,7 @@ sys_close(int fHandle,int *retval) {
     return EBADF;
   }
   curthread->t_fdtable[fHandle]->refCount = curthread->t_fdtable[fHandle]->refCount-1;
-  if (curthread->t_fdtable[fHandle]->refCount == 1) {
+  if (curthread->t_fdtable[fHandle]->refCount == 0) {
     vfs_close(curthread->t_fdtable[fHandle]->vn);
     lock_destroy(curthread->t_fdtable[fHandle]->lk);
     curthread->t_fdtable[fHandle]->refCount  = 0;

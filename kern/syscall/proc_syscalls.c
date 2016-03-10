@@ -234,7 +234,6 @@ sys_execv(const char *program, char **uargs){
 		//thread_exit destroys curthread->t_addrspace
 		kfree(program_name);
 		kfree(args);
-		vfs_close(v_node);
 		return error;
 	}
 
@@ -269,7 +268,6 @@ sys_execv(const char *program, char **uargs){
 			kfree(program_name);
 			kfree(args);
 			kfree(arg);
-			vfs_close(v_node);
 			return error;
 		}
 		kfree(arg);
@@ -288,7 +286,6 @@ sys_execv(const char *program, char **uargs){
 		if (error) {
 			kfree(program_name);
 			kfree(args);
-			vfs_close(v_node);
 			return error;
 		}
 	}
