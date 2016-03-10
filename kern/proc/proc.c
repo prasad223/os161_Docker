@@ -102,7 +102,7 @@ proc_create(const char *name)
 		lock_release(pid_lock);
 	}else{
 		proc->pid = 1;
-		proc->pid = 0;
+		proc->ppid = 0;
 	}
 
 	return proc;

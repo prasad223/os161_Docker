@@ -117,7 +117,7 @@ common_prog(int nargs, char **args)
 {
 	struct proc *proc;
 	int result;
-	userptr_t status = (userptr_t)kmalloc(sizeof(userptr_t));
+	int status;
 	int retval;
 
 	/* Create a process for the new program to run in. */
@@ -138,7 +138,7 @@ common_prog(int nargs, char **args)
 		proc_destroy(proc);
 		return result;
 	}
-	result = sys_waitpid(proc->pid, status, 0 , &retval);
+	result = sys_waitpid(proc->pid, &status, 0 , &retval);
 	if (result ) {
 		kprintf_n("sys_waitpid done with result %d for pid %d \n",result,proc->pid );
 		//return 0;

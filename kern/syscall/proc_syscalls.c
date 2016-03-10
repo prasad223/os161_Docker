@@ -35,10 +35,8 @@ sys_getpid(int *retval){
 
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
-
 	int error;
 	struct proc *child_proc = proc_create_runprogram("child process");
-	
 	struct trapframe* child_trapframe = NULL;
 	
 	error = as_copy(curproc->p_addrspace, &(child_proc->p_addrspace));
@@ -51,10 +49,11 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		*retval = -1;
 		return ENOMEM;
 	}
-	memcpy(child_trapframe, parent_tf, sizeof(struct trapframe));
+	*child_trapframe = *parent_tf;
+	//memcpy(child_trapframe, parent_tf, sizeof(struct trapframe));
 
 	error = thread_fork("Child proc", child_proc, child_fork_entry,
-		(void *)child_trapframe,(unsigned long)child_proc->p_addrspace);
+		(struct trapframe *)child_trapframe,(unsigned long)child_proc->p_addrspace);
 
 	if(error){
 		kfree(child_trapframe);
@@ -63,24 +62,24 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		return error;
 	}
 
-	*retval = 0;
+	*retval = child_proc->pid;
 	return 0;
 }
 
 void child_fork_entry(void *data1, unsigned long data2){
 
-	struct trapframe *tf, *temp_tf;
+	struct trapframe *tf, temp_tf;
 
 	tf = (struct trapframe*) data1;
 	tf->tf_a3 = 0;
 	tf->tf_v0 = 0;
 	tf->tf_epc += 4;
 
-	curthread->t_proc->p_addrspace = (struct addrspace*) data2;
+	curproc->p_addrspace = (struct addrspace*) data2;
 	as_activate();
 
-	temp_tf = tf;
-	mips_usermode(temp_tf);
+	temp_tf = *tf;
+	mips_usermode(&temp_tf);
 	return;
 }
 
@@ -88,48 +87,43 @@ void child_fork_entry(void *data1, unsigned long data2){
 
 void
 sys__exit(int _exitcode){
-
-	if(curproc->has_exited){
-		proc_destroy(curproc);
-	}
-	else{
 		curproc->has_exited = true;
 		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
 		V(curproc->exit_sem);
 		thread_exit();
-	}
 	return;
 }
 
 pid_t
-sys_waitpid(pid_t pid, userptr_t status, int options, int *retval){
-
+sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	if(options != 0){
 		kprintf("Invalid options provided\n");
+		*retval = -1;
 		return EINVAL;
 	}
 
 	struct proc* pid_proc = get_pid_proc(pid);
 	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid){
 		kprintf("Trying to wait invalid pid or self");
+		*retval = -1;
 		return ESRCH;
 	}
 
 	if(curproc->pid != pid_proc->ppid){
 		kprintf("Trying to wait on a non-child process\n");
+		*retval = -1;
 		return ECHILD;
 	}
-
 
 	if(!pid_proc->has_exited){
 		P(pid_proc->exit_sem);
 	}
-
 	if(status != NULL){
-		int error = copyout((const void*)curproc->exit_code,
-			status, sizeof(int));
+		int error = copyout((const void*)&(pid_proc->exit_code),
+			(userptr_t)status, sizeof(int));
 		if(error){
-			kprintf("Invalid status pointer\n");
+			kprintf("SYS_waitpid: Invalid status pointer\n");
+			*retval = -1;
 			return EFAULT;
 		}
 	}

@@ -14,11 +14,13 @@ cd ../compile/DUMBVM/
 
 # build dependencies and install
 bmake clean
-bmake depend
-bmake
-bmake install
+bmake -j8 depend
+bmake -j8
+bmake -j8 install
 # Modify the sys.conf file when necessary
 # Especially the ramsize and cpus 
 # bmake -h when you modify userland
 # Launch the compiled kernel
-cd $HOME/os161/root/
+cd $HOME/os161/src/
+bmake -j8
+bmake -j8 install 
