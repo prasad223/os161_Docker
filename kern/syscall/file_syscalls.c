@@ -160,7 +160,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   int index = 0,result;
   char* kbuff;
   struct vnode* vn;
-  int readMode = 0;
+  //int readMode = 0;
   struct stat file_stat;
   (void)mode; // suppress warning, mode is unused
 
@@ -169,23 +169,33 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     kprintf_n("Could not allocate kbuff to sys_open\n");
     return EFAULT;
   }
-
+  kprintf_n("flags are %d:\n",flags);
   result = copyin((const_userptr_t) filename, kbuff, PATH_MAX);
   if (result) {
     kfree(kbuff);
     kprintf_n("Could not copy the filename to kbuff error is %d\n",result);
     return EFAULT; /* filename was an invalid pointer */
   }
-  //check the flags
   if (flags < 0) {
     kprintf_n("Flags cannot be negative\n");
     return EINVAL;
   }
-  if (flags == O_RDONLY) {
-    readMode  = 1;
-  }
 
-  if (  ( (flags & O_WRONLY) == O_WRONLY )||
+  //check the flags
+  /*switch (flags & O_ACCMODE) {
+    case O_RDONLY:
+      readMode = 1;
+    break;
+    case O_RDWR:
+    case O_WRONLY:
+    default:
+    {
+      kprintf_n("Bad flags passed\n");
+      return EINVAL;
+    }
+  }*/
+
+  /*if (  ( (flags & O_WRONLY) == O_WRONLY )||
         ( (flags & O_RDWR) == O_RDWR ) ) {
     if (readMode == 1)
     {
@@ -196,7 +206,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     kprintf_n("Unable to open file. Bad flags passed \n");
     return EINVAL;
   }
-  if (readMode == 1 ) { // invalid flags with read_mode
+  if (readMode == 1 ) {
     if ( ((flags & O_CREAT) == O_CREAT) ||
         ((flags & O_EXCL) == O_EXCL)   ||
         ((flags & O_TRUNC) == O_TRUNC) ||
@@ -205,10 +215,10 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
       return EINVAL;
     }
   }
-  if ( ( (flags & O_EXCL) == O_EXCL) && ( (flags & O_CREAT) != O_CREAT) ) { // O_EXCL makes sense only with O_CREAT
+  if ( ( (flags & O_EXCL) == O_EXCL) && ( (flags & O_CREAT) != O_CREAT) ) {
     kprintf_n("flag combinations wrong ! O_EXCL passed, but not O_CREAT");
     return EINVAL;
-  }
+  }*/
   /** **/
   while(curthread->t_fdtable[index] != NULL) {
     index++;
@@ -218,11 +228,12 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     return EMFILE; /* Too many open files */
   }
   // create the vnode
-  if (vfs_open(kbuff,flags,0664, &vn)) {
+  result = vfs_open(kbuff,flags,0664, &vn);
+  if (result) {
     kprintf_n("flags %d",flags  );
     kprintf_n("Could not open vnode for sys_open\n");
     kfree(kbuff);
-    return EFAULT;
+    return result;
   }
   curthread->t_fdtable[index] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
   if (curthread->t_fdtable[index] == NULL) {
@@ -332,11 +343,15 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
     kprintf_n("File handle is invalid in sys_write\n");
     return result;
   }
-  if (curthread->t_fdtable[fd]->openFlags  == O_RDONLY) { // inappropriate permissions
+  //kprintf_n("curthread->t_fdtable[fd]->openFlags %d\n",curthread->t_fdtable[fd]->openFlags);
+  /*if (curthread->t_fdtable[fd]->openFlags  == O_RDONLY) { // inappropriate permissions
+    kprintf_n("File permissions are invalid. Flags are read only in sys_write");
+    return EBADF;
+  }*/
+  if ((curthread->t_fdtable[fd]->openFlags & O_ACCMODE) == 0) {
     kprintf_n("File permissions are invalid. Flags are read only in sys_write\n");
     return EBADF;
   }
-
   lock_acquire(curthread->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
