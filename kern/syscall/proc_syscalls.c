@@ -181,10 +181,10 @@ sys_execv(const char *program, char **uargs){
 	while (uargs[i] != NULL ) {
 		a_len = strlen(uargs[i])+1;
 		args[i] = (char *) kmalloc(sizeof(char) * a_len);
-		kprintf("arg:i:%d\t length:%d, uarg_addr:%p, arg_addr:%p \n",i,a_len,uargs+i,args+i);
+		/*kprintf("arg:i:%d\t length:%d, uarg_addr:%p, arg_addr:%p \n",i,a_len,uargs+i,args+i);
 		if(a_len < 100){
 			kprintf("arg is %s\n",uargs[i]);
-		}
+		}*/
 		error = copyinstr((const_userptr_t) uargs[i], args[i], a_len,
 				&size);
 		if (error) {
