@@ -169,6 +169,7 @@ sys_execv(const char *program, char **uargs){
 	char **args = (char **) kmalloc(sizeof(char **));
 
 	if(copyin((const_userptr_t) uargs, args, sizeof(char **))){
+		kprintf("error in copying in args\n");
 		kfree(program_name);
 		kfree(args);
 		return EFAULT;
@@ -176,11 +177,18 @@ sys_execv(const char *program, char **uargs){
 
 	int i=0;
 	size_t size=0;
-
+	int a_len =0;
 	while (uargs[i] != NULL ) {
-		args[i] = (char *) kmalloc(sizeof(char) * NAME_MAX);
-		if (copyinstr((const_userptr_t) uargs[i], args[i], NAME_MAX,
-				&size)) {
+		a_len = strlen(uargs[i])+1;
+		args[i] = (char *) kmalloc(sizeof(char) * a_len);
+		kprintf("arg:i:%d\t length:%d, uarg_addr:%p, arg_addr:%p \n",i,a_len,uargs+i,args+i);
+		if(a_len < 100){
+			kprintf("arg is %s\n",uargs[i]);
+		}
+		error = copyinstr((const_userptr_t) uargs[i], args[i], a_len,
+				&size);
+		if (error) {
+			kprintf("error in copying individual args: error: %d\n",error);
 			kfree(program_name);
 			kfree(args);
 			return EFAULT;
@@ -188,13 +196,14 @@ sys_execv(const char *program, char **uargs){
 		i++;
 	}
 	args[i] = NULL;
-
+	kprintf("count:%d\n",i);
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
 	
 	error = vfs_open(program_name, O_RDONLY, 0, &v_node);
 	if (error) {
+		kprintf("error in vfs open\n");
 		kfree(program_name);
 		kfree(args);
 		vfs_close(v_node);
@@ -210,6 +219,7 @@ sys_execv(const char *program, char **uargs){
 
 	curproc->p_addrspace = as_create();
 	if (curproc->p_addrspace == NULL) {
+		kprintf("error in clearning curproc addressspace\n");
 		kfree(program_name);
 		kfree(args);
 		vfs_close(v_node);
@@ -220,7 +230,7 @@ sys_execv(const char *program, char **uargs){
 
 	error = load_elf(v_node, &entry_point);
 	if (error) {
-		//thread_exit destroys curthread->t_addrspace
+		kprintf("error in loading elf\n");
 		kfree(program_name);
 		kfree(args);
 		vfs_close(v_node);
@@ -231,7 +241,7 @@ sys_execv(const char *program, char **uargs){
 
 	error = as_define_stack(curproc->p_addrspace, &stack_ptr);
 	if (error) {
-		//thread_exit destroys curthread->t_addrspace
+		kprintf("error in defiingin stack\n");
 		kfree(program_name);
 		kfree(args);
 		return error;
@@ -284,6 +294,7 @@ sys_execv(const char *program, char **uargs){
 		error = copyout((const void *) (args + i), (userptr_t) stack_ptr,
 				(sizeof(char *)));
 		if (error) {
+			kprintf("error in setting args to stack\n");
 			kfree(program_name);
 			kfree(args);
 			return error;
@@ -292,7 +303,7 @@ sys_execv(const char *program, char **uargs){
 	kfree(program_name);
 	kfree(args);
 	
-	kprintf("passing following args: argc: %d, stack:%u  entry:%u",j,stack_ptr, entry_point);
+	kprintf("passing following args: argc: %d, stack:%u  entry:%u\n",j,stack_ptr, entry_point);
 	enter_new_process(j /*argc*/,
 			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
 			entry_point);
