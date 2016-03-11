@@ -169,56 +169,19 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     kprintf_n("Could not allocate kbuff to sys_open\n");
     return EFAULT;
   }
-  kprintf_n("flags are %d:\n",flags);
   result = copyin((const_userptr_t) filename, kbuff, PATH_MAX);
   if (result) {
+//    kprintf_n("%p",filename);
     kfree(kbuff);
     kprintf_n("Could not copy the filename to kbuff error is %d\n",result);
     return EFAULT; /* filename was an invalid pointer */
   }
+  //check the flags
   if (flags < 0) {
     kprintf_n("Flags cannot be negative\n");
     return EINVAL;
   }
 
-  //check the flags
-  /*switch (flags & O_ACCMODE) {
-    case O_RDONLY:
-      readMode = 1;
-    break;
-    case O_RDWR:
-    case O_WRONLY:
-    default:
-    {
-      kprintf_n("Bad flags passed\n");
-      return EINVAL;
-    }
-  }*/
-
-  /*if (  ( (flags & O_WRONLY) == O_WRONLY )||
-        ( (flags & O_RDWR) == O_RDWR ) ) {
-    if (readMode == 1)
-    {
-      kprintf_n("Both O_RDONLY and O_WRONLY flags passed\n");
-      return EINVAL;
-    }
-  }  else if (readMode == 0 ) {
-    kprintf_n("Unable to open file. Bad flags passed \n");
-    return EINVAL;
-  }
-  if (readMode == 1 ) {
-    if ( ((flags & O_CREAT) == O_CREAT) ||
-        ((flags & O_EXCL) == O_EXCL)   ||
-        ((flags & O_TRUNC) == O_TRUNC) ||
-        ((flags & O_APPEND) == O_APPEND) ) {
-      kprintf_n("Invalid flags passed with read mode\n");
-      return EINVAL;
-    }
-  }
-  if ( ( (flags & O_EXCL) == O_EXCL) && ( (flags & O_CREAT) != O_CREAT) ) {
-    kprintf_n("flag combinations wrong ! O_EXCL passed, but not O_CREAT");
-    return EINVAL;
-  }*/
   /** **/
   while(curthread->t_fdtable[index] != NULL) {
     index++;
@@ -508,39 +471,21 @@ sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
 int
 sys_dup2(int oldfd, int newfd, int *retval) {
   int result;
-  kprintf_n("sys_dup2 oldfd %d newfd %d newfd\n",oldfd,newfd);
 
   result = check_isFileHandleValid(oldfd);
   if (result > 0) {
     return result;
   }
-
-  result = check_isFileHandleValid(newfd);
-  if (result > 0) {
-    return result;
+  if (newfd >= OPEN_MAX || newfd < 0) {
+    return EBADF;
   }
+
   if (oldfd == newfd) { //file handle are same, this has no effect, just return the new handle, and move on
     *retval = newfd;
     return 0;
   }
-
-  /*if (oldfd == 0)
-  {
-    kprintf_n("Cannot dup on oldfd 0\n");
-    return EINVAL;
-  }*/
   int retval1;
   lock_acquire(curthread->t_fdtable[oldfd]->lk);
-  /*index =0;
-  while(curthread->t_fdtable[index] != NULL) {
-    index++;
-  }
-  if (index >= OPEN_MAX) { // process specific file limit was reached
-    lock_release(curthread->t_fdtable[index]->lk  );
-    kprintf_n("Process file table is full in oldfd in sys_dup2\n");
-    return EMFILE;
-  }*/
-  kprintf_n("newfd is %d \n",newfd);
   if (curthread->t_fdtable[newfd] != NULL) {
       result = sys_close(newfd,&retval1);
       if (result) {
