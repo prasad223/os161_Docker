@@ -227,3 +227,114 @@ This is an unique call, as this is actually going to server as a wrapper to user
 Since user-space library expects buffer to be null-terminated, we will have to insert a '\0' character ourselves. (Refer menu.c for similar code). The number of bytes in the buffer i.e. ```strlen(buffer)``` is returned.
 
 ***
+
+
+
+Prasad --- 
+
+OS 161 Asst2
+
+no support for user processes
+after completion, launch shell 
+
+design and define data structures 
+system calls, interface specifications
+calm down, think, design , think , design again
+
+check how kernel boots up , this might be useful 
+look at __start.S
+sys_reboot() in main.c
+system call executes using syscall() in syscall.h
+
+You will also be implementing the subsystem that keeps track of the multiple processes you will have in the future
+what data structures , 
+get started in kern/include/proc.h
+
+helpful to look at kernel include files of your favorite operating system for suggestions, specifically the proc structure
+That said, these structures are likely to include much more process (or task) state than you need to correctly complete this assignment.
+
+
+The programs are compiled with a cross-compiler, os161-gcc
+To create new user programs, you will need to edit the Makefile in bin, sbin, or testbin
+Use an existing program and its Makefile as a template
+
+Design doc
+ Git Markup 
+ AsciiDoc
+
+The contents of your design document should include (but not be limited to):
+1) A description of each new piece of functionality you need to add for ASST2.
+2) A list and brief description of any new data structures you will have to add to the system.
+3) Indications of what, if any, existing code you may model your solution off of.
+4) A description of how accesses to shared state will be synchronized, if necessary.
+5) A breakdown of who will do what between the partners, and a timeline indicating when assignment tasks will be finished and when testing will take place.
+
+Design Considerations
+1) programs will have cmd line args
+2) What primitive operations exist to support the transfer of data to and from kernel space? Do you want to implement more on top of these?
+3) When implementing exec, how will you determine:
+	the stack pointer initial value
+	the initial register contents
+	the return value
+	whether you can execute the program at all?
+4) Avoid user program from modifying kernel related stuff
+5 )What new data structures will you need to manage multiple processes?
+6) What relationships do these new structures have with the rest of the system?
+7) How will you manage file accesses? 
+	When the shell invokes the cat command, 
+	and the cat command starts to read file1, 
+	what will happen if another program also tries to read file1? 
+	What would you like to happen?
+
+Existing process support
+
+Key files to user programs
+
+1) loadelf.c  	- loading elf executable from File System and into Virtual space 
+2) runprogram.c - running program from kernel menu, It is a good base for writing the execv system call
+				  Determine what more is required for execv() that runprogram() does not conern itself with (or take care of)
+3) uio.c 		- This file contains functions for moving data between kernel and user space
+				  Most important, be careful when making changes here
+				  You should also examine the code in kern/vm/copyinout.c
+
+1) What are the ELF magic numbers?
+2) What is the difference between UIO_USERISPACE and UIO_USERSPACE? When should one use UIO_SYSSPACE instead?
+3) Why can the struct uio that is used to read in a segment be allocated on the stack in load_segment? Or, put another way, where does the memory read actually go?
+4) In runprogram why is it important to call vfs_close before going to user mode?
+5) What function forces the processor to switch into user mode? Is this function machine dependent?
+6) In what files are copyin, copyout, and memmove defined? Why are copyin and copyout necessary? (As opposed to just using memmove.)
+7) What is the purpose of userptr_t?
+
+kern/arch/mips: Traps and System Calls
+
+
+This is referred from [jhshi blog](http://jhshi.me/2012/03/12/os161-pid-management/)
+
+***
+
+Process system Calls
+
+For effective management of process in OS161, we need to add the thread's pid. This way, during thread_create, we can simply allocate an available  number to the pid.
+
+Q. What to allocate for the PID ?
+
+A: In kern/limits.h, we see that there are two values, one is ```__PID_MIN```, other is ```__PID_MAX```. Thus our PID allocation must limit itself to these two values.
+
+Note : As per the blog (refer above), we can limit ourselves to 256. This way, the array we create for PID allocation is quite small, and manageable.
+
+Thus, we can declare an array which we write as
+
+struct process_list* t_processTable[PID_MAX]; // Reduce PID_MAX as per design
+Each entry of this has struct proc and related fields
+
+Since there was already a existing proc structure, we added the below fields to proc structure
+
+struct proc {
+  // additionals fields
+  pid_t ppid;
+  struct semphore* exitsem;
+  bool exited;
+  int exitcode;
+}
+
+This way, we can make use of this structure to keep the meta-data about the process's exit status, and use it in ```waitpid``` and ```exit``` system calls to let the parent know about what was the status of child's execution status.
