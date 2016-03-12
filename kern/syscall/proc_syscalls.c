@@ -145,28 +145,24 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 int
 sys_execv(const char *program, char **uargs){
  
- 	(void)program;
- 	(void)uargs;
- 	
  	int error = 0;
 	
-	if (program == NULL || uargs == NULL || uargs == (void *)0x80000000 || uargs == (void *) 0x40000000) {
+	if (program == NULL || uargs == NULL) {
 		// is the explicit address check required , won't copy in & out take care of it , 
-		// adding it for now as these addresses were mentioned in the recitation
 		return EFAULT;
 	}
-
- 	if (strlen(program) == 0) { // see if you should increase this to 1
-		return EINVAL;
-	}
 	
-	char *program_name = (char *)kmalloc(NAME_MAX);
+	char *program_name = (char *)kmalloc(PATH_MAX);
 	size_t prog_name_size;
 
 	// Copy program name from userspace and check for errors
-	error = copyinstr((const userptr_t) program, program_name, NAME_MAX, &prog_name_size);
+	error = copyinstr((const userptr_t) program, program_name, PATH_MAX, &prog_name_size);
 	if (error){
-		return error;
+		return EFAULT;
+	}
+
+ 	if (prog_name_size == 1) { // see if you should increase this to 1
+		return EINVAL;
 	}
 	
 	kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
@@ -182,15 +178,10 @@ sys_execv(const char *program, char **uargs){
 
 	int i=0;
 	size_t size=0;
-	int a_len =0;
 	while (uargs[i] != NULL ) {
-		a_len = strlen(uargs[i])+1;
-		args[i] = (char *) kmalloc(sizeof(char) * a_len);
-		/*kprintf("arg:i:%d\t length:%d, uarg_addr:%p, arg_addr:%p \n",i,a_len,uargs+i,args+i);
-		if(a_len < 100){
-			kprintf("arg is %s\n",uargs[i]);
-		}*/
-		error = copyinstr((const_userptr_t) uargs[i], args[i], a_len,
+		args[i] = (char *) kmalloc(sizeof(char) * PATH_MAX);
+		
+		error = copyinstr((const_userptr_t) uargs[i], args[i], PATH_MAX,
 				&size);
 		if (error) {
 			kprintf("error in copying individual args: error: %d\n",error);
