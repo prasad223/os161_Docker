@@ -173,7 +173,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   if (result) {
 //    kprintf_n("%p",filename);
     kfree(kbuff);
-    kprintf_n("Could not copy the filename to kbuff error is %d\n",result);
+    //kprintf_n("Could not copy the filename to kbuff error is %d\n",result);
     return EFAULT; /* filename was an invalid pointer */
   }
   //check the flags
@@ -419,11 +419,13 @@ int sys_chdir(const char *pathname, int *retval) {
 off_t
 sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
   int result;
+  kprintf_n("fd %d\n",fd);
   result = check_isFileHandleValid(fd);
   if (result > 0) {
     return result;
   }
-  if (fd == 0 || fd == 1 || fd == 2) { // all seeks on console handles fail
+  if ((fd <= 2 ) && ((int)pos > 0)) {
+    kprintf_n("File handle is invalid in sys_lseek\n");
     return ESPIPE;
   }
   if ((whence != SEEK_SET) && (whence != SEEK_CUR) && (whence != SEEK_END)) {
