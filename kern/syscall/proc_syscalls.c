@@ -93,6 +93,8 @@ sys__exit(int _exitcode){
 
 pid_t
 sys_waitpid(pid_t pid, int* status, int options, int *retval){
+
+	kprintf("pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
 	if(options != 0){
 		kprintf("Invalid options provided\n");
 		*retval = -1;
@@ -100,7 +102,10 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	struct proc* pid_proc = get_pid_proc(pid);
-	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid){
+	if(pid_proc != NULL){
+		kprintf("pid_proc:pid %d, ppid:%d\n",pid_proc->pid,pid_proc->ppid);
+	}
+	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid || pid == curproc->ppid){
 		kprintf("Trying to wait invalid pid or self");
 		*retval = -1;
 		return ESRCH;
