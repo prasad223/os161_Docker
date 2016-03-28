@@ -35,6 +35,20 @@
  *
  * You'll probably want to add stuff here.
  */
+ #define DIRTY 1;
+ #define CLEAN 0;
+
+ paddr_t
+ getppages(unsigned long npages);
+
+
+ struct coremap_entry {
+   struct addrspace *as;
+   vaddr_t va;
+
+   char state;
+   paddr_t phyAddr;
+ };
 
 
 #include <machine/vm.h>
@@ -43,6 +57,7 @@
 #define VM_FAULT_READ        0    /* A read was attempted */
 #define VM_FAULT_WRITE       1    /* A write was attempted */
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
+
 
 
 /* Initialization function */
