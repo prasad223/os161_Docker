@@ -35,8 +35,9 @@
  *
  * You'll probably want to add stuff here.
  */
- #define DIRTY 1;
- #define CLEAN 0;
+ #define DIRTY 5
+ #define CLEAN 4
+
 
  paddr_t
  getppages(unsigned long npages);
@@ -45,6 +46,7 @@
  struct coremap_entry {
    struct addrspace *as;
    vaddr_t va;
+   int allocPageCount;
 
    char state;
    paddr_t phyAddr;
