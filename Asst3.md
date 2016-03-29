@@ -70,3 +70,24 @@ This function needs to take care of two scenarios :
   Otherwise, mark all the pages found in `npages` block as allocated, and return the start address of the block.
 
   Of course, all the access to coremap is locked by the static `stealmem_lock`. 
+  
+3. While allocating pages, we need to keep track of the number of pages we allocated for that particular chunk so that we can use this information during freeing that chunk of memory.
+4. Also we need to keep track of the total amount of memory allocated on the entire RAM, which includes memory during boot function.
+5.
+
+###### free_kpages
+
+void free_kpages(vaddr_t addr)
+This function frees the memory allocated by getppages, but the ones only allocated by coremap.
+
+1. Few things to take care of 
+  a. We need to check if the virtual address is in coremap accessible range.
+  b. check if the virtual address was actually allocated at all in the first place.
+2. If the address passes the above mentioned check, and if the address corresponds to the virtual address of the starting page. Then we can use the information about the number of pages that were allocated and free them all at once.
+3. Not sure if we should reset the pages memory area , for now just setting the state of the page to clean. Need to check on this.
+4. subtract the page_size * pagesCount from coremap_used_size.
+
+###### coremap_used_bytes
+
+This function is pretty simple, it just returns the actual number of bytes that's occupied on the RAM at this point of this. Not sure if we should hold a lock before returning , as its being used in alloc and free.
+
