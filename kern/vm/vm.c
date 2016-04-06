@@ -37,11 +37,11 @@
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
 static unsigned long coremap_used_size;
-paddr_t lastpaddr, firstFreeAddr , freeAddr;
+paddr_t lastpaddr, freeAddr, firstpaddr;
 
-extern int coremap_page_num;
-extern struct coremap_entry* coremap;
-static bool firstuserboot = true;
+int coremap_page_num;
+struct coremap_entry* coremap;
+//static bool firstuserboot = true;
 
 //extern paddr_t first_ram_phyAddr;
 /*
@@ -58,43 +58,34 @@ static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 **/
 void
 vm_bootstrap(void) {
-
-/*   int i;
-  int coremap_size;
-  paddr_t temp, freeAddr;
+  int i;
+	//size_t ramsize;
+	paddr_t freeAddr, temp;
+	int coremap_size;
 
   lastpaddr = ram_getsize();
+  firstpaddr= ram_getfirstfree();
 
-  firstFreeAddr = ram_getfirstfree();
+  coremap_page_num = (lastpaddr - firstpaddr) / PAGE_SIZE;
 
-  kprintf("first_ram_phyAddr %d",first_ram_phyAddr);
-  coremap_page_num = (lastpaddr - first_ram_phyAddr) / PAGE_SIZE;
+  freeAddr = firstpaddr + coremap_page_num * sizeof(struct coremap_entry);
+	freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
 
-  freeAddr = firstFreeAddr + coremap_page_num * sizeof(struct coremap_entry);
-  freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
-
-  kprintf("freeAddr in vm_bootstrap %d",firstFreeAddr);
-
-  coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstFreeAddr);
-  coremap_size = ROUNDUP(freeAddr - first_ram_phyAddr, PAGE_SIZE) / PAGE_SIZE;
-
-
-  for(i=0; i < (coremap_page_num); i++) {
-    if (i < coremap_size) {
-      coremap[i].state  = DIRTY;
-    } else {
-      coremap[i].state  = CLEAN;
-    }
-    temp = firstFreeAddr + (PAGE_SIZE * i);
+	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
+	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
+	for(i =0 ; i < coremap_page_num; i++ ) {
+		if (i < coremap_size) {
+			coremap[i].state = DIRTY;
+		} else {
+			coremap[i].state = CLEAN;
+		}
+		temp = firstpaddr + (PAGE_SIZE * i);
     coremap[i].phyAddr= temp;
+
     coremap[i].allocPageCount = -1;
     coremap[i].va     = PADDR_TO_KVADDR(temp);
-  }
-
-
-
-  vm_bootstrap_done = true;
-*/
+	}
+  coremap_used_size = 0;
 }
 
 /*
@@ -104,14 +95,10 @@ paddr_t
 getppages(unsigned long npages)
 {
   spinlock_acquire(&stealmem_lock);
-  //addr = ram_stealmem(npages);
-  //spinlock_release(&stealmem_lock);
-  //return addr;
-  if (firstuserboot) {
-    //kprintf("coremap_used_size before %lu ",coremap_used_size);
-    coremap_used_size = 0;
-    firstuserboot     = false;
-  }
+  // if (firstuserboot) {
+  //   coremap_used_size = 0;
+  //   firstuserboot     = false;
+  // }
    paddr_t addr;
    int nPageTemp = (int)npages;
    int i, block_count , page_block_start = 0;
@@ -132,13 +119,7 @@ getppages(unsigned long npages)
      }
    }
    if (i == coremap_page_num) { //no free pages
-     //kprintf("No more pages failedd !!!\n");
-    //  int j=0;
-    //  for(;j<coremap_page_num;j++){
-    //    kprintf("pgNum:%d, state:%d\n",j,coremap[j].state);
-    //  }
      spinlock_release(&stealmem_lock);
-     //kprintf("i %d coremap_page_num %d\n",i,coremap_page_num);
      return 0;
    }
    page_block_start = i - nPageTemp + 1;
@@ -147,57 +128,11 @@ getppages(unsigned long npages)
      coremap[i + page_block_start].state = DIRTY;
    }
    addr = coremap[page_block_start].phyAddr;
-   //kprintf("\npage %d, count %d\n",page_block_start, nPageTemp);
    coremap[page_block_start].allocPageCount = nPageTemp;
 
    coremap_used_size = coremap_used_size + (nPageTemp * PAGE_SIZE);
-   //kprintf("coremap_used_size %lu ",coremap_used_size);
-  //
-  //  coremap_used_size = coremap_used_size + (nPageTemp * PAGE_SIZE);
-  //
-
-   //addr = ram_stealmem(npages);
    spinlock_release(&stealmem_lock);
    return addr;
-
-  //
-  // block_count = nPageTemp;
-  //
-  // for(i=0; i < coremap_page_num; i++) {
-  //   if (coremap[i].state == CLEAN) {
-  //     block_count--;
-  //     if (block_count == 0) {
-  //       break; //
-  //     }
-  //   } else {
-  //     block_count = nPageTemp;
-  //   }
-  // }
-  //
-  // if (i == coremap_page_num) { //no free pages
-  //   kprintf("No more pages failedd !!!\n");
-  //   int j=0;
-  //   for(;j<coremap_page_num;j++){
-  //     kprintf("pgNum:%d, state:%d\n",j,coremap[j].state);
-  //   }
-  //   spinlock_release(&stealmem_lock);
-  //   //kprintf("i %d coremap_page_num %d\n",i,coremap_page_num);
-  //   return 0;
-  // }
-  //
-  // page_block_start = i - nPageTemp + 1;
-  //
-  // for(i = 0; i < nPageTemp; i++) {
-  //   coremap[i + page_block_start].state = DIRTY;
-  // }
-  //
-  // coremap[page_block_start].allocPageCount = nPageTemp;
-  // addr = coremap[page_block_start].phyAddr;
-  // coremap_used_size = coremap_used_size + (nPageTemp * PAGE_SIZE);
-  // kprintf("page %d, count %d, addr %d, VA %p\n",page_block_start, nPageTemp, addr,(void*)coremap[page_block_start].va);
-  //
-  // spinlock_release(&stealmem_lock);
-	// return addr;
 }
 
 /*kmalloc-routines*/
@@ -215,16 +150,12 @@ alloc_kpages(unsigned npages) {
 
 void
 free_kpages(vaddr_t addr) {
-  (void)addr;
   spinlock_acquire(&stealmem_lock);
-  //kprintf("free_kpages:start,addr:%p\n",(void *)addr);
   int i=0;
   int pgCount = 0;
 
   for(;i<coremap_page_num;i++){
-    //kprintf("free_kpages:for loop:i:%d, va:%d\n",i,coremap[i].va);
     if(coremap[i].va == addr){
-      //kprintf("KFREE:found page allocated at %d, addr %p,pgCount:%d\n",i,(void *)addr,coremap[i].allocPageCount);
       break;
     }
   }
@@ -235,9 +166,7 @@ free_kpages(vaddr_t addr) {
     coremap[i+j].allocPageCount = -1;
     coremap[i+j].state = CLEAN;
   }
-  //kprintf("free_kpages:pgCount:%d\n",pgCount);
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
-  //kprintf("REDUCED :coremap_used_size %d ",coremap_used_size);
   spinlock_release(&stealmem_lock);
 }
 

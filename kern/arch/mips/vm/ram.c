@@ -41,8 +41,6 @@ static paddr_t lastpaddr;   /* one past end of last free physical page */
 
 int coremap_page_num = 0;
 struct coremap_entry* coremap;
-//extern unsigned long coremap_used_size ;
-//static int coremap_used_size = 0;
 
 /*
  * Called very early in system boot to figure out how much physical
@@ -51,15 +49,13 @@ struct coremap_entry* coremap;
 void
 ram_bootstrap(void)
 {
-	kprintf("in ram_bootstrap\n");
-	int i;
+	// int i;
 	size_t ramsize;
-	paddr_t freeAddr, temp;
-	int coremap_size;
+	// paddr_t freeAddr, temp;
+	// int coremap_size;
 
 	/* Get size of RAM. */
 	ramsize = mainbus_ramsize();
-	kprintf("ramsize %d",ramsize);
 	/*
 	 * This is the same as the last physical address, as long as
 	 * we have less than 512 megabytes of memory. If we had more,
@@ -78,77 +74,25 @@ ram_bootstrap(void)
 	 * Convert to physical address.
 	 */
 	firstpaddr = firstfree - MIPS_KSEG0;
-	//first_ram_phyAddr = firstpaddr;
-	// int coremap_size;
-  // paddr_t temp, freeAddr;
+  // coremap_page_num = (lastpaddr - firstpaddr) / PAGE_SIZE;
 	//
-  // lastpaddr = ram_getsize();
-
-  // firstFreeAddr = ram_getfirstfree();
+  // freeAddr = firstpaddr + coremap_page_num * sizeof(struct coremap_entry);
+	// freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
 	//
-  // kprintf("first_ram_phyAddr %d",first_ram_phyAddr);
-  // coremap_page_num = (lastpaddr - first_ram_phyAddr) / PAGE_SIZE;
-	//
-  // freeAddr = firstFreeAddr + coremap_page_num * sizeof(struct coremap_entry);
-  // freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
-	//
-  // kprintf("freeAddr in vm_bootstrap %d",firstFreeAddr);
-	//
-  // coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstFreeAddr);
-  // coremap_size = ROUNDUP(freeAddr - first_ram_phyAddr, PAGE_SIZE) / PAGE_SIZE;
-	//
-	//
-  // for(i=0; i < (coremap_page_num); i++) {
-  //   if (i < coremap_size) {
-  //     coremap[i].state  = DIRTY;
-  //   } else {
-  //     coremap[i].state  = CLEAN;
-  //   }
-  //   temp = firstFreeAddr + (PAGE_SIZE * i);
+	// coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
+	// coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
+	// for(i =0 ; i < coremap_page_num; i++ ) {
+	// 	if (i < coremap_size) {
+	// 		coremap[i].state = DIRTY;
+	// 	} else {
+	// 		coremap[i].state = CLEAN;
+	// 	}
+	// 	temp = firstpaddr + (PAGE_SIZE * i);
   //   coremap[i].phyAddr= temp;
+	//
   //   coremap[i].allocPageCount = -1;
   //   coremap[i].va     = PADDR_TO_KVADDR(temp);
-  // }
-
-	//kprintf("%uk physical memory available, lastpaddr:%d, firstpaddr:%d, PAGE_SIZE:%d\n",
-		//(lastpaddr-firstpaddr)/1024,lastpaddr,firstpaddr,PAGE_SIZE);
-
-  coremap_page_num = (lastpaddr - firstpaddr) / PAGE_SIZE;
-  //coremap_page_num     = ROUNDUP(t2,PAGE_SIZE);
-
-  freeAddr = firstpaddr + coremap_page_num * sizeof(struct coremap_entry);
-	freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
-	//kprintf("firstpaddr in ram_bootstrap %d :: %d",firstpaddr, coremap_page_num);
-	//kprintf("\nfreeAddr in ram_getsize %d\n",freeAddr);
-
-	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
-	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
-
-	//kprintf("coremap_size %d\n",coremap_size);
-	for(i =0 ; i < coremap_page_num; i++ ) {
-		if (i < coremap_size) {
-			coremap[i].state = DIRTY;
-		} else {
-			coremap[i].state = CLEAN;
-		}
-		temp = firstpaddr + (PAGE_SIZE * i);
-    coremap[i].phyAddr= temp;
-
-    coremap[i].allocPageCount = -1;
-    coremap[i].va     = PADDR_TO_KVADDR(temp);
-		//kprintf("vm_bootstrap:phyAddr:%d, i:%d\n",coremap[i].phyAddr,i);
-	}
-	//coremap_used_size =0;
-/*	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstFreeAddr);
-  coremap_size = ROUNDUP(freeAddr - firstFreeAddr, PAGE_SIZE) / PAGE_SIZE;
-	temp     = 0;
-
-  for(i=0; i < freeAddr;) {
-		coremap[i].state   = FIXED;
-		coremap[i].phyAddr = i;
-		i = i + PAGE_SIZE;
-
-	}*/
+	// }
 }
 
 /*
@@ -172,7 +116,6 @@ ram_bootstrap(void)
 paddr_t
 ram_stealmem(unsigned long npages)
 {
-	kprintf("ram_stealmem:npages:%lu\n",npages);
 	size_t size;
 	paddr_t paddr;
 

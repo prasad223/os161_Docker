@@ -108,7 +108,8 @@ boot(void)
 
 	/* Early initialization. */
 	ram_bootstrap();
-	proc_bootstrap();
+  vm_bootstrap();
+  proc_bootstrap();
 	thread_bootstrap();
 	hardclock_bootstrap();
 	vfs_bootstrap();
@@ -125,7 +126,7 @@ boot(void)
 	kheap_nextgeneration();
 
 	/* Late phase of initialization. */
-	vm_bootstrap();
+
 	kprintf_bootstrap();
 	thread_start_cpus();
 	test161_bootstrap();
@@ -211,7 +212,7 @@ void
 kmain(char *arguments)
 {
 	boot();
-	
+
 	menu(arguments);
 
 	/* Should not get here */
