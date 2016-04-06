@@ -59,20 +59,25 @@ static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 void
 vm_bootstrap(void) {
   int i;
-	//size_t ramsize;
 	paddr_t freeAddr, temp;
 	int coremap_size;
 
+  // Get the total size of the RAM
   lastpaddr = ram_getsize();
-  firstpaddr= ram_getfirstfree();
+  firstpaddr= ram_getfirstfree();   // Get first free address on RAM
 
+  // Number of pages that can be used to allocate
   coremap_page_num = (lastpaddr - firstpaddr) / PAGE_SIZE;
 
+  // Calculate and set the first free address after coremap is allocated
   freeAddr = firstpaddr + coremap_page_num * sizeof(struct coremap_entry);
 	freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
 
+  // Allocate memory to coremap
 	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
+
+  // Initiliase each page status in coremap
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
 			coremap[i].state = DIRTY;
@@ -81,10 +86,10 @@ vm_bootstrap(void) {
 		}
 		temp = firstpaddr + (PAGE_SIZE * i);
     coremap[i].phyAddr= temp;
-
     coremap[i].allocPageCount = -1;
-    coremap[i].va     = PADDR_TO_KVADDR(temp);
+    coremap[i].va = PADDR_TO_KVADDR(temp);
 	}
+  // Set coremap used size to 0
   coremap_used_size = 0;
 }
 
@@ -94,19 +99,11 @@ vm_bootstrap(void) {
 paddr_t
 getppages(unsigned long npages)
 {
-  spinlock_acquire(&stealmem_lock);
-  // if (firstuserboot) {
-  //   coremap_used_size = 0;
-  //   firstuserboot     = false;
-  // }
+   spinlock_acquire(&stealmem_lock);
    paddr_t addr;
    int nPageTemp = (int)npages;
    int i, block_count , page_block_start = 0;
 
-   (void)i;
-   (void)block_count;
-   (void)page_block_start;
-   (void)nPageTemp;
    block_count = nPageTemp;
    for(i=0; i < coremap_page_num; i++) {
      if (coremap[i].state == CLEAN) {
@@ -118,6 +115,7 @@ getppages(unsigned long npages)
        block_count = nPageTemp;
      }
    }
+   
    if (i == coremap_page_num) { //no free pages
      spinlock_release(&stealmem_lock);
      return 0;
@@ -138,35 +136,37 @@ getppages(unsigned long npages)
 /*kmalloc-routines*/
 vaddr_t
 alloc_kpages(unsigned npages) {
-  paddr_t pa;
-
-	pa = getppages(npages);
-	if (pa==0) {
+  
+  paddr_t pa = getppages(npages);
+	if (pa == 0) {
 		return 0;
-	}
-	return PADDR_TO_KVADDR(pa);
-
+	}else{
+	  return PADDR_TO_KVADDR(pa);
+  }
 }
 
 void
 free_kpages(vaddr_t addr) {
   spinlock_acquire(&stealmem_lock);
-  int i=0;
+  int i;
   int pgCount = 0;
 
-  for(;i<coremap_page_num;i++){
+  for(i = 0; i < coremap_page_num; i++){
     if(coremap[i].va == addr){
+      pgCount = coremap[i].allocPageCount;
       break;
     }
   }
 
-  pgCount = coremap[i].allocPageCount;
-  int j=0;
-  for(;j<pgCount;j++){
+  int j;
+  for( j = 0; j < pgCount; j++){
     coremap[i+j].allocPageCount = -1;
     coremap[i+j].state = CLEAN;
   }
+
+  // Remove the memory of removed pages from counter
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
+  
   spinlock_release(&stealmem_lock);
 }
 
