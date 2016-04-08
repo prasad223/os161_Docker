@@ -69,8 +69,8 @@ This function needs to take care of two scenarios :
   If `npages` are not available in contiguous order, the function shall fail, and return 0.
   Otherwise, mark all the pages found in `npages` block as allocated, and return the start address of the block.
 
-  Of course, all the access to coremap is locked by the static `stealmem_lock`. 
-  
+  Of course, all the access to coremap is locked by the static `stealmem_lock`.
+
 3. While allocating pages, we need to keep track of the number of pages we allocated for that particular chunk so that we can use this information during freeing that chunk of memory.
 4. Also we need to keep track of the total amount of memory allocated on the entire RAM, which includes memory during boot function.
 5.
@@ -80,14 +80,65 @@ This function needs to take care of two scenarios :
 void free_kpages(vaddr_t addr)
 This function frees the memory allocated by getppages, but the ones only allocated by coremap.
 
-1. Few things to take care of 
+1. Few things to take care of
   a. We need to check if the virtual address is in coremap accessible range.
   b. check if the virtual address was actually allocated at all in the first place.
 2. If the address passes the above mentioned check, and if the address corresponds to the virtual address of the starting page. Then we can use the information about the number of pages that were allocated and free them all at once.
 3. Not sure if we should reset the pages memory area , for now just setting the state of the page to clean. Need to check on this.
 4. subtract the page_size * pagesCount from coremap_used_size.
 
-###### coremap_used_bytes
 
+###### coremap_used_bytes
 This function is pretty simple, it just returns the actual number of bytes that's occupied on the RAM at this point of this. Not sure if we should hold a lock before returning , as its being used in alloc and free.
 
+**NOTE** :
+
+Finally, we moved the `vm_bootstrap` to be called before `proc_bootstrap` so that no memory leaks occur.Rest of the things remained the same. We scored full in this part ! Yipee!
+
+**************************
+
+This is the second part of ASST3 assignment. We need to tackle 3 main issues here :
+
+1. Add paging support to user-address space programs
+2. Setup user address space
+3. TLB fault handling
+4. Add sbrk() system call to support malloc()
+
+**NOTE** : The points are written in the order that they must be completed. E.g., without implementing user address space support, there is no sense in writing `vm_fault`
+
+###### Paging support
+
+First issue to tackle is how we do represent, the user-level pages.
+Remember that page tables give Virtual address to physical address translation support.
+
+*As an aside, there are 4 regions of memory in OS/161 , `kseg0`, `kseg1`, `kseg2` and `kuseg`. Out of all these areas, only 'kuseg' and `kseg2` actually use TLB for translation. However, we only concern ourselves with `kuseg` since this is the region which can generate TLB faults.  (In OS161, the TLB is software managed)*
+
+Jinghao gives two options in his videos for a page table entry structure :
+
+1. Linked list : Something in the format
+
+  struct page_table_entry {
+    paddr_t pa;
+    vaddr_t va;
+    int permissions  ; //what kind of permission is allowed in this page
+    struct page_table_entry  * next; // this is a pointer to next node in Page table
+  }
+
+  This is not terribly efficient both in terms of space and time complexity. But this is simple.
+
+2. Multilevel page table : Using the 32 bit virtual address and dividing it into 3 parts as shown below :
+
+
+  | directory(10 bits)| Table(10 bits) | Offset (12 bits)|
+  | :-------------    | :------------- | :-------------  |
+
+  directory (10 bits) : Using a static array of 1024 (2^10) entries, we use the first 10 bits as an index into this array. The address stored at this index gives the paddr_base of `Table` array.
+
+  Table(10 bits)      : Thus each entry in `directory` array is linked to one `Table` array. This means that we have 1024 `Table` arrays. We can now use the `Table(10 bits)` as an index into this array to get the paddr_base of the physical page.
+
+  Offset(12 bits)     : This offset is added to paddr_base of physical page to give the actual physical address.
+
+  If we allocate 1024 arrays for `Table` statically, this leads to massive space wastage, as not all processes need all the entries. One solution to handle this is to check in `vm_fault` that if the entry at `directory[index]` is not allocated, then create a new entry at that time. This is an emulation of on-demand paging technique.
+
+  Pros : Each page entry now needs only 8 bytes (4 for directory + 4 for table) and gives constant lookup time.
+  Cons : More complicated.
