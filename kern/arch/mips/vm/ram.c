@@ -34,7 +34,6 @@
 #include <mainbus.h>
 
 vaddr_t firstfree;   /* first free virtual address; set by start.S */
-//paddr_t first_ram_phyAddr; // save the initial "first free physical address"; used in vm.c
 
 static paddr_t firstpaddr;  /* address of first free physical page */
 static paddr_t lastpaddr;   /* one past end of last free physical page */
@@ -49,10 +48,7 @@ struct coremap_entry* coremap;
 void
 ram_bootstrap(void)
 {
-	// int i;
 	size_t ramsize;
-	// paddr_t freeAddr, temp;
-	// int coremap_size;
 
 	/* Get size of RAM. */
 	ramsize = mainbus_ramsize();
@@ -74,25 +70,6 @@ ram_bootstrap(void)
 	 * Convert to physical address.
 	 */
 	firstpaddr = firstfree - MIPS_KSEG0;
-  // coremap_page_num = (lastpaddr - firstpaddr) / PAGE_SIZE;
-	//
-  // freeAddr = firstpaddr + coremap_page_num * sizeof(struct coremap_entry);
-	// freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
-	//
-	// coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
-	// coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
-	// for(i =0 ; i < coremap_page_num; i++ ) {
-	// 	if (i < coremap_size) {
-	// 		coremap[i].state = DIRTY;
-	// 	} else {
-	// 		coremap[i].state = CLEAN;
-	// 	}
-	// 	temp = firstpaddr + (PAGE_SIZE * i);
-  //   coremap[i].phyAddr= temp;
-	//
-  //   coremap[i].allocPageCount = -1;
-  //   coremap[i].va     = PADDR_TO_KVADDR(temp);
-	// }
 }
 
 /*
