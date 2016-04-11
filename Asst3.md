@@ -142,3 +142,11 @@ Jinghao gives two options in his videos for a page table entry structure :
 
   Pros : Each page entry now needs only 8 bytes (4 for directory + 4 for table) and gives constant lookup time.
   Cons : More complicated.
+
+
+For now, we will use 
+1. getppages() to simulate allocating user pages
+2. free_kpages() to simulate freeing user pages by passing the kernel virtual address equivalent of the physical address.
+   This is a simpler version, does the job but not sure if this is the right way to do it.
+
+

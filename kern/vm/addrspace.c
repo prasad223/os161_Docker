@@ -33,6 +33,7 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <proc.h>
+#include <spl.h>
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -54,8 +55,36 @@ as_create(void)
 	 * Initialize as needed.
 	 */
 
+	as->as_page_entries = NULL;
+	as->as_regions = NULL;
+	as->as_heap_start = (vaddr_t)0;
+	as->as_heap_end = (vaddr_t)0;
+	
 	return as;
 }
+
+// Should this be void or int
+void as_copy_region(struct region* old, struct region** ret){
+
+	struct region* old_region = old;
+	struct region* new_region = NULL;
+	*ret = NULL;
+
+	while(old_region != NULL){
+		new_region = (struct region*)kmalloc(sizeof(struct region));
+		new_region->va = old_region->va;
+		new_region->pa = old_region->pa;
+		new_region->npages = old_region->npages;
+		new_region->permissions = old_region->permissions;
+		new_region->next = NULL;
+		if(*ret == NULL){
+			*ret = new_region;
+		}
+		old_region = old_region->next;
+		new_region = new_region->next;
+	}
+}
+
 
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
@@ -67,11 +96,14 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
-	/*
-	 * Write this.
-	 */
-
 	(void)old;
+
+	as_copy_region(old->as_regions, &(newas->as_regions));
+
+	// TODO: not sure how to handle pte entries, need to discuss 
+	
+	newas->as_heap_start = old->as_heap_start;
+	newas->as_heap_end = old->as_heap_end;
 
 	*ret = newas;
 	return 0;
@@ -84,7 +116,34 @@ as_destroy(struct addrspace *as)
 	 * Clean up as needed.
 	 */
 
+	KASSERT(as != NULL);
+
+	// Clear all regions
+	// free all pages
+	// unset heap start and end addresses
+
+	struct region* current_region = as->as_regions, *temp = NULL;
+	
+	while(current_region != NULL){
+		temp = current_region;
+		current_region = current_region->next;
+		kfree(temp);
+	}
+
+	struct page_table_entry *pte_entries = as->as_page_entries, *pte_temp = NULL; 
+
+	while(pte_entries != NULL){
+		pte_temp = pte_entries;
+		pte_entries = pte_entries->next;
+		free_kpages(PADDR_TO_KVADDR(pte_temp->pa)); // This is sort of a hack for now, we have to change later
+		kfree(pte_temp);
+	}
+
+	as->as_heap_end = (vaddr_t)0;
+	as->as_heap_start = (vaddr_t)0;
+
 	kfree(as);
+	KASSERT(as == NULL);
 }
 
 void
@@ -100,10 +159,16 @@ as_activate(void)
 		 */
 		return;
 	}
+	//TODO: Should we keep the above code , not there in previous versions
 
-	/*
-	 * Write this.
-	 */
+	int spl = splhigh();
+	int i=0;
+
+	for(;i < NUM_TLB; i++){
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+
+	splx(spl);
 }
 
 void
@@ -113,7 +178,7 @@ as_deactivate(void)
 	 * Write this. For many designs it won't need to actually do
 	 * anything. See proc.c for an explanation of why it (might)
 	 * be needed.
-	 */
+	*/
 }
 
 /*
@@ -130,17 +195,27 @@ int
 as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		 int readable, int writeable, int executable)
 {
-	/*
-	 * Write this.
-	 */
+	
+	vaddr &= PAGE_FRAME;
+	memsize += vaddr & ~(vaddr_t)PAGE_FRAME;
+	memsize = (memsize + PAGE_SIZE - 1) & PAGE_FRAME;
 
-	(void)as;
-	(void)vaddr;
-	(void)memsize;
-	(void)readable;
-	(void)writeable;
-	(void)executable;
-	return ENOSYS;
+	struct region* new_region = (struct region*)kmalloc(sizeof(struct region));
+
+	new_region->va = vaddr;
+	new_region->npages = memsize / PAGE_SIZE;
+	
+	//TODO: how to set physical address
+	new_region->pa = (paddr_t)0;
+	new_region->permissions = 0;
+	if(readable) new_region->permissions |= SET_READ_MASK;
+	if(writeable) new_region->permissions |= SET_WRITE_MASK;
+	if(executable) new_region->permissions |= SET_EXEC_MASK;
+
+	new_region->next = as->as_regions;
+	as->as_regions = new_region;
+	
+	return 0;
 }
 
 int
@@ -151,6 +226,8 @@ as_prepare_load(struct addrspace *as)
 	 */
 
 	(void)as;
+
+
 	return 0;
 }
 
