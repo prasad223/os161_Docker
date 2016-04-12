@@ -119,12 +119,15 @@ common_prog(int nargs, char **args)
 	int result;
 	int status;
 	int retval;
+	unsigned tc;
 
 	/* Create a process for the new program to run in. */
 	proc = proc_create_runprogram(args[0] /* name */);
 	if (proc == NULL) {
 		return ENOMEM;
 	}
+
+	tc = thread_count;
 
 	result = thread_fork(args[0] /* thread name */,
 			proc /* new process */,
@@ -148,6 +151,10 @@ common_prog(int nargs, char **args)
 	 * The new process will be destroyed when the program exits...
 	 * once you write the code for handling that.
 	 */
+
+	// Wait for all threads to finish cleanup, otherwise khu be a bit behind,
+	// especially once swapping is enabled.
+	thread_wait_for_count(tc);
 
 	return 0;
 }
