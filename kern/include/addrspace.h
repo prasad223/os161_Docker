@@ -150,6 +150,7 @@ int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
 void deletePageTable(struct addrspace *as);
 void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
+struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current
