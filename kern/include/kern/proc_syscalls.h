@@ -19,5 +19,6 @@ int sys_getpid(int *retval);
 pid_t sys_waitpid(pid_t pid, int* status, int options, int *retval);
 int sys_execv(const char *program, char **uargs);
 void sys__exit(int _exitcode);
+int sys_sbrk(int amount, int * retval);
 
 #endif /* _PROC_CALL_H_ */
