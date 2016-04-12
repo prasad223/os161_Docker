@@ -173,9 +173,11 @@ free_kpages(vaddr_t addr) {
 
 int
 vm_fault(int faulttype, vaddr_t faultaddress) {
-  (void)faulttype;
-  (void)faultaddress;
-
+  //(void)faulttype;
+  //(void)faultaddress;
+  switch(faulttype) {
+    
+  }
 
   return 0;
 }

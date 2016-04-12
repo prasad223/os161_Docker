@@ -44,7 +44,7 @@ struct vnode;
 struct page_table_entry {
     vaddr_t va;
     paddr_t pa;
-    struct page_table_entry *next, *last;
+    struct page_table_entry *next;
 };
 
 // struct regionlist {
@@ -74,6 +74,7 @@ struct addrspace {
         /* Put stuff here for your VM system */
         /*We are assuming 2 fixed regions, code and data and use the */
         struct page_table_entry *first;
+        //struct page_table_entry *last;
         /*Region 1*/
         vaddr_t as_vbase1;
         size_t as_npages1;
@@ -148,6 +149,7 @@ int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
 void deletePageTable(struct addrspace *as);
+struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

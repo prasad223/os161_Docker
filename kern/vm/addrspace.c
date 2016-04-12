@@ -58,6 +58,38 @@ deletePageTable(struct addrspace *as) {
 
 }
 
+/*Takes the old address space, and copies all the PTE to the new address space
+Returns the first entry of PTE for new address space*/
+struct
+page_table_entry* copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old) {
+		if (old->first == NULL) {
+			return old->first;
+		}
+		struct page_table_entry *tempFirst = old->first;
+		struct page_table_entry *tempNew   = NULL;
+		struct page_table_entry *tempLast  = NULL;
+		int i=0;
+		while(tempFirst != NULL) {
+			tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+			KASSERT(tempNew != NULL);
+			tempNew->pa = getppages(1);
+			tempNew->va = PADDR_TO_KVADDR(tempNew->pa);
+
+			memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
+			if (i == 0 ) {
+				tempLast = tempNew;
+				newas->first = tempNew;
+				i++;
+			} else {
+			  tempLast->next = tempNew;
+				tempLast = tempNew;
+			}
+
+			tempFirst = tempFirst->next;
+		}
+		return newas->first;
+}
+
 /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 struct addrspace *
 as_create(void)
@@ -102,27 +134,28 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	}
 
 	/*
-	 * Write this.
+	 * Write this
 	 */
 
 	//(void)old;
 	/*Since we do on-demand paging, now how we do allocate PTE for new AS ?*/
 	KASSERT(old != NULL);
-	newas->as_vbase1 = old->as_vbase1;
-	newas->as_npages1;
-	newas->perm_region1;
+	newas->as_vbase1   = old->as_vbase1;
+	newas->as_npages1  = old->as_npages1;
+	newas->perm_region1= old->perm_region1;
 	/*Region 2*/
-	newas->as_vbase2;
-	newas->as_npages2;
-	newas->perm_region2;
+	newas->as_vbase2   = old->as_vbase2;
+	newas->as_npages2  = old->as_npages2;
+	newas->perm_region2= old->perm_region2;
 	/*stack base + size*/
-	newas->as_stackbase;
-	newas->nStackPages;
+	newas->as_stackbase= old->as_stackbase;
+	newas->nStackPages = old->nStackPages;
 	/*Heap base + size*/
-	newas->heapStart;
-	newas->heapEnd;
+	newas->heapStart   = old->heapStart;
+	newas->heapEnd     = old->heapEnd;
 
-	//*ret = newas;
+	newas->first       = copyAllPageTableEntries(newas,old);
+	*ret = newas;
 	return 0;
 }
 
