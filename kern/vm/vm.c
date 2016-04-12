@@ -34,8 +34,12 @@
 #include <synch.h>
 #include <vm.h>
 #include <mips/tlb.h>
-#include <spl.h>
-
+#include <kern/errno.h>
+#include <proc.h>
+#include <addrspace.h>
+#include <elf.h>
+#include <signal.h>
+#include <proc_syscalls.h>
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
 static unsigned long coremap_used_size;
@@ -50,6 +54,7 @@ struct coremap_entry* coremap;
  * Wrap ram_stealmem in a spinlock.
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+static struct spinlock tlb_spinlock  = SPINLOCK_INITIALIZER;
 
 /*
 * Logic is to find the first free physical address from where we can start to initialize our coremap.
@@ -174,10 +179,103 @@ free_kpages(vaddr_t addr) {
 
 int
 vm_fault(int faulttype, vaddr_t faultaddress) {
-  //(void)faulttype;
-  //(void)faultaddress;
-  (void)faulttype;
-  (void)faultaddress;
+	int i;
+	uint32_t ehi, elo;
+	struct addrspace *as;
+	//int spl;
+
+	faultaddress &= PAGE_FRAME;
+
+	kprintf("faultaddress : 0x%x\n", faultaddress);
+
+  if (curproc == NULL) {
+    /*
+		 * No process. This is probably a kernel fault early
+		 * in boot. Return EFAULT so as to panic instead of
+		 * getting into an infinite faulting loop.
+		 */
+		return EFAULT;
+  }
+  as = proc_getas();
+  if (as == NULL) {
+    /*
+		 * No address space set up. This is probably also a
+		 * kernel fault early in boot.
+		 */
+		return EFAULT;
+  }
+  /* Assert that the address space has been set up properly. */
+  /*Region 1*/
+  KASSERT(as->as_vbase1 != 0);
+	KASSERT(as->as_npages1 != 0);
+  /*Region 2*/
+  KASSERT(as->as_vbase2 != 0);
+	KASSERT(as->as_npages2 != 0);
+  /*Stack */
+	KASSERT(as->as_stackbase != 0);
+  /*Heap */
+  KASSERT(as->heapStart != 0);
+  KASSERT(as->heapEnd != 0);
+  /*Check if vaddr are valid or not*/
+	KASSERT((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
+	KASSERT((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
+	KASSERT((as->as_stackbase & PAGE_FRAME) == as->as_stackbase);
+  KASSERT((as->heapStart & PAGE_FRAME) == as->heapStart);
+  KASSERT((as->heapEnd & PAGE_FRAME) == as->heapEnd);
+
+  /*Check if faultaddress is within code region
+  Also check permissions*/
+  int permissions;
+  if ((faultaddress >= as->as_vbase1) && (faultaddress <= ( as->as_vbase1 + as->as_npages1 * PAGE_SIZE))) {
+    permissions = (as->perm_region1 & 7);
+    if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
+      return EFAULT;
+    }
+  }
+  else if ((faultaddress >= as->as_vbase2) && (faultaddress <= ( as->as_vbase2 + as->as_npages2 * PAGE_SIZE))) {
+    permissions = (as->perm_region2 & 7);
+    if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
+      return EFAULT;
+    }
+  }
+
+  if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
+      /*Things to do :
+      1. Do a walk through page table to see the page table entry
+      2. If no entry is found based on faultaddress, then allocate a new entry
+      3. Write the entry to TLB*/
+  } else if (faulttype == VM_FAULT_READONLY) {
+    /*It's a write operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
+    then this is also a TLB miss with type VM_FAULT_READONLY
+    VM_FAULT_READONLY is sent by HW when EX_MOD interrupt occurs ( TLB Modify (write to read-only page) )
+    1. This means that the process needs to have write permissions to the page
+    2. Also page need not be allocated, simply change the dirty bit to 1*/
+    if (permissions == PF_W) {
+      spinlock_acquire(&tlb_spinlock);
+      /*tlb_probe -> finds index of faultaddress
+      tlb_read    -> gets entryhi and entrylo
+      tlb_write   -> to set the dirty bit to 1*/
+      int index = tlb_probe(faultaddress,0);
+      if (index == -1) {
+        kprintf("Could not find index of 0x%x in TLB \n",faultaddress );
+        spinlock_release(&tlb_spinlock);
+        return EFAULT;
+      }
+      tlb_read(&ehi,&elo,index);
+      ehi = faultaddress;
+      elo = elo | TLBLO_DIRTY;
+      tlb_write(ehi,elo,index);
+
+      spinlock_release(&tlb_spinlock);
+    } else {
+      kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
+      sys_exit(SIGSEGV);
+    }
+  }
+
+  // } else if (faultaddress >= as->heapStart && as->heapEnd) {
+  //
+  // }
   return 0;
 }
 
@@ -185,13 +283,12 @@ void
 vm_tlbshootdown_all(void)
 {
 	//panic("dumbvm tried to do tlb shootdown?!\n");
-  /*Flush all TLB entries, use the functio tlb_shootdown_all function*/
-  int spl = splhigh();
   int i;
+  spinlock_acquire(&tlb_spinlock);
   for (i=0; i<NUM_TLB; i++) {
-    tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+  		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
   }
-  splx(spl);
+  spinlock_release(&tlb_spinlock);
 }
 
 void
@@ -207,7 +304,7 @@ tlb_shootdown_page_table_entry(vaddr_t va) {
   int i;
   uint32_t ehi, elo;
   KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
-  spinlock_acquire(&stealmem_lock);
+  spinlock_acquire(&tlb_spinlock);
   for(i=0; i < NUM_TLB; i++) {
     tlb_read(&ehi, &elo, i);
     if (ehi  == va) {
@@ -216,7 +313,7 @@ tlb_shootdown_page_table_entry(vaddr_t va) {
     }
 
   }
-  spinlock_release(&stealmem_lock);
+  spinlock_release(&tlb_spinlock);
 }
 
 unsigned

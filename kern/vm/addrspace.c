@@ -41,7 +41,12 @@
  * assignment, this file is not compiled or linked or in any way
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
-
+struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as) {
+	KASSERT(as != NULL);
+	KASSERT(as->first != NULL);
+	struct page_table_entry *tempFirst = as->first;
+	
+}
 /*Iterate through all PTE entries, invalidate their TLB entries
 Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
 void
