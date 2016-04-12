@@ -27,6 +27,28 @@
  */
 
 int
+sys_sbrk(int amount, int *retval){
+	(void)amount;
+	(void)retval;
+
+	vaddr_t heap_end, heap_start, stack_base;
+
+	heap_end = curproc->p_addrspace->heapEnd;
+	heap_start = curproc->p_addrspace->heapStart;
+	stack_base = curproc->p_addrspace->as_stackbase;
+	
+	if ((heap_end + amount) < heap_start) {
+		return EINVAL;	
+	} else if (heap_end + amount > stack_base) { // parameter checking to see if heap has not overlapped with the stack
+		return EINVAL;
+	}
+	// We are now clear to go ahead with the system call. But, before that return the old heap end through retval
+	*retval = heap_end;
+	heap_end += amount;
+	return 0;
+}
+
+int
 sys_getpid(int *retval){
 	*retval = curproc->pid;
 	return 0;
