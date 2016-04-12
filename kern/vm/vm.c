@@ -34,6 +34,7 @@
 #include <synch.h>
 #include <vm.h>
 #include <mips/tlb.h>
+#include <spl.h>
 
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
@@ -175,10 +176,8 @@ int
 vm_fault(int faulttype, vaddr_t faultaddress) {
   //(void)faulttype;
   //(void)faultaddress;
-  switch(faulttype) {
-    
-  }
-
+  (void)faulttype;
+  (void)faultaddress;
   return 0;
 }
 
@@ -186,10 +185,13 @@ void
 vm_tlbshootdown_all(void)
 {
 	//panic("dumbvm tried to do tlb shootdown?!\n");
+  /*Flush all TLB entries, use the functio tlb_shootdown_all function*/
+  int spl = splhigh();
   int i;
-    for (i=0; i<NUM_TLB; i++) {
-  		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+  for (i=0; i<NUM_TLB; i++) {
+    tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
   }
+  splx(spl);
 }
 
 void

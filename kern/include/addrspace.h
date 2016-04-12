@@ -149,7 +149,7 @@ int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
 void deletePageTable(struct addrspace *as);
-struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old);
+void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

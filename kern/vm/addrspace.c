@@ -49,62 +49,48 @@ deletePageTable(struct addrspace *as) {
 	struct page_table_entry *tempFirst = as->first;
 	struct page_table_entry *tempFree;
 	while(tempFirst != NULL	) {
-		tlb_shootdown_page_table_entry(tempFirst->va);
-
+		//TODO: we should change this, i dont think its necessary
+		// Its very time consuming process
+		free_kpages(PADDR_TO_KVADDR(tempFirst->pa));
 		tempFree = tempFirst;
 		tempFirst= tempFirst->next;
 		kfree(tempFree);
 	}
-
 }
 
 /*Takes the old address space, and copies all the PTE to the new address space
 Returns the first entry of PTE for new address space*/
-struct
-page_table_entry* copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old) {
-		if (old->first == NULL) {
-			return old->first;
+void copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entry **new_pte) {
+	*new_pte = NULL;
+	struct page_table_entry *tempFirst = old_pte;
+	struct page_table_entry *tempNew = NULL;
+	while(tempFirst != NULL) {
+		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+		KASSERT(tempNew != NULL);
+		tempNew->pa = getppages(1);
+		KASSERT(tempNew->pa != 0);
+		tempNew->va = PADDR_TO_KVADDR(tempNew->pa);
+		memcpy((void *) tempNew->va, (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
+		if (*new_pte == NULL) {
+			*new_pte = tempNew;
 		}
-		struct page_table_entry *tempFirst = old->first;
-		struct page_table_entry *tempNew   = NULL;
-		struct page_table_entry *tempLast  = NULL;
-		int i=0;
-		while(tempFirst != NULL) {
-			tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-			KASSERT(tempNew != NULL);
-			tempNew->pa = getppages(1);
-			tempNew->va = PADDR_TO_KVADDR(tempNew->pa);
-
-			memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
-			if (i == 0 ) {
-				tempLast = tempNew;
-				newas->first = tempNew;
-				i++;
-			} else {
-			  tempLast->next = tempNew;
-				tempLast = tempNew;
-			}
-
-			tempFirst = tempFirst->next;
-		}
-		return newas->first;
+		tempNew = tempNew->next;
+		tempFirst = tempFirst->next;
+	}
 }
 
-/*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
+
 struct addrspace *
 as_create(void)
 {
 	struct addrspace *as;
-
 	as = kmalloc(sizeof(struct addrspace));
 	if (as == NULL) {
 		return NULL;
 	}
 
-	/*
-	 * Initialize as needed.
-	 */
 	 as->first 		 		= NULL;
+
 	 /*Region 1*/
 	 as->as_vbase1 		= (vaddr_t)0;
 	 as->as_npages1		= 0;
@@ -119,7 +105,6 @@ as_create(void)
 	 /*Heap base + size*/
 	 as->heapStart		= (vaddr_t)0;
 	 as->heapEnd			= (vaddr_t)0;
-
 	return as;
 }
 
@@ -133,12 +118,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
-	/*
-	 * Write this
-	 */
-
-	//(void)old;
-	/*Since we do on-demand paging, now how we do allocate PTE for new AS ?*/
 	KASSERT(old != NULL);
 	newas->as_vbase1   = old->as_vbase1;
 	newas->as_npages1  = old->as_npages1;
@@ -154,7 +133,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->heapStart   = old->heapStart;
 	newas->heapEnd     = old->heapEnd;
 
-	newas->first       = copyAllPageTableEntries(newas,old);
+	copyAllPageTableEntries(old->first,&(newas->first));
 	*ret = newas;
 	return 0;
 }
@@ -163,24 +142,24 @@ void
 as_destroy(struct addrspace *as)
 {
 	/*
-	 * Clean up as needed.
-	 */
-	 KASSERT(as != NULL);
-	 /*Shoot down all TLB entries associated with this process's address space*/
-	 /*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
-	 Then do a kfree on the page's vaddr to mark the page clean in coremap*/
+	* Clean up as needed.
+	*/
+	KASSERT(as != NULL);
+	/*Shoot down all TLB entries associated with this process's address space*/
+	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
+	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
+	vm_tlbshootdown_all();
+	deletePageTable(as);
+	as->as_vbase1   = (vaddr_t)0;
+	/*Region 2*/
+	as->as_vbase2   = (vaddr_t)0;
+	/*stack base + size*/
+	as->as_stackbase= (vaddr_t)0;
+	/*Heap base + size*/
+	as->heapStart	 = (vaddr_t)0;
+	as->heapEnd	= (vaddr_t)0;
 
-	 deletePageTable(as);
-	 as->as_vbase1   = (vaddr_t)0;
-	 /*Region 2*/
-	 as->as_vbase2   = (vaddr_t)0;
-	 /*stack base + size*/
-	 as->as_stackbase= (vaddr_t)0;
-	 /*Heap base + size*/
-	 as->heapStart	 = (vaddr_t)0;
-	 as->heapEnd		 = (vaddr_t)0;
-
-	 kfree(as);
+	kfree(as);
 }
 
 void
@@ -196,16 +175,8 @@ as_activate(void)
 		 */
 		return;
 	}
-
-	/*
-	 * Write this.
-	 */
-	 int spl;
-	 /*Flush all TLB entries, use the functio tlb_shootdown_all function*/
-	 spl = splhigh();
-	 vm_tlbshootdown_all();
-	 splx(spl);
-	 return;
+	vm_tlbshootdown_all();
+	return;
 }
 
 void
@@ -252,7 +223,6 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		as->as_vbase1 = vaddr;
 		as->as_npages1= npages;
 		/*Set heapStart and heapEnd */
-		return 0;
 		as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
 		as->heapEnd   = as->heapStart;
 		return 0;
@@ -296,10 +266,7 @@ as_prepare_load(struct addrspace *as)
 int
 as_complete_load(struct addrspace *as)
 {
-	/*
-	 * Write this.
-	 */
-	 /*Change the permission of each region to original values; */
+	/*Change the permission of each region to original values; */
 	KASSERT(as != NULL);
 	int oldPerm1 = ((as->perm_region1  & 7)>> 3);
 	int oldPerm2 = ((as->perm_region2  & 7)>> 3);
