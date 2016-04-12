@@ -28,23 +28,24 @@
 
 int
 sys_sbrk(int amount, int *retval){
-	(void)amount;
-	(void)retval;
 
-	vaddr_t heap_end, heap_start, stack_base;
-
-	heap_end = curproc->p_addrspace->heapEnd;
-	heap_start = curproc->p_addrspace->heapStart;
-	stack_base = curproc->p_addrspace->as_stackbase;
+	if(curproc == NULL || curproc->p_addrspace == NULL){
+		return EFAULT;
+	}
 	
-	if ((heap_end + amount) < heap_start) {
-		return EINVAL;	
-	} else if (heap_end + amount > stack_base) { // parameter checking to see if heap has not overlapped with the stack
+	vaddr_t heap_end, heap_start, stack_base;
+	heap_start = curproc->p_addrspace->heapStart;
+	heap_end   = curproc->p_addrspace->heapEnd;
+	stack_base = curproc->p_addrspace->as_stackbase;
+
+	heap_end += amount;
+	
+	if (heap_end < heap_start || heap_end > stack_base) {
 		return EINVAL;
 	}
-	// We are now clear to go ahead with the system call. But, before that return the old heap end through retval
+
 	*retval = heap_end;
-	heap_end += amount;
+	curproc->p_addrspace->heapEnd = heap_end;
 	return 0;
 }
 
