@@ -39,7 +39,7 @@
 #include <addrspace.h>
 #include <elf.h>
 #include <signal.h>
-#include <proc_syscalls.h>
+#include <kern/proc_syscalls.h>
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
 static unsigned long coremap_used_size;
@@ -180,6 +180,7 @@ free_kpages(vaddr_t addr) {
 int
 vm_fault(int faulttype, vaddr_t faultaddress) {
 	int i;
+  (void)i;
 	uint32_t ehi, elo;
 	struct addrspace *as;
 	//int spl;
@@ -244,6 +245,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       1. Do a walk through page table to see the page table entry
       2. If no entry is found based on faultaddress, then allocate a new entry
       3. Write the entry to TLB*/
+
   } else if (faulttype == VM_FAULT_READONLY) {
     /*It's a write operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
     then this is also a TLB miss with type VM_FAULT_READONLY
@@ -269,7 +271,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       spinlock_release(&tlb_spinlock);
     } else {
       kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
-      sys_exit(SIGSEGV);
+      sys__exit(SIGSEGV);
     }
   }
 
