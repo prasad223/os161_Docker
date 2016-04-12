@@ -280,7 +280,6 @@ sys_close(int fHandle,int *retval) {
 *             offset value here
 * uio_resid : The amount of data to transfer
 * uio_space : current process's address space
-* TODO      : Calling this function did not give me proper result . Investigate
 */
 void
 uio_uinit(struct iovec *iov, struct uio *uio,

@@ -143,10 +143,46 @@ Jinghao gives two options in his videos for a page table entry structure :
   Pros : Each page entry now needs only 8 bytes (4 for directory + 4 for table) and gives constant lookup time.
   Cons : More complicated.
 
+We will start our implementation with linked list and see how it goes. *Maybe if we get time, we will switch on to 2 level page table..*
 
-For now, we will use 
-1. getppages() to simulate allocating user pages
-2. free_kpages() to simulate freeing user pages by passing the kernel virtual address equivalent of the physical address.
-   This is a simpler version, does the job but not sure if this is the right way to do it.
+###### User address space
+The life cycle of as_* functions is in following order :
+
+`as_create -> as_activate -> as_define_region -> as_prepare_load -> as_complete_load`
+
+The deallocation of as_* is done with two functions :
+
+`as_deactivate -> as_destroy`
+
+We need to write the as_* family of functions to mainly support 3 options for user-address space :
+
+1. Variable number of regions :
+
+The best solution is to have a linked list for storing the region's information. For example, the structure could be
+
+`struct regionlist {
+  paddr_t paddr_base;
+  vaddr_t vaddr_base;
+  size_t nPages;
+  int permissions;
+  struct regionlist * next, * end;
+};`
+
+The information that we want to keep is to track the base address (both physical and Virtual), the actual size (number of pages it occupies), and the permission this region provides.
+
+The permission are tricky in this part, where e.g. code section needs to restrict access to any
+
+2. Variable sized stack
+3. Heap support (There is no heap support in dumbvm)
 
 
+Since we need to change the structure of addrspace to support our requirements (see above), we do the following with addrspace :
+
+1.
+
+struct addrspace {
+
+  struct regionlist * regions;
+  int permissions; //ensure that during vm_fault, there is no invalid access to the region
+
+}

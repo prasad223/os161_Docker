@@ -36,16 +36,23 @@
 
 
 #include <vm.h>
-#include <mips/tlb.h>
 #include "opt-dumbvm.h"
-
-#define SET_READ_MASK  0x4
-#define SET_WRITE_MASK 0x2
-#define SET_EXEC_MASK  0x1
-
+#include <limits.h>
 
 struct vnode;
 
+struct page_table_entry {
+    vaddr_t va;
+    paddr_t pa;
+    struct page_table_entry *next, *last;
+};
+
+// struct regionlist {
+//   paddr_t pa_start;
+//   vaddr_t va_start;
+//   int region_permissions; /*set it from as_define_region*/
+//   struct regionlist *next, *last;
+// };
 
 /*
  * Address space - data structure associated with the virtual memory
@@ -54,42 +61,33 @@ struct vnode;
  * You write this.
  */
 
-// Simplest form of page table entry, need to expand with future parts
-
-struct page_table_entry{
-  vaddr_t va;
-  paddr_t pa;
-  uint8_t permissions:3;
-  struct page_table_entry *next;
-};
-
-// To be used to identify the different regions in an address space
-// TODO: Should have an indicator to identify the regions
-
-struct region {
-  vaddr_t va;
-  paddr_t pa;
-  // size_t size; this may be required
-  size_t npages;
-  uint8_t permissions:3;
-  struct region *next;
-};
-
 struct addrspace {
 #if OPT_DUMBVM
-    vaddr_t as_vbase1;
-    paddr_t as_pbase1;
-    size_t as_npages1;
-    vaddr_t as_vbase2;
-    paddr_t as_pbase2;
-    size_t as_npages2;
-    paddr_t as_stackpbase;
+        vaddr_t as_vbase1;
+        paddr_t as_pbase1;
+        size_t as_npages1;
+        vaddr_t as_vbase2;
+        paddr_t as_pbase2;
+        size_t as_npages2;
+        paddr_t as_stackpbase;
 #else
-    struct page_table_entry * as_page_entries;
-    struct region* as_regions;
-    vaddr_t as_heap_start;
-    vaddr_t as_heap_end;
-    // We should have stack start address, this is required
+        /* Put stuff here for your VM system */
+        /*We are assuming 2 fixed regions, code and data and use the */
+        struct page_table_entry *first;
+        /*Region 1*/
+        vaddr_t as_vbase1;
+        size_t as_npages1;
+        int perm_region1;
+        /*Region 2*/
+        vaddr_t as_vbase2;
+        size_t as_npages2;
+        int perm_region2;
+        /*stack base + size*/
+        vaddr_t as_stackbase;
+        size_t nStackPages;
+        /*Heap base + size*/
+        vaddr_t heapStart;
+        vaddr_t heapEnd;
 #endif
 };
 
@@ -135,7 +133,6 @@ struct addrspace {
  */
 
 struct addrspace *as_create(void);
-void              as_copy_region(struct region* old, struct region **ret);
 int               as_copy(struct addrspace *src, struct addrspace **ret);
 void              as_activate(void);
 void              as_deactivate(void);
@@ -150,7 +147,7 @@ int               as_prepare_load(struct addrspace *as);
 int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
-
+void deletePageTable(struct addrspace *as);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

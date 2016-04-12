@@ -33,6 +33,7 @@
 #include <lib.h>
 #include <synch.h>
 #include <vm.h>
+#include <mips/tlb.h>
 
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
@@ -115,7 +116,7 @@ getppages(unsigned long npages)
        block_count = nPageTemp;
      }
    }
-   
+
    if (i == coremap_page_num) { //no free pages
      spinlock_release(&stealmem_lock);
      return 0;
@@ -136,7 +137,7 @@ getppages(unsigned long npages)
 /*kmalloc-routines*/
 vaddr_t
 alloc_kpages(unsigned npages) {
-  
+
   paddr_t pa = getppages(npages);
 	if (pa == 0) {
 		return 0;
@@ -166,7 +167,7 @@ free_kpages(vaddr_t addr) {
 
   // Remove the memory of removed pages from counter
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
-  
+
   spinlock_release(&stealmem_lock);
 }
 
@@ -174,13 +175,19 @@ int
 vm_fault(int faulttype, vaddr_t faultaddress) {
   (void)faulttype;
   (void)faultaddress;
+
+
   return 0;
 }
 
 void
 vm_tlbshootdown_all(void)
 {
-	panic("dumbvm tried to do tlb shootdown?!\n");
+	//panic("dumbvm tried to do tlb shootdown?!\n");
+  int i;
+    for (i=0; i<NUM_TLB; i++) {
+  		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+  }
 }
 
 void
@@ -188,6 +195,24 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 {
 	(void)ts;
 	panic("dumbvm tried to do tlb shootdown?!\n");
+}
+
+/*Shoot down a TLB entry based on given virtual address*/
+void
+tlb_shootdown_page_table_entry(vaddr_t va) {
+  int i;
+  uint32_t ehi, elo;
+  KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
+  spinlock_acquire(&stealmem_lock);
+  for(i=0; i < NUM_TLB; i++) {
+    tlb_read(&ehi, &elo, i);
+    if (ehi  == va) {
+      tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+      break;
+    }
+
+  }
+  spinlock_release(&stealmem_lock);
 }
 
 unsigned

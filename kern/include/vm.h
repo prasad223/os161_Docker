@@ -42,7 +42,6 @@
  paddr_t
  getppages(unsigned long npages);
 
-
  struct coremap_entry {
    struct addrspace *as;
    vaddr_t va;
@@ -82,6 +81,7 @@ unsigned int coremap_used_bytes(void);
 /* TLB shootdown handling called from interprocessor_interrupt */
 void vm_tlbshootdown_all(void);
 void vm_tlbshootdown(const struct tlbshootdown *);
+void tlb_shootdown_page_table_entry(vaddr_t va);
 
 
 #endif /* _VM_H_ */

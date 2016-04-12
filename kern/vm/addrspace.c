@@ -33,14 +33,32 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <proc.h>
+#include <mips/tlb.h>
 #include <spl.h>
-
+#include <elf.h>
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
 
+/*Iterate through all PTE entries, invalidate their TLB entries
+Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
+void
+deletePageTable(struct addrspace *as) {
+	struct page_table_entry *tempFirst = as->first;
+	struct page_table_entry *tempFree;
+	while(tempFirst != NULL	) {
+		tlb_shootdown_page_table_entry(tempFirst->va);
+
+		tempFree = tempFirst;
+		tempFirst= tempFirst->next;
+		kfree(tempFree);
+	}
+
+}
+
+/*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 struct addrspace *
 as_create(void)
 {
@@ -54,37 +72,24 @@ as_create(void)
 	/*
 	 * Initialize as needed.
 	 */
+	 as->first 		 		= NULL;
+	 /*Region 1*/
+	 as->as_vbase1 		= (vaddr_t)0;
+	 as->as_npages1		= 0;
+	 as->perm_region1 = 0;
+	 /*Region 2*/
+	 as->as_vbase2		= (vaddr_t)0;
+	 as->as_npages2		= 0;
+	 as->perm_region2 = 0;
+	 /*stack base + size*/
+	 as->as_stackbase = (vaddr_t)0;
+	 as->nStackPages	= 0;
+	 /*Heap base + size*/
+	 as->heapStart		= (vaddr_t)0;
+	 as->heapEnd			= (vaddr_t)0;
 
-	as->as_page_entries = NULL;
-	as->as_regions = NULL;
-	as->as_heap_start = (vaddr_t)0;
-	as->as_heap_end = (vaddr_t)0;
-	
 	return as;
 }
-
-// Should this be void or int
-void as_copy_region(struct region* old, struct region** ret){
-
-	struct region* old_region = old;
-	struct region* new_region = NULL;
-	*ret = NULL;
-
-	while(old_region != NULL){
-		new_region = (struct region*)kmalloc(sizeof(struct region));
-		new_region->va = old_region->va;
-		new_region->pa = old_region->pa;
-		new_region->npages = old_region->npages;
-		new_region->permissions = old_region->permissions;
-		new_region->next = NULL;
-		if(*ret == NULL){
-			*ret = new_region;
-		}
-		old_region = old_region->next;
-		new_region = new_region->next;
-	}
-}
-
 
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
@@ -96,16 +101,28 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
-	(void)old;
+	/*
+	 * Write this.
+	 */
 
-	as_copy_region(old->as_regions, &(newas->as_regions));
+	//(void)old;
+	/*Since we do on-demand paging, now how we do allocate PTE for new AS ?*/
+	KASSERT(old != NULL);
+	newas->as_vbase1 = old->as_vbase1;
+	newas->as_npages1;
+	newas->perm_region1;
+	/*Region 2*/
+	newas->as_vbase2;
+	newas->as_npages2;
+	newas->perm_region2;
+	/*stack base + size*/
+	newas->as_stackbase;
+	newas->nStackPages;
+	/*Heap base + size*/
+	newas->heapStart;
+	newas->heapEnd;
 
-	// TODO: not sure how to handle pte entries, need to discuss 
-	
-	newas->as_heap_start = old->as_heap_start;
-	newas->as_heap_end = old->as_heap_end;
-
-	*ret = newas;
+	//*ret = newas;
 	return 0;
 }
 
@@ -115,35 +132,22 @@ as_destroy(struct addrspace *as)
 	/*
 	 * Clean up as needed.
 	 */
+	 KASSERT(as != NULL);
+	 /*Shoot down all TLB entries associated with this process's address space*/
+	 /*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
+	 Then do a kfree on the page's vaddr to mark the page clean in coremap*/
 
-	KASSERT(as != NULL);
+	 deletePageTable(as);
+	 as->as_vbase1   = (vaddr_t)0;
+	 /*Region 2*/
+	 as->as_vbase2   = (vaddr_t)0;
+	 /*stack base + size*/
+	 as->as_stackbase= (vaddr_t)0;
+	 /*Heap base + size*/
+	 as->heapStart	 = (vaddr_t)0;
+	 as->heapEnd		 = (vaddr_t)0;
 
-	// Clear all regions
-	// free all pages
-	// unset heap start and end addresses
-
-	struct region* current_region = as->as_regions, *temp = NULL;
-	
-	while(current_region != NULL){
-		temp = current_region;
-		current_region = current_region->next;
-		kfree(temp);
-	}
-
-	struct page_table_entry *pte_entries = as->as_page_entries, *pte_temp = NULL; 
-
-	while(pte_entries != NULL){
-		pte_temp = pte_entries;
-		pte_entries = pte_entries->next;
-		free_kpages(PADDR_TO_KVADDR(pte_temp->pa)); // This is sort of a hack for now, we have to change later
-		kfree(pte_temp);
-	}
-
-	as->as_heap_end = (vaddr_t)0;
-	as->as_heap_start = (vaddr_t)0;
-
-	kfree(as);
-	KASSERT(as == NULL);
+	 kfree(as);
 }
 
 void
@@ -159,16 +163,16 @@ as_activate(void)
 		 */
 		return;
 	}
-	//TODO: Should we keep the above code , not there in previous versions
 
-	int spl = splhigh();
-	int i=0;
-
-	for(;i < NUM_TLB; i++){
-		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-	}
-
-	splx(spl);
+	/*
+	 * Write this.
+	 */
+	 int spl;
+	 /*Flush all TLB entries, use the functio tlb_shootdown_all function*/
+	 spl = splhigh();
+	 vm_tlbshootdown_all();
+	 splx(spl);
+	 return;
 }
 
 void
@@ -178,7 +182,9 @@ as_deactivate(void)
 	 * Write this. For many designs it won't need to actually do
 	 * anything. See proc.c for an explanation of why it (might)
 	 * be needed.
-	*/
+	 */
+	 /*TODO : Not sure what to do here
+	 Leave it as it is for now*/
 }
 
 /*
@@ -195,27 +201,41 @@ int
 as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		 int readable, int writeable, int executable)
 {
-	
-	vaddr &= PAGE_FRAME;
-	memsize += vaddr & ~(vaddr_t)PAGE_FRAME;
-	memsize = (memsize + PAGE_SIZE - 1) & PAGE_FRAME;
+	/*
+	 * Write this.
+	 */
+	 size_t npages;
+	/*Pages calculation taken from dumbvm*/
+ 	/* Align the region. First, the base... */
+ 	memsize += vaddr & ~(vaddr_t)PAGE_FRAME;
+ 	vaddr &= PAGE_FRAME;
 
-	struct region* new_region = (struct region*)kmalloc(sizeof(struct region));
+ 	/* ...and now the length. */
+ 	memsize = (memsize + PAGE_SIZE - 1) & PAGE_FRAME;
 
-	new_region->va = vaddr;
-	new_region->npages = memsize / PAGE_SIZE;
-	
-	//TODO: how to set physical address
-	new_region->pa = (paddr_t)0;
-	new_region->permissions = 0;
-	if(readable) new_region->permissions |= SET_READ_MASK;
-	if(writeable) new_region->permissions |= SET_WRITE_MASK;
-	if(executable) new_region->permissions |= SET_EXEC_MASK;
+ 	npages = memsize / PAGE_SIZE;
+	if (as->as_vbase1 == (vaddr_t)0) { //region 0 not yet allocated , do this first
+		as->perm_region1 = ((readable | writeable | executable) & 7) >> 3; //set permission in LSB 3 bits
+		as->as_vbase1 = vaddr;
+		as->as_npages1= npages;
+		/*Set heapStart and heapEnd */
+		return 0;
+		as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapEnd   = as->heapStart;
+		return 0;
+	}
+	if (as->as_vbase2 == (vaddr_t)0) { //region 1 not yet allocated, do this now
+		as->perm_region2 = ((readable | writeable | executable) & 7) >> 3; //set permission in LSB 3 bits
+		as->as_vbase2 = vaddr;
+		as->as_npages2= npages;
+		/*Set heapStart and heapEnd */
+		as->heapStart = ROUNDUP(as->as_vbase2 + (as->as_npages2 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapEnd   = as->heapStart;
+		return 0;
+	}
 
-	new_region->next = as->as_regions;
-	as->as_regions = new_region;
-	
-	return 0;
+	kprintf("More regions than supported !!! Panic");
+	return EACCES; //permission denied
 }
 
 int
@@ -224,11 +244,20 @@ as_prepare_load(struct addrspace *as)
 	/*
 	 * Write this.
 	 */
+	 /*Change the permission of each region to read-write*/
+	 KASSERT(as != NULL);
+	 //TODO: Write assert statements here
 
-	(void)as;
+	 int oldPerm1 = ((as->perm_region1 << 3 ) & 6);
+	 int oldPerm2 = ((as->perm_region2 << 3) & 6); //store old permissions in MSB 3 bits
 
+	 as->perm_region1 = (PF_R | PF_W ) >> 3; //set new permissions as R-W
+	 as->perm_region2 = as->perm_region1 ;// R-W here too
 
-	return 0;
+	 as->perm_region1 = (as->perm_region1 | oldPerm1); //save old permissions in MSB 3 bits
+	 as->perm_region2 = (as->perm_region2 | oldPerm2); //save old permissions in MSB 3 bits
+
+	 return 0;
 }
 
 int
@@ -237,8 +266,14 @@ as_complete_load(struct addrspace *as)
 	/*
 	 * Write this.
 	 */
+	 /*Change the permission of each region to original values; */
+	KASSERT(as != NULL);
+	int oldPerm1 = ((as->perm_region1  & 7)>> 3);
+	int oldPerm2 = ((as->perm_region2  & 7)>> 3);
 
-	(void)as;
+	as->perm_region1 = oldPerm1;
+	as->perm_region2 = oldPerm2;
+
 	return 0;
 }
 
@@ -249,11 +284,10 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	 * Write this.
 	 */
 
-	(void)as;
+	KASSERT(as != NULL);
 
 	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
 
 	return 0;
 }
-
