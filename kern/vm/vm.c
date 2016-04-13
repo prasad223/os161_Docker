@@ -187,7 +187,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
 	faultaddress &= PAGE_FRAME;
 
-	kprintf("faultaddress : 0x%x\n", faultaddress);
+	//kprintf("faultaddress : 0x%x\n", faultaddress);
 
   if (curproc == NULL) {
     /*
@@ -226,15 +226,15 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
   /*Check if faultaddress is within code region
   Also check permissions*/
-  int permissions;
+  uint8_t permissions;
   if ((faultaddress >= as->as_vbase1) && (faultaddress <= ( as->as_vbase1 + as->as_npages1 * PAGE_SIZE))) {
-    permissions = (as->perm_region1 & 7);
+    permissions = (as->perm_region1 & PF_W);
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
   }
   else if ((faultaddress >= as->as_vbase2) && (faultaddress <= ( as->as_vbase2 + as->as_npages2 * PAGE_SIZE))) {
-    permissions = (as->perm_region2 & 7);
+    permissions = (as->perm_region2 & PF_W);
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
@@ -245,7 +245,18 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       1. Do a walk through page table to see the page table entry
       2. If no entry is found based on faultaddress, then allocate a new entry
       3. Write the entry to TLB*/
+      struct page_table_entry* tempNew = findPageForGivenVirtualAddress(faultaddress,as);
+      if (tempNew == NULL) { //allocate a new entry
+          spinlock_acquire(&tlb_spinlock);
+          tempNew = allocatePageTableEntry(as,faultaddress);
+          ehi = faultaddress;
+          elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
+          KASSERT(tlb_probe(ehi,0) == -1);
+          tlb_random(ehi,elo);
+          spinlock_release(&tlb_spinlock);
+      } else { //right now, don't know what to do , will be used during swapping stage
 
+      }
   } else if (faulttype == VM_FAULT_READONLY) {
     /*It's a write operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
     then this is also a TLB miss with type VM_FAULT_READONLY
@@ -259,7 +270,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       tlb_write   -> to set the dirty bit to 1*/
       int index = tlb_probe(faultaddress,0);
       if (index == -1) {
-        kprintf("Could not find index of 0x%x in TLB \n",faultaddress );
+        //kprintf("Could not find index of 0x%x in TLB \n",faultaddress );
         spinlock_release(&tlb_spinlock);
         return EFAULT;
       }
