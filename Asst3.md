@@ -150,6 +150,7 @@ The life cycle of as_* functions is in following order :
 
 `as_create -> as_activate -> as_define_region -> as_prepare_load -> as_complete_load`
 
+
 The deallocation of as_* is done with two functions :
 
 `as_deactivate -> as_destroy`
@@ -163,26 +164,49 @@ The best solution is to have a linked list for storing the region's information.
 `struct regionlist {
   paddr_t paddr_base;
   vaddr_t vaddr_base;
-  size_t nPages;
+  size_t nPages; // Not sure if this is supposed to be the actual size or npages 
+  size_t size; // yet to finalise on this
   int permissions;
   struct regionlist * next, * end;
 };`
+
+1. If we keep it to number of pages per segment then there might be some internal segmentation address thats accessible , but that should not be allowed
+2. It might also mess up if there are small continuous virtual addresses with multiple regions
+3. The permissions can be maintained at region level, there is no need to replicate this info at the page level too.
+
 
 The information that we want to keep is to track the base address (both physical and Virtual), the actual size (number of pages it occupies), and the permission this region provides.
 
 The permission are tricky in this part, where e.g. code section needs to restrict access to any
 
-2. Variable sized stack
-3. Heap support (There is no heap support in dumbvm)
+1. Variable sized stack
+2. Heap support (There is no heap support in dumbvm)
 
 
 Since we need to change the structure of addrspace to support our requirements (see above), we do the following with addrspace :
 
 1.
 
-struct addrspace {
-
+`struct addrspace {
   struct regionlist * regions;
-  int permissions; //ensure that during vm_fault, there is no invalid access to the region
+  int permissions:3; //ensure that during vm_fault, there is no invalid access to the region
+  struct page_table_entry* pte_entries;
+};`
 
-}
+
+2.
+
+`struct page_table_entry{
+  paddr_t paddr_base;
+  vaddr_t vaddr_base;
+  size_t nPages; // Not sure if this is supposed to be the actual size or npages 
+  size_t size; // yet to finalise on this
+  int permissions;
+  struct regionlist * next, * end;
+};`
+
+Below is just a rough outline of what needs to be done in each of as_* functions
+
+1. as_create() -- In this function, we should instantiate an empty address space and  
+
+as_create
