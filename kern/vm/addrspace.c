@@ -81,18 +81,17 @@ deletePageTable(struct addrspace *as) {
 }
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
-struct page_table_entry*
-allocatePageTableEntry(struct addrspace *as, vaddr_t vaddr) {
-	KASSERT(as != NULL);
+void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr) {
+	//KASSERT(as != NULL);
 	struct page_table_entry *tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 	KASSERT(tempNew != NULL);
 	tempNew->pa = getppages(1);
 	KASSERT(tempNew->pa != 0);
 	tempNew->va = vaddr;
 	KASSERT(tempNew-> va < USERSTACK);
-	tempNew->next = as->first;
-	as->first = tempNew;
-	return tempNew;
+	tempNew->next = *old_pte;
+	*old_pte = tempNew;
+	return;
 }
 
 /*Takes the old address space, and copies all the PTE to the new address space
@@ -143,8 +142,8 @@ as_create(void)
 	 as->perm_region2 = 0;
 	 as->perm_region2_temp = 0;
 	 /*stack base + size*/
-	 as->as_stackbase = USERSTACK;
-	 as->nStackPages	= USERSTACK - (OWN_VM_STACKPAGES * PAGE_SIZE);
+	 as->as_stackbase = USERSTACK - (OWN_VM_STACKPAGES * PAGE_SIZE);
+	 as->nStackPages	= OWN_VM_STACKPAGES;
 	 /*Heap base + size*/
 	 as->heapStart		= (vaddr_t)0;
 	 as->heapEnd			= (vaddr_t)0;
@@ -154,6 +153,7 @@ as_create(void)
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
+	KASSERT(old != NULL);
 	struct addrspace *newas;
 
 	newas = as_create();
@@ -161,7 +161,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
-	KASSERT(old != NULL);
 	newas->as_vbase1   = old->as_vbase1;
 	newas->as_npages1  = old->as_npages1;
 	newas->perm_region1= old->perm_region1;
@@ -266,7 +265,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		as->as_vbase1 = vaddr;
 		as->as_npages1= npages;
 		/*Set heapStart and heapEnd */
-		as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		//as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapStart = (as->as_vbase1 & PAGE_FRAME ) + (as->as_npages1 * PAGE_SIZE);
 		as->heapEnd   = as->heapStart;
 		return 0;
 	}
@@ -275,7 +275,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		as->as_vbase2 = vaddr;
 		as->as_npages2= npages;
 		/*Set heapStart and heapEnd */
-		as->heapStart = ROUNDUP(as->as_vbase2 + (as->as_npages2 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		//as->heapStart = ROUNDUP(as->as_vbase2 + (as->as_npages2 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapStart = (as->as_vbase2 & PAGE_FRAME ) + (as->as_npages2 * PAGE_SIZE);
 		as->heapEnd   = as->heapStart;
 		return 0;
 	}
