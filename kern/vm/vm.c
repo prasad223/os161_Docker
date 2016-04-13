@@ -241,27 +241,86 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       return EFAULT;
     }
   }
-
-  if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
+  // if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
+  //   struct page_table_entry* tempNew;
+  //
+  //   tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+  //   KASSERT(tempNew != NULL);
+  //   tempNew->pa = getppages(1);
+  //   KASSERT(tempNew->pa != 0);
+  //   tempNew->va = faultaddress;
+  //   KASSERT(tempNew->va < USERSTACK);
+  //   tempNew->next = as->first;
+  //   as->first = tempNew;
+  //
+  //   //tempNew = as->first;
+  //   ehi = faultaddress;
+  //   elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
+  //   int spl = splhigh();
+  //   KASSERT(tlb_probe(ehi,0) == -1);
+  //   tlb_random(ehi,elo);
+  //   splx(spl);
+  //
+  // }
+  // return 0;
+  lock_acquire(coremapLock);
+  if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
+  {
       /*Things to do :
       1. Do a walk through page table to see the page table entry
       2. If no entry is found based on faultaddress, then allocate a new entry
       3. Write the entry to TLB*/
-      struct page_table_entry* tempNew = findPageForGivenVirtualAddress(faultaddress,as);
+
+      //struct page_table_entry* tempNew = findPageForGivenVirtualAddress(faultaddress,as);
+      struct page_table_entry* tempNew;
+      struct page_table_entry* tempFirst;
+      //KASSERT(as != NULL);
+    	//KASSERT((faultaddress & PAGE_FRAME) == PAGE_FRAME);
+    	if (as->first == NULL) {
+    		tempNew =  NULL;
+    	} else {
+        tempFirst = as->first;
+      	while(tempFirst != NULL) {
+      		KASSERT(tempFirst->va < USERSTACK);
+      		if (tempFirst->va == faultaddress) {
+      			tempNew = tempFirst;
+            break;
+      		}
+      		tempFirst = tempFirst->next;
+      	}
+
+      }
+
       if (tempNew == NULL) { //allocate a new entry
           //spinlock_acquire(&tlb_spinlock);
-          allocatePageTableEntry(&(as->first),faultaddress);
-          tempNew = as->first;
-          ehi = faultaddress;
-          elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
-          int spl = splhigh();
-          KASSERT(tlb_probe(ehi,0) == -1);
-          tlb_random(ehi,elo);
-          splx(spl);
+          //allocatePageTableEntry(&(as->first),faultaddress);
+          tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+        	KASSERT(tempNew != NULL);
+        	tempNew->pa = getppages(1);
+        	KASSERT(tempNew->pa != 0);
+        	tempNew->va = faultaddress;
+        	KASSERT(tempNew->va < USERSTACK);
+          tempNew->next = as->first;
+          as->first = tempNew;
+          //tempNew = as->first;
           //spinlock_release(&tlb_spinlock);
       } else { //right now, don't know what to do , will be used during swapping stage
 
+        // ehi = faultaddress;
+        // elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
+        // int spl = splhigh();
+        // KASSERT(tlb_probe(ehi,0) == -1);
+        // tlb_random(ehi,elo);
+        // splx(spl);
+
       }
+      ehi = faultaddress;
+      elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
+      int spl = splhigh();
+      KASSERT(tlb_probe(ehi,0) == -1);
+      tlb_random(ehi,elo);
+      splx(spl);
+
   } else if (faulttype == VM_FAULT_READONLY) {
     /*It's a write operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
     then this is also a TLB miss with type VM_FAULT_READONLY
@@ -286,11 +345,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
       //spinlock_release(&tlb_spinlock);
     } else {
-      kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
-      sys__exit(SIGSEGV);
+      panic("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
+      //sys__exit(SIGSEGV);
     }
   }
-
+  lock_release(coremapLock);
   // } else if (faultaddress >= as->heapStart && as->heapEnd) {
   //
   // }
