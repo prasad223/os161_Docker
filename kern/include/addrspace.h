@@ -78,11 +78,13 @@ struct addrspace {
         /*Region 1*/
         vaddr_t as_vbase1;
         size_t as_npages1;
-        int perm_region1;
+        uint8_t perm_region1:3;
+        uint8_t perm_region1_temp:3; //store temporary permissions during as_prepare_load
         /*Region 2*/
         vaddr_t as_vbase2;
         size_t as_npages2;
-        int perm_region2;
+        uint8_t perm_region2:3;
+        uint8_t perm_region2_temp:3; //store temporary permissions during as_prepare_load
         /*stack base + size*/
         vaddr_t as_stackbase;
         size_t nStackPages;
@@ -151,6 +153,7 @@ int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 void deletePageTable(struct addrspace *as);
 void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
 struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as);
+void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

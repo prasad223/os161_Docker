@@ -1,0 +1,1687 @@
+Checking for <err.h>... yes
+Checking for ntohll()...no
+Generating defs.mk.
+Configuration ASST3
+Generating files... opt-automationtest.h opt-dumbvm.h opt-net.h opt-netfs.h opt-noasserts.h opt-semfs.h opt-sfs.h opt-synchprobs.h files.mk Makefile autoconf.h autoconf.c
+Configuration in ../compile/ASST3 done
+Remember to make depend
+rm -f *.o *.a tags kernel
+rm -rf includelinks
+rm -f /home/sunandan/os161/root/.src
+rm -f ../../../.root
+--- depend ---
+bmake includelinks
+mkdir includelinks
+mkdir includelinks/kern
+ln -s ../../../arch/mips/include includelinks/mips
+ln -s ../../../../arch/mips/include/kern  includelinks/kern/mips
+ln -s ../../../arch/sys161/include includelinks/sys161
+ln -s mips includelinks/machine
+ln -s mips includelinks/kern/machine
+ln -s sys161 includelinks/platform
+rm -f .depend.* || true
+bmake realdepend
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/printf/__printf.c > .depend.__printf.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/printf/snprintf.c > .depend.snprintf.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/stdlib/atoi.c > .depend.atoi.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/bzero.c > .depend.bzero.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/memcpy.c > .depend.memcpy.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/memmove.c > .depend.memmove.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/memset.c > .depend.memset.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strcat.c > .depend.strcat.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strchr.c > .depend.strchr.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strcmp.c > .depend.strcmp.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strcpy.c > .depend.strcpy.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strlen.c > .depend.strlen.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strrchr.c > .depend.strrchr.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/string/strtok_r.c > .depend.strtok_r.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libtest161/secure.c > .depend.secure.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libtest161/sha256.c > .depend.sha256.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libtest161/test161.c > .depend.test161.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../compile/ASST3/autoconf.c > .depend.autoconf.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/generic/beep.c > .depend.beep.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/generic/console.c > .depend.console.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/generic/random.c > .depend.random.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/generic/rtclock.c > .depend.rtclock.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/beep_ltimer.c > .depend.beep_ltimer.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/con_lser.c > .depend.con_lser.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/emu_att.c > .depend.emu_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/emu.c > .depend.emu.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lamebus.c > .depend.lamebus.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lhd_att.c > .depend.lhd_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lhd.c > .depend.lhd.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lrandom_att.c > .depend.lrandom_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lrandom.c > .depend.lrandom.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lser_att.c > .depend.lser_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/lser.c > .depend.lser.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/ltimer_att.c > .depend.ltimer_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/ltimer.c > .depend.ltimer.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/ltrace_att.c > .depend.ltrace_att.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/ltrace.c > .depend.ltrace.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/random_lrandom.c > .depend.random_lrandom.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../dev/lamebus/rtclock_ltimer.c > .depend.rtclock_ltimer.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/semfs/semfs_fsops.c > .depend.semfs_fsops.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/semfs/semfs_obj.c > .depend.semfs_obj.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/semfs/semfs_vnops.c > .depend.semfs_vnops.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_balloc.c > .depend.sfs_balloc.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_bmap.c > .depend.sfs_bmap.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_dir.c > .depend.sfs_dir.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_fsops.c > .depend.sfs_fsops.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_inode.c > .depend.sfs_inode.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_io.c > .depend.sfs_io.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../fs/sfs/sfs_vnops.c > .depend.sfs_vnops.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/array.c > .depend.array.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/bitmap.c > .depend.bitmap.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/bswap.c > .depend.bswap.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/kgets.c > .depend.kgets.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/kprintf.c > .depend.kprintf.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/misc.c > .depend.misc.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/time.c > .depend.time.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../lib/uio.c > .depend.uio.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../main/main.c > .depend.main.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../main/menu.c > .depend.menu.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../proc/proc.c > .depend.proc.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../syscall/file_syscalls.c > .depend.file_syscalls.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../syscall/loadelf.c > .depend.loadelf.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../syscall/proc_syscalls.c > .depend.proc_syscalls.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../syscall/runprogram.c > .depend.runprogram.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../syscall/time_syscalls.c > .depend.time_syscalls.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/arraytest.c > .depend.arraytest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/bitmaptest.c > .depend.bitmaptest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/fstest.c > .depend.fstest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/hmacunit.c > .depend.hmacunit.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/kmalloctest.c > .depend.kmalloctest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/lib.c > .depend.lib.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/rwtest.c > .depend.rwtest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/semunit.c > .depend.semunit.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/synchtest.c > .depend.synchtest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/threadlisttest.c > .depend.threadlisttest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/threadtest.c > .depend.threadtest.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../test/tt3.c > .depend.tt3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/clock.c > .depend.clock.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/spinlock.c > .depend.spinlock.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/spl.c > .depend.spl.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/synch.c > .depend.synch.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/thread.c > .depend.thread.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../thread/threadlist.c > .depend.threadlist.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/device.c > .depend.device.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/devnull.c > .depend.devnull.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vfscwd.c > .depend.vfscwd.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vfsfail.c > .depend.vfsfail.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vfslist.c > .depend.vfslist.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vfslookup.c > .depend.vfslookup.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vfspath.c > .depend.vfspath.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vfs/vnode.c > .depend.vnode.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vm/addrspace.c > .depend.addrspace.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vm/kmalloc.c > .depend.kmalloc.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vm/vm.c > .depend.vm.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/locore/trap.c > .depend.trap.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/syscall/syscall.c > .depend.syscall.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/thread/cpu.c > .depend.cpu.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/thread/switchframe.c > .depend.switchframe.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/thread/switch.S > .depend.switch.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/thread/thread_machdep.c > .depend.thread_machdep.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/thread/threadstart.S > .depend.threadstart.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/vm/ram.c > .depend.ram.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/adddi3.c > .depend.adddi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/anddi3.c > .depend.anddi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/ashldi3.c > .depend.ashldi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/ashrdi3.c > .depend.ashrdi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/cmpdi2.c > .depend.cmpdi2.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/divdi3.c > .depend.divdi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/iordi3.c > .depend.iordi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/lshldi3.c > .depend.lshldi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/lshrdi3.c > .depend.lshrdi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/moddi3.c > .depend.moddi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/muldi3.c > .depend.muldi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/negdi2.c > .depend.negdi2.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/notdi2.c > .depend.notdi2.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/qdivrem.c > .depend.qdivrem.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/subdi3.c > .depend.subdi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/ucmpdi2.c > .depend.ucmpdi2.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/udivdi3.c > .depend.udivdi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/umoddi3.c > .depend.umoddi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/gcc-millicode/xordi3.c > .depend.xordi3.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../../common/libc/arch/mips/setjmp.S > .depend.setjmp.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../vm/copyinout.c > .depend.copyinout.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/locore/cache-mips161.S > .depend.cache-mips161.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/locore/exception-mips1.S > .depend.exception-mips1.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/mips/vm/tlb-mips161.S > .depend.tlb-mips161.S
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/sys161/dev/lamebus_machdep.c > .depend.lamebus_machdep.c
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -M ../../arch/sys161/main/start.S > .depend.start.S
+cat .depend.__printf.c .depend.snprintf.c .depend.atoi.c .depend.bzero.c .depend.memcpy.c .depend.memmove.c .depend.memset.c .depend.strcat.c .depend.strchr.c .depend.strcmp.c .depend.strcpy.c .depend.strlen.c .depend.strrchr.c .depend.strtok_r.c .depend.secure.c .depend.sha256.c .depend.test161.c .depend.autoconf.c .depend.beep.c .depend.console.c .depend.random.c .depend.rtclock.c .depend.beep_ltimer.c .depend.con_lser.c .depend.emu_att.c .depend.emu.c .depend.lamebus.c .depend.lhd_att.c .depend.lhd.c .depend.lrandom_att.c .depend.lrandom.c .depend.lser_att.c .depend.lser.c .depend.ltimer_att.c .depend.ltimer.c .depend.ltrace_att.c .depend.ltrace.c .depend.random_lrandom.c .depend.rtclock_ltimer.c .depend.semfs_fsops.c .depend.semfs_obj.c .depend.semfs_vnops.c .depend.sfs_balloc.c .depend.sfs_bmap.c .depend.sfs_dir.c .depend.sfs_fsops.c .depend.sfs_inode.c .depend.sfs_io.c .depend.sfs_vnops.c .depend.array.c .depend.bitmap.c .depend.bswap.c .depend.kgets.c .depend.kprintf.c .depend.misc.c .depend.time.c .depend.uio.c .depend.main.c .depend.menu.c .depend.proc.c .depend.file_syscalls.c .depend.loadelf.c .depend.proc_syscalls.c .depend.runprogram.c .depend.time_syscalls.c .depend.arraytest.c .depend.bitmaptest.c .depend.fstest.c .depend.hmacunit.c .depend.kmalloctest.c .depend.lib.c .depend.rwtest.c .depend.semunit.c .depend.synchtest.c .depend.threadlisttest.c .depend.threadtest.c .depend.tt3.c .depend.clock.c .depend.spinlock.c .depend.spl.c .depend.synch.c .depend.thread.c .depend.threadlist.c .depend.device.c .depend.devnull.c .depend.vfscwd.c .depend.vfsfail.c .depend.vfslist.c .depend.vfslookup.c .depend.vfspath.c .depend.vnode.c .depend.addrspace.c .depend.kmalloc.c .depend.vm.c .depend.trap.c .depend.syscall.c .depend.cpu.c .depend.switchframe.c .depend.switch.S .depend.thread_machdep.c .depend.threadstart.S .depend.ram.c .depend.adddi3.c .depend.anddi3.c .depend.ashldi3.c .depend.ashrdi3.c .depend.cmpdi2.c .depend.divdi3.c .depend.iordi3.c .depend.lshldi3.c .depend.lshrdi3.c .depend.moddi3.c .depend.muldi3.c .depend.negdi2.c .depend.notdi2.c .depend.qdivrem.c .depend.subdi3.c .depend.ucmpdi2.c .depend.udivdi3.c .depend.umoddi3.c .depend.xordi3.c .depend.setjmp.S .depend.copyinout.c .depend.cache-mips161.S .depend.exception-mips1.S .depend.tlb-mips161.S .depend.lamebus_machdep.c .depend.start.S > .depend
+--- __printf.o ---
+--- snprintf.o ---
+--- atoi.o ---
+--- bzero.o ---
+--- memcpy.o ---
+--- memmove.o ---
+--- memset.o ---
+--- strcat.o ---
+--- __printf.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/printf/__printf.c
+--- snprintf.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/printf/snprintf.c
+--- atoi.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/stdlib/atoi.c
+--- bzero.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/bzero.c
+--- memcpy.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/memcpy.c
+--- memmove.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/memmove.c
+--- memset.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/memset.c
+--- strcat.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strcat.c
+--- strchr.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strchr.c
+--- strcmp.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strcmp.c
+--- strcpy.o ---
+--- strlen.o ---
+--- strcpy.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strcpy.c
+--- strlen.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strlen.c
+--- strrchr.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strrchr.c
+--- strtok_r.o ---
+--- secure.o ---
+--- strtok_r.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libc/string/strtok_r.c
+--- sha256.o ---
+--- test161.o ---
+--- autoconf.o ---
+--- sha256.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libtest161/sha256.c
+--- secure.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libtest161/secure.c
+--- test161.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../../common/libtest161/test161.c
+--- beep.o ---
+--- console.o ---
+--- random.o ---
+--- autoconf.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../compile/ASST3/autoconf.c
+--- beep.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/generic/beep.c
+--- console.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/generic/console.c
+--- random.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/generic/random.c
+--- rtclock.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/generic/rtclock.c
+--- beep_ltimer.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/beep_ltimer.c
+--- con_lser.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/con_lser.c
+--- emu_att.o ---
+--- emu.o ---
+--- emu_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/emu_att.c
+--- lamebus.o ---
+--- emu.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/emu.c
+--- lhd_att.o ---
+--- lhd.o ---
+--- lamebus.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lamebus.c
+--- lhd_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lhd_att.c
+--- lrandom_att.o ---
+--- lrandom.o ---
+--- lhd.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lhd.c
+--- lrandom_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lrandom_att.c
+--- lser_att.o ---
+--- lrandom.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lrandom.c
+--- lser_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lser_att.c
+--- lser.o ---
+--- ltimer_att.o ---
+--- lser.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/lser.c
+--- ltimer_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/ltimer_att.c
+--- ltimer.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/ltimer.c
+--- ltrace_att.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/ltrace_att.c
+--- ltrace.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/ltrace.c
+--- random_lrandom.o ---
+--- rtclock_ltimer.o ---
+--- semfs_fsops.o ---
+--- random_lrandom.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/random_lrandom.c
+--- rtclock_ltimer.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../dev/lamebus/rtclock_ltimer.c
+--- semfs_obj.o ---
+--- semfs_fsops.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/semfs/semfs_fsops.c
+--- semfs_obj.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/semfs/semfs_obj.c
+--- semfs_vnops.o ---
+--- sfs_balloc.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_balloc.c
+--- semfs_vnops.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/semfs/semfs_vnops.c
+--- sfs_bmap.o ---
+--- sfs_dir.o ---
+--- sfs_fsops.o ---
+--- sfs_bmap.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_bmap.c
+--- sfs_dir.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_dir.c
+--- sfs_inode.o ---
+--- sfs_fsops.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_fsops.c
+--- sfs_inode.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_inode.c
+--- sfs_io.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_io.c
+--- sfs_vnops.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../fs/sfs/sfs_vnops.c
+--- array.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/array.c
+--- bitmap.o ---
+--- bswap.o ---
+--- kgets.o ---
+--- bitmap.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/bitmap.c
+--- kgets.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/kgets.c
+--- bswap.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/bswap.c
+--- kprintf.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/kprintf.c
+--- misc.o ---
+--- time.o ---
+--- misc.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/misc.c
+--- time.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/time.c
+--- uio.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../lib/uio.c
+--- main.o ---
+--- menu.o ---
+--- main.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../main/main.c
+--- proc.o ---
+--- menu.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../main/menu.c
+--- file_syscalls.o ---
+--- proc.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../proc/proc.c
+--- loadelf.o ---
+--- file_syscalls.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../syscall/file_syscalls.c
+--- proc_syscalls.o ---
+--- loadelf.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../syscall/loadelf.c
+--- runprogram.o ---
+--- proc_syscalls.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../syscall/proc_syscalls.c
+--- time_syscalls.o ---
+--- runprogram.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../syscall/runprogram.c
+--- proc.o ---
+In file included from ../../proc/proc.c:49:0:
+../../include/addrspace.h:152:26: error: no previous prototype for 'copyAllPageTableEntries' [-Werror=missing-prototypes]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+In file included from ../../proc/proc.c:50:0:
+../../include/vnode.h: In function 'copyAllPageTableEntries':
+../../include/vnode.h:34:1: error: empty declaration [-Werror]
+ struct uio;
+ ^
+../../include/vnode.h:35:1: error: empty declaration [-Werror]
+ struct stat;
+ ^
+../../include/vnode.h:51:1: error: empty declaration [-Werror]
+ struct vnode {
+ ^
+../../include/vnode.h:180:1: error: empty declaration [-Werror]
+ struct vnode_ops {
+ ^
+../../proc/proc.c:54:21: error: storage class specified for parameter 'process_list'
+ static struct proc* process_list[MAX_PROCS];
+                     ^
+../../proc/proc.c:55:21: error: storage class specified for parameter 'pid_lock'
+ static struct lock* pid_lock;
+                     ^
+--- arraytest.o ---
+--- proc.o ---
+../../proc/proc.c:68:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:119:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:210:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:219:31: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ pid_allocation_bootstrap(void){
+                               ^
+../../proc/proc.c:233:24: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ get_pid_proc(pid_t pid){
+                        ^
+../../proc/proc.c:249:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:289:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:316:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:343:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../proc/proc.c:363:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+In file included from ../../proc/proc.c:49:0:
+../../include/addrspace.h:152:26: error: old-style parameter declarations in prototyped function definition
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+../../proc/proc.c:374:1: error: expected '{' at end of input
+ }
+ ^
+In file included from ../../proc/proc.c:49:0:
+../../include/addrspace.h:152:68: error: unused parameter 'newas' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                    ^
+../../include/addrspace.h:152:93: error: unused parameter 'old' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                                             ^
+../../proc/proc.c:374:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+cc1: all warnings being treated as errors
+*** [proc.o] Error code 1
+
+bmake: stopped in /home/sunandan/os161/src/kern/compile/ASST3
+--- time_syscalls.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../syscall/time_syscalls.c
+--- arraytest.o ---
+mips-harvard-os161-gcc -g -Wall -W -Wwrite-strings -Wmissing-prototypes -Werror -std=gnu99 -mno-abicalls -fno-pic -ffixed-23 -nostdinc -I../../include -I../../dev -I. -Iincludelinks -ffreestanding -D_KERNEL -c ../../test/arraytest.c
+--- loadelf.o ---
+In file included from ../../syscall/loadelf.c:59:0:
+../../include/addrspace.h:152:26: error: no previous prototype for 'copyAllPageTableEntries' [-Werror=missing-prototypes]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+In file included from ../../syscall/loadelf.c:60:0:
+../../include/vnode.h: In function 'copyAllPageTableEntries':
+../../include/vnode.h:34:1: error: empty declaration [-Werror]
+ struct uio;
+ ^
+../../include/vnode.h:35:1: error: empty declaration [-Werror]
+ struct stat;
+ ^
+../../include/vnode.h:51:1: error: empty declaration [-Werror]
+ struct vnode {
+ ^
+../../include/vnode.h:180:1: error: empty declaration [-Werror]
+ struct vnode_ops {
+ ^
+In file included from ../../syscall/loadelf.c:61:0:
+../../include/elf.h:66:3: error: storage class specified for parameter 'Elf32_Ehdr'
+ } Elf32_Ehdr;
+   ^
+../../include/elf.h:177:3: error: storage class specified for parameter 'Elf32_Phdr'
+ } Elf32_Phdr;
+   ^
+../../include/elf.h:196:20: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'Elf_Ehdr'
+ typedef Elf32_Ehdr Elf_Ehdr;
+                    ^
+../../include/elf.h:197:20: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'Elf_Phdr'
+ typedef Elf32_Phdr Elf_Phdr;
+                    ^
+../../syscall/loadelf.c:83:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../syscall/loadelf.c:155:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+In file included from ../../syscall/loadelf.c:59:0:
+../../include/addrspace.h:152:26: error: old-style parameter declarations in prototyped function definition
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+../../syscall/loadelf.c:307:1: error: expected '{' at end of input
+ }
+ ^
+In file included from ../../syscall/loadelf.c:59:0:
+../../include/addrspace.h:152:68: error: unused parameter 'newas' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                    ^
+../../include/addrspace.h:152:93: error: unused parameter 'old' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                                             ^
+../../syscall/loadelf.c:307:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+cc1: all warnings being treated as errors
+*** [loadelf.o] Error code 1
+
+bmake: stopped in /home/sunandan/os161/src/kern/compile/ASST3
+--- runprogram.o ---
+In file included from ../../syscall/runprogram.c:42:0:
+../../include/addrspace.h:152:26: error: no previous prototype for 'copyAllPageTableEntries' [-Werror=missing-prototypes]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+In file included from ../../syscall/runprogram.c:44:0:
+../../include/vfs.h: In function 'copyAllPageTableEntries':
+../../include/vfs.h:44:1: error: empty declaration [-Werror]
+ struct uio;    /* kernel or userspace I/O buffer (uio.h) */
+ ^
+../../include/vfs.h:45:1: error: empty declaration [-Werror]
+ struct device; /* abstract structure for a device (dev.h) */
+ ^
+../../include/vfs.h:46:1: error: empty declaration [-Werror]
+ struct fs;     /* abstract structure for a filesystem (fs.h) */
+ ^
+../../include/vfs.h:47:1: error: empty declaration [-Werror]
+ struct vnode;  /* abstract structure for an on-disk file (vnode.h) */
+ ^
+In file included from ../../include/thread.h:39:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/runprogram.c:40:
+../../include/array.h:169:2: error: empty declaration [-Werror]
+  struct ARRAY {      \
+  ^
+../../include/array.h:258:30: note: in expansion of macro 'DECLARRAY_BYTYPE'
+ #define DECLARRAY(T, INLINE) DECLARRAY_BYTYPE(T##array, struct T, INLINE)
+                              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_create' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:173:23: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE struct ARRAY *ARRAY##_create(void);  \
+                       ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_destroy' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:174:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_destroy(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_init' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:175:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_init(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_cleanup' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:176:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_cleanup(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_num' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:177:18: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE unsigned ARRAY##_num(const struct ARRAY *a); \
+                  ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_get' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:178:12: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE T *ARRAY##_get(const struct ARRAY *a, unsigned index); \
+            ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_set' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:179:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_set(struct ARRAY *a, unsigned index, T *val); \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_preallocate' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:180:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_preallocate(struct ARRAY *a, unsigned num); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_setsize' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:181:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_setsize(struct ARRAY *a, unsigned num); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_add' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:182:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_add(struct ARRAY *a, T *val, unsigned *index_ret); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_remove' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:183:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_remove(struct ARRAY *a, unsigned index)
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:188:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:199:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:206:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:212:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:218:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:224:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:230:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:236:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:242:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:248:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:254:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+In file included from ../../syscall/runprogram.c:44:0:
+../../include/vfs.h:185:27: error: expected declaration specifiers before ';' token
+ DEFARRAY(vnode, VFSINLINE);
+                           ^
+In file included from ../../include/syscall.h:33:0,
+                 from ../../syscall/runprogram.c:45:
+../../include/kern/proc_syscalls.h:13:1: error: empty declaration [-Werror]
+ struct trapframe; /* from <machine/trapframe.h> */
+ ^
+In file included from ../../syscall/runprogram.c:45:0:
+../../include/syscall.h:35:1: error: empty declaration [-Werror]
+ struct trapframe; /* from <machine/trapframe.h> */
+ ^
+In file included from ../../include/lib.h:41:0,
+                 from ../../syscall/runprogram.c:39:
+../../include/cdefs.h:58:19: error: expected declaration specifiers before '__attribute__'
+ #define __DEAD    __attribute__((__noreturn__))
+                   ^
+../../include/syscall.h:51:1: note: in expansion of macro '__DEAD'
+ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
+ ^
+In file included from ../../syscall/runprogram.c:46:0:
+../../include/test.h:197:50: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ static inline void silent(const char * fmt, ...) { (void)fmt; };
+                                                  ^
+../../include/test.h:197:64: error: expected declaration specifiers before ';' token
+ static inline void silent(const char * fmt, ...) { (void)fmt; };
+                                                                ^
+../../syscall/runprogram.c:57:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+In file included from ../../syscall/runprogram.c:42:0:
+../../include/addrspace.h:152:26: error: old-style parameter declarations in prototyped function definition
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+../../syscall/runprogram.c:117:1: error: expected '{' at end of input
+ }
+ ^
+In file included from ../../syscall/runprogram.c:42:0:
+../../include/addrspace.h:152:68: error: unused parameter 'newas' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                    ^
+../../include/addrspace.h:152:93: error: unused parameter 'old' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                                             ^
+../../syscall/runprogram.c:117:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+cc1: all warnings being treated as errors
+*** [runprogram.o] Error code 1
+
+bmake: stopped in /home/sunandan/os161/src/kern/compile/ASST3
+--- proc_syscalls.o ---
+In file included from ../../syscall/proc_syscalls.c:13:0:
+../../include/addrspace.h:152:26: error: no previous prototype for 'copyAllPageTableEntries' [-Werror=missing-prototypes]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+In file included from ../../include/spinlock.h:46:0,
+                 from ../../include/proc.h:39,
+                 from ../../syscall/proc_syscalls.c:15:
+includelinks/machine/spinlock.h: In function 'copyAllPageTableEntries':
+includelinks/machine/spinlock.h:37:18: error: storage class specified for parameter 'spinlock_data_t'
+ typedef unsigned spinlock_data_t;
+                  ^
+includelinks/machine/spinlock.h:44:33: error: type defaults to 'int' in declaration of 'spinlock_data_t' [-Werror]
+ void spinlock_data_set(volatile spinlock_data_t *sd, unsigned val);
+                                 ^
+includelinks/machine/spinlock.h:44:49: error: expected ';', ',' or ')' before '*' token
+ void spinlock_data_set(volatile spinlock_data_t *sd, unsigned val);
+                                                 ^
+includelinks/machine/spinlock.h:46:17: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'spinlock_data_get'
+ spinlock_data_t spinlock_data_get(volatile spinlock_data_t *sd);
+                 ^
+includelinks/machine/spinlock.h:48:17: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'spinlock_data_testandset'
+ spinlock_data_t spinlock_data_testandset(volatile spinlock_data_t *sd);
+                 ^
+includelinks/machine/spinlock.h:59:28: error: type defaults to 'int' in declaration of 'spinlock_data_t' [-Werror]
+ spinlock_data_set(volatile spinlock_data_t *sd, unsigned val)
+                            ^
+includelinks/machine/spinlock.h:59:44: error: expected ';', ',' or ')' before '*' token
+ spinlock_data_set(volatile spinlock_data_t *sd, unsigned val)
+                                            ^
+includelinks/machine/spinlock.h:70:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'spinlock_data_get'
+ spinlock_data_get(volatile spinlock_data_t *sd)
+ ^
+includelinks/machine/spinlock.h:90:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'spinlock_data_testandset'
+ spinlock_data_testandset(volatile spinlock_data_t *sd)
+ ^
+In file included from ../../include/proc.h:39:0,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/spinlock.h:58:27: error: expected ':', ',', ';', '}' or '__attribute__' before 'splk_lock'
+  volatile spinlock_data_t splk_lock; /* Memory word where we spin. */
+                           ^
+../../include/spinlock.h:57:1: error: empty declaration [-Werror]
+ struct spinlock {
+ ^
+In file included from ../../include/proc.h:40:0,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/lib.h:93:17: error: storage class specified for parameter 'dbflags'
+ extern uint32_t dbflags;
+                 ^
+In file included from ../../include/syscall.h:34:0,
+                 from ../../include/kern/proc_syscalls.h:9,
+                 from ../../syscall/proc_syscalls.c:10:
+../../include/cdefs.h:58:19: error: expected declaration specifiers before '__attribute__'
+ #define __DEAD    __attribute__((__noreturn__))
+                   ^
+../../include/lib.h:184:1: note: in expansion of macro '__DEAD'
+ __DEAD void panic(const char *format, ...) __PF(1,2);
+ ^
+../../include/cdefs.h:58:19: error: expected declaration specifiers before '__attribute__'
+ #define __DEAD    __attribute__((__noreturn__))
+                   ^
+../../include/lib.h:185:1: note: in expansion of macro '__DEAD'
+ __DEAD void badassert(const char *expr, const char *file,
+ ^
+In file included from ../../include/thread.h:39:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/array.h:70:1: error: empty declaration [-Werror]
+ struct array {
+ ^
+../../include/array.h:79:22: error: parameter 'array_num' declared 'inline' [-Werror]
+ ARRAYINLINE unsigned array_num(const struct array *);
+                      ^
+../../include/array.h:80:19: error: parameter 'array_get' declared 'inline' [-Werror]
+ ARRAYINLINE void *array_get(const struct array *, unsigned index);
+                   ^
+../../include/array.h:81:18: error: parameter 'array_set' declared 'inline' [-Werror]
+ ARRAYINLINE void array_set(const struct array *, unsigned index, void *val);
+                  ^
+../../include/array.h:84:17: error: parameter 'array_add' declared 'inline' [-Werror]
+ ARRAYINLINE int array_add(struct array *, void *val, unsigned *index_ret);
+                 ^
+../../include/array.h:93:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../include/array.h:99:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../include/array.h:106:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../include/array.h:113:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ {
+ ^
+../../include/array.h:169:2: error: empty declaration [-Werror]
+  struct ARRAY {      \
+  ^
+../../include/array.h:265:1: note: in expansion of macro 'DECLARRAY_BYTYPE'
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:265:18: error: parameter 'stringarray_create' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:173:23: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE struct ARRAY *ARRAY##_create(void);  \
+                       ^
+../../include/array.h:265:18: error: parameter 'stringarray_destroy' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:174:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_destroy(struct ARRAY *a);  \
+              ^
+../../include/array.h:265:18: error: parameter 'stringarray_init' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:175:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_init(struct ARRAY *a);  \
+              ^
+../../include/array.h:265:18: error: parameter 'stringarray_cleanup' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:176:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_cleanup(struct ARRAY *a);  \
+              ^
+../../include/array.h:265:18: error: parameter 'stringarray_num' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:177:18: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE unsigned ARRAY##_num(const struct ARRAY *a); \
+                  ^
+../../include/array.h:265:18: error: parameter 'stringarray_get' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:178:12: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE T *ARRAY##_get(const struct ARRAY *a, unsigned index); \
+            ^
+../../include/array.h:265:18: error: parameter 'stringarray_set' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:179:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_set(struct ARRAY *a, unsigned index, T *val); \
+              ^
+../../include/array.h:265:18: error: parameter 'stringarray_preallocate' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:180:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_preallocate(struct ARRAY *a, unsigned num); \
+             ^
+../../include/array.h:265:18: error: parameter 'stringarray_setsize' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:181:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_setsize(struct ARRAY *a, unsigned num); \
+             ^
+../../include/array.h:265:18: error: parameter 'stringarray_add' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:182:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_add(struct ARRAY *a, T *val, unsigned *index_ret); \
+             ^
+../../include/array.h:265:18: error: parameter 'stringarray_remove' declared 'inline' [-Werror]
+ DECLARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                  ^
+../../include/array.h:183:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_remove(struct ARRAY *a, unsigned index)
+              ^
+../../include/array.h:188:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:199:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:206:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:212:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:218:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:224:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:230:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:236:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:242:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:248:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:254:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:266:1: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+ ^
+../../include/array.h:266:48: error: expected declaration specifiers before ';' token
+ DEFARRAY_BYTYPE(stringarray, char, ARRAYINLINE);
+                                                ^
+In file included from ../../include/thread.h:41:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/threadlist.h:34:1: error: empty declaration [-Werror]
+ struct thread; /* from <thread.h> */
+ ^
+../../include/threadlist.h:57:1: error: empty declaration [-Werror]
+ struct threadlistnode {
+ ^
+../../include/threadlist.h:63:1: error: empty declaration [-Werror]
+ struct threadlist {
+ ^
+In file included from ../../include/uio.h:58:0,
+                 from ../../include/kern/file_syscalls.h:9,
+                 from ../../include/thread.h:44,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/kern/iovec.h:38:1: error: empty declaration [-Werror]
+ struct iovec {
+ ^
+In file included from ../../include/kern/file_syscalls.h:9:0,
+                 from ../../include/thread.h:44,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/uio.h:61:1: error: empty declaration [-Werror]
+ enum uio_rw {
+ ^
+../../include/uio.h:67:1: error: empty declaration [-Werror]
+ enum uio_seg {
+ ^
+../../include/uio.h:73:1: error: empty declaration [-Werror]
+ struct uio {
+ ^
+In file included from ../../include/thread.h:44:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/kern/file_syscalls.h:11:1: error: empty declaration [-Werror]
+ struct file_descriptor {
+ ^
+In file included from ../../include/current.h:78:0,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/thread.h:46:1: error: empty declaration [-Werror]
+ struct cpu;
+ ^
+In file included from ../../include/setjmp.h:38:0,
+                 from includelinks/machine/thread.h:38,
+                 from ../../include/thread.h:49,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+includelinks/kern/machine/setjmp.h:44:18: error: storage class specified for parameter 'jmp_buf'
+ typedef uint32_t jmp_buf[__JB_REGS];
+                  ^
+In file included from includelinks/machine/thread.h:38:0,
+                 from ../../include/thread.h:49,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/setjmp.h:40:12: error: expected declaration specifiers or '...' before 'jmp_buf'
+ int setjmp(jmp_buf jb);
+            ^
+../../include/setjmp.h:41:14: error: expected declaration specifiers or '...' before 'jmp_buf'
+ void longjmp(jmp_buf jb, int retval);
+              ^
+In file included from ../../include/thread.h:49:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+includelinks/machine/thread.h:40:16: error: storage class specified for parameter 'badfaultfunc_t'
+ typedef void (*badfaultfunc_t)(void);
+                ^
+includelinks/machine/thread.h:43:2: error: expected specifier-qualifier-list before 'badfaultfunc_t'
+  badfaultfunc_t tm_badfaultfunc; /* fault hook used by copyin/out */
+  ^
+includelinks/machine/thread.h:42:1: error: empty declaration [-Werror]
+ struct thread_machdep {
+ ^
+In file included from ../../include/current.h:78:0,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/thread.h:69:3: error: storage class specified for parameter 'threadstate_t'
+ } threadstate_t;
+   ^
+../../include/thread.h:88:2: error: expected specifier-qualifier-list before 'threadstate_t'
+  threadstate_t t_state;  /* State this thread is in */
+  ^
+../../include/thread.h:72:1: error: empty declaration [-Werror]
+ struct thread {
+ ^
+In file included from ../../include/thread.h:39:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/array.h:169:2: error: empty declaration [-Werror]
+  struct ARRAY {      \
+  ^
+../../include/array.h:258:30: note: in expansion of macro 'DECLARRAY_BYTYPE'
+ #define DECLARRAY(T, INLINE) DECLARRAY_BYTYPE(T##array, struct T, INLINE)
+                              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_create' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:173:23: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE struct ARRAY *ARRAY##_create(void);  \
+                       ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_destroy' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:174:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_destroy(struct ARRAY *a);  \
+              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_init' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:175:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_init(struct ARRAY *a);  \
+              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_cleanup' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:176:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_cleanup(struct ARRAY *a);  \
+              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_num' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:177:18: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE unsigned ARRAY##_num(const struct ARRAY *a); \
+                  ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_get' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:178:12: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE T *ARRAY##_get(const struct ARRAY *a, unsigned index); \
+            ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_set' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:179:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_set(struct ARRAY *a, unsigned index, T *val); \
+              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_preallocate' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:180:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_preallocate(struct ARRAY *a, unsigned num); \
+             ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_setsize' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:181:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_setsize(struct ARRAY *a, unsigned num); \
+             ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_add' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:182:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_add(struct ARRAY *a, T *val, unsigned *index_ret); \
+             ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/thread.h:132:11: error: parameter 'threadarray_remove' declared 'inline' [-Werror]
+ DECLARRAY(thread, THREADINLINE);
+           ^
+../../include/array.h:183:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_remove(struct ARRAY *a, unsigned index)
+              ^
+../../include/thread.h:132:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:188:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:199:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:206:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:212:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:218:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:224:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:230:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:236:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:242:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:248:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+../../include/array.h:254:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/thread.h:133:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(thread, THREADINLINE);
+ ^
+In file included from ../../include/current.h:78:0,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/thread.h:133:31: error: expected declaration specifiers before ';' token
+ DEFARRAY(thread, THREADINLINE);
+                               ^
+../../include/thread.h:159:17: error: 'struct proc' declared inside parameter list [-Werror]
+                 void *data1, unsigned long data2);
+                 ^
+../../include/thread.h:159:17: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
+In file included from ../../include/syscall.h:34:0,
+                 from ../../include/kern/proc_syscalls.h:9,
+                 from ../../syscall/proc_syscalls.c:10:
+../../include/cdefs.h:58:19: error: expected declaration specifiers before '__attribute__'
+ #define __DEAD    __attribute__((__noreturn__))
+                   ^
+../../include/thread.h:165:1: note: in expansion of macro '__DEAD'
+ __DEAD void thread_exit(void);
+ ^
+In file included from ../../include/current.h:78:0,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/thread.h:185:17: error: storage class specified for parameter 'thread_count'
+ extern unsigned thread_count;
+                 ^
+In file included from ../../include/synch.h:40:0,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/kern/time.h:43:1: error: empty declaration [-Werror]
+ struct timeval {
+ ^
+../../include/kern/time.h:48:1: error: empty declaration [-Werror]
+ struct timespec {
+ ^
+../../include/kern/time.h:64:1: error: empty declaration [-Werror]
+ struct itimerval {
+ ^
+In file included from ../../include/proc.h:41:0,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/synch.h:47:1: error: empty declaration [-Werror]
+ struct semaphore {
+ ^
+../../include/synch.h:76:1: error: empty declaration [-Werror]
+ struct lock {
+ ^
+../../include/synch.h:125:1: error: empty declaration [-Werror]
+ struct cv {
+ ^
+../../include/synch.h:167:1: error: empty declaration [-Werror]
+ struct rwlock {
+ ^
+In file included from ../../syscall/proc_syscalls.c:15:0:
+../../include/proc.h:43:1: error: empty declaration [-Werror]
+ struct addrspace;
+ ^
+../../include/proc.h:44:1: error: empty declaration [-Werror]
+ struct thread;
+ ^
+../../include/proc.h:45:1: error: empty declaration [-Werror]
+ struct vnode;
+ ^
+../../include/proc.h:64:1: error: empty declaration [-Werror]
+ struct proc {
+ ^
+../../include/proc.h:84:21: error: storage class specified for parameter 'kproc'
+ extern struct proc *kproc;
+                     ^
+In file included from ../../syscall/proc_syscalls.c:19:0:
+includelinks/mips/trapframe.h:40:1: error: empty declaration [-Werror]
+ struct trapframe {
+ ^
+In file included from ../../include/syscall.h:34:0,
+                 from ../../include/kern/proc_syscalls.h:9,
+                 from ../../syscall/proc_syscalls.c:10:
+../../include/cdefs.h:58:19: error: expected declaration specifiers before '__attribute__'
+ #define __DEAD    __attribute__((__noreturn__))
+                   ^
+includelinks/mips/trapframe.h:101:1: note: in expansion of macro '__DEAD'
+ __DEAD void mips_usermode(struct trapframe *tf);
+ ^
+In file included from ../../syscall/proc_syscalls.c:19:0:
+includelinks/mips/trapframe.h:106:16: error: storage class specified for parameter 'cpustacks'
+ extern vaddr_t cpustacks[];
+                ^
+includelinks/mips/trapframe.h:107:16: error: storage class specified for parameter 'cputhreads'
+ extern vaddr_t cputhreads[];
+                ^
+In file included from ../../syscall/proc_syscalls.c:20:0:
+../../include/vfs.h:44:1: error: empty declaration [-Werror]
+ struct uio;    /* kernel or userspace I/O buffer (uio.h) */
+ ^
+../../include/vfs.h:45:1: error: empty declaration [-Werror]
+ struct device; /* abstract structure for a device (dev.h) */
+ ^
+../../include/vfs.h:46:1: error: empty declaration [-Werror]
+ struct fs;     /* abstract structure for a filesystem (fs.h) */
+ ^
+../../include/vfs.h:47:1: error: empty declaration [-Werror]
+ struct vnode;  /* abstract structure for an on-disk file (vnode.h) */
+ ^
+In file included from ../../include/thread.h:39:0,
+                 from ../../include/current.h:78,
+                 from ../../include/synch.h:39,
+                 from ../../include/proc.h:41,
+                 from ../../syscall/proc_syscalls.c:15:
+../../include/array.h:169:2: error: empty declaration [-Werror]
+  struct ARRAY {      \
+  ^
+../../include/array.h:258:30: note: in expansion of macro 'DECLARRAY_BYTYPE'
+ #define DECLARRAY(T, INLINE) DECLARRAY_BYTYPE(T##array, struct T, INLINE)
+                              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_create' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:173:23: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE struct ARRAY *ARRAY##_create(void);  \
+                       ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_destroy' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:174:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_destroy(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_init' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:175:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_init(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_cleanup' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:176:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_cleanup(struct ARRAY *a);  \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_num' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:177:18: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE unsigned ARRAY##_num(const struct ARRAY *a); \
+                  ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_get' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:178:12: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE T *ARRAY##_get(const struct ARRAY *a, unsigned index); \
+            ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_set' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:179:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_set(struct ARRAY *a, unsigned index, T *val); \
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_preallocate' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:180:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_preallocate(struct ARRAY *a, unsigned num); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_setsize' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:181:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_setsize(struct ARRAY *a, unsigned num); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_add' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:182:13: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE int ARRAY##_add(struct ARRAY *a, T *val, unsigned *index_ret); \
+             ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/vfs.h:184:11: error: parameter 'vnodearray_remove' declared 'inline' [-Werror]
+ DECLARRAY(vnode, VFSINLINE);
+           ^
+../../include/array.h:183:14: note: in definition of macro 'DECLARRAY_BYTYPE'
+  INLINE void ARRAY##_remove(struct ARRAY *a, unsigned index)
+              ^
+../../include/vfs.h:184:1: note: in expansion of macro 'DECLARRAY'
+ DECLARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:188:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:199:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:206:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:212:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:218:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:224:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:230:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:236:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:242:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:248:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+../../include/array.h:254:2: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+  {       \
+  ^
+../../include/array.h:259:29: note: in expansion of macro 'DEFARRAY_BYTYPE'
+ #define DEFARRAY(T, INLINE) DEFARRAY_BYTYPE(T##array, struct T, INLINE)
+                             ^
+../../include/vfs.h:185:1: note: in expansion of macro 'DEFARRAY'
+ DEFARRAY(vnode, VFSINLINE);
+ ^
+In file included from ../../syscall/proc_syscalls.c:20:0:
+../../include/vfs.h:185:27: error: expected declaration specifiers before ';' token
+ DEFARRAY(vnode, VFSINLINE);
+                           ^
+In file included from ../../syscall/proc_syscalls.c:21:0:
+../../include/vnode.h:34:1: error: empty declaration [-Werror]
+ struct uio;
+ ^
+../../include/vnode.h:35:1: error: empty declaration [-Werror]
+ struct stat;
+ ^
+../../include/vnode.h:51:1: error: empty declaration [-Werror]
+ struct vnode {
+ ^
+../../include/vnode.h:180:1: error: empty declaration [-Werror]
+ struct vnode_ops {
+ ^
+In file included from ../../syscall/proc_syscalls.c:22:0:
+../../include/kern/fcntl.h:91:1: error: empty declaration [-Werror]
+ struct flock {
+ ^
+../../syscall/proc_syscalls.c:30:24: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ sys_getpid(int *retval){
+                        ^
+../../syscall/proc_syscalls.c:37:51: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ sys_fork(struct trapframe* parent_tf, int *retval){
+                                                   ^
+../../syscall/proc_syscalls.c:68:56: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ void child_fork_entry(void *data1, unsigned long data2){
+                                                        ^
+../../syscall/proc_syscalls.c:86:25: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ sys__exit(int _exitcode){
+                         ^
+../../syscall/proc_syscalls.c:95:62: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ sys_waitpid(pid_t pid, int* status, int options, int *retval){
+                                                              ^
+../../syscall/proc_syscalls.c:146:45: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ sys_execv(const char *program, char **uargs){
+                                             ^
+In file included from ../../syscall/proc_syscalls.c:13:0:
+../../include/addrspace.h:152:26: error: old-style parameter declarations in prototyped function definition
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                          ^
+../../syscall/proc_syscalls.c:311:1: error: expected '{' at end of input
+ }
+ ^
+In file included from ../../syscall/proc_syscalls.c:13:0:
+../../include/addrspace.h:152:68: error: unused parameter 'newas' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                    ^
+../../include/addrspace.h:152:93: error: unused parameter 'old' [-Werror=unused-parameter]
+ struct page_table_entry *copyAllPageTableEntries(struct addrspace *newas, struct addrspace *old)
+                                                                                             ^
+../../syscall/proc_syscalls.c:311:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+cc1: all warnings being treated as errors
+*** [proc_syscalls.o] Error code 1
+
+bmake: stopped in /home/sunandan/os161/src/kern/compile/ASST3
+
+bmake: stopped in /home/sunandan/os161/src/kern/compile/ASST3
+--- install ---
+[ -d /home/sunandan/os161/root ] || mkdir /home/sunandan/os161/root
+cp kernel /home/sunandan/os161/root/kernel-ASST3
+cp: cannot stat ‘kernel’: No such file or directory
+*** [install] Error code 1 (ignored)

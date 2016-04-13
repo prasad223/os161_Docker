@@ -36,24 +36,32 @@
 #include <mips/tlb.h>
 #include <spl.h>
 #include <elf.h>
+#include <mips/vm.h>
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
+#define OWN_VM_STACKPAGES 64
+
 struct
 page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as) {
 	KASSERT(as != NULL);
-	KASSERT(as->first != NULL);
+	KASSERT((faultaddress & PAGE_FRAME) == PAGE_FRAME);
+	if (as->first == NULL) {
+		return NULL;
+	}
 	struct page_table_entry *tempFirst = as->first;
 	while(tempFirst != NULL) {
+		KASSERT(tempFirst->va < USERSTACK);
 		if (tempFirst->va == faultaddress) {
-			break;
+			return tempFirst;
 		}
 		tempFirst = tempFirst->next;
 	}
-	return tempFirst;
+	return NULL;
 }
+
 /*Iterate through all PTE entries, invalidate their TLB entries
 Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
 void
@@ -70,23 +78,41 @@ deletePageTable(struct addrspace *as) {
 	}
 }
 
+/*Allocates a page table entry and add it to the page table of address space "as"*/
+void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr) {
+	//KASSERT(as != NULL);
+	struct page_table_entry *tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+	KASSERT(tempNew != NULL);
+	tempNew->pa = getppages(1);
+	KASSERT(tempNew->pa != 0);
+	tempNew->va = vaddr;
+	KASSERT(tempNew-> va < USERSTACK);
+	tempNew->next = *old_pte;
+	*old_pte = tempNew;
+	return;
+}
+
 /*Takes the old address space, and copies all the PTE to the new address space
 Returns the first entry of PTE for new address space*/
-void copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entry **new_pte) {
+void
+copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entry **new_pte) {
 	*new_pte = NULL;
 	struct page_table_entry *tempFirst = old_pte;
 	struct page_table_entry *tempNew = NULL;
 	while(tempFirst != NULL) {
 		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(tempNew != NULL);
+		tempNew->va = tempFirst->va;
 		tempNew->pa = getppages(1);
 		KASSERT(tempNew->pa != 0);
-		tempNew->va = PADDR_TO_KVADDR(tempNew->pa);
-		memcpy((void *) tempNew->va, (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
+
+		memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
 		if (*new_pte == NULL) {
 			*new_pte = tempNew;
+		} else {
+			tempNew->next  = *new_pte;
+			*new_pte 			 = tempNew;
 		}
-		tempNew = tempNew->next;
 		tempFirst = tempFirst->next;
 	}
 }
@@ -107,13 +133,15 @@ as_create(void)
 	 as->as_vbase1 		= (vaddr_t)0;
 	 as->as_npages1		= 0;
 	 as->perm_region1 = 0;
+	 as->perm_region1_temp = 0;
 	 /*Region 2*/
 	 as->as_vbase2		= (vaddr_t)0;
 	 as->as_npages2		= 0;
 	 as->perm_region2 = 0;
+	 as->perm_region2_temp = 0;
 	 /*stack base + size*/
-	 as->as_stackbase = (vaddr_t)0;
-	 as->nStackPages	= 0;
+	 as->as_stackbase = USERSTACK - (OWN_VM_STACKPAGES * PAGE_SIZE);
+	 as->nStackPages	= OWN_VM_STACKPAGES;
 	 /*Heap base + size*/
 	 as->heapStart		= (vaddr_t)0;
 	 as->heapEnd			= (vaddr_t)0;
@@ -123,6 +151,7 @@ as_create(void)
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
+	KASSERT(old != NULL);
 	struct addrspace *newas;
 
 	newas = as_create();
@@ -130,7 +159,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
-	KASSERT(old != NULL);
 	newas->as_vbase1   = old->as_vbase1;
 	newas->as_npages1  = old->as_npages1;
 	newas->perm_region1= old->perm_region1;
@@ -231,20 +259,22 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
  	npages = memsize / PAGE_SIZE;
 	if (as->as_vbase1 == (vaddr_t)0) { //region 0 not yet allocated , do this first
-		as->perm_region1 = ((readable | writeable | executable) & 7) >> 3; //set permission in LSB 3 bits
+		as->perm_region1 = ((readable | writeable | executable) & 7); //set permission in LSB 3 bits
 		as->as_vbase1 = vaddr;
 		as->as_npages1= npages;
 		/*Set heapStart and heapEnd */
-		as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		//as->heapStart = ROUNDUP(as->as_vbase1 + (as->as_npages1 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapStart = (as->as_vbase1 & PAGE_FRAME ) + (as->as_npages1 * PAGE_SIZE);
 		as->heapEnd   = as->heapStart;
 		return 0;
 	}
 	if (as->as_vbase2 == (vaddr_t)0) { //region 1 not yet allocated, do this now
-		as->perm_region2 = ((readable | writeable | executable) & 7) >> 3; //set permission in LSB 3 bits
+		as->perm_region2 = ((readable | writeable | executable) & 7); //set permission in LSB 3 bits
 		as->as_vbase2 = vaddr;
 		as->as_npages2= npages;
 		/*Set heapStart and heapEnd */
-		as->heapStart = ROUNDUP(as->as_vbase2 + (as->as_npages2 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		//as->heapStart = ROUNDUP(as->as_vbase2 + (as->as_npages2 * PAGE_SIZE),PAGE_SIZE); //TODO : Discuss this
+		as->heapStart = (as->as_vbase2 & PAGE_FRAME ) + (as->as_npages2 * PAGE_SIZE);
 		as->heapEnd   = as->heapStart;
 		return 0;
 	}
@@ -262,15 +292,15 @@ as_prepare_load(struct addrspace *as)
 	 /*Change the permission of each region to read-write*/
 	 KASSERT(as != NULL);
 	 //TODO: Write assert statements here
+	 as->perm_region1_temp = as->perm_region1;
+	 as->perm_region2_temp = as->perm_region2;
+	//  int oldPerm1 = ((as->perm_region1 << 3 ) & 6);
+	//  int oldPerm2 = ((as->perm_region2 << 3) & 6); //store old permissions in MSB 3 bits
 
-	 int oldPerm1 = ((as->perm_region1 << 3 ) & 6);
-	 int oldPerm2 = ((as->perm_region2 << 3) & 6); //store old permissions in MSB 3 bits
-
-	 as->perm_region1 = (PF_R | PF_W ) >> 3; //set new permissions as R-W
+	 as->perm_region1 = (PF_R | PF_W ); //set new permissions as R-W
 	 as->perm_region2 = as->perm_region1 ;// R-W here too
-
-	 as->perm_region1 = (as->perm_region1 | oldPerm1); //save old permissions in MSB 3 bits
-	 as->perm_region2 = (as->perm_region2 | oldPerm2); //save old permissions in MSB 3 bits
+	//  as->perm_region1 = (as->perm_region1 | oldPerm1); //save old permissions in MSB 3 bits
+	//  as->perm_region2 = (as->perm_region2 | oldPerm2); //save old permissions in MSB 3 bits
 
 	 return 0;
 }
@@ -280,11 +310,12 @@ as_complete_load(struct addrspace *as)
 {
 	/*Change the permission of each region to original values; */
 	KASSERT(as != NULL);
-	int oldPerm1 = ((as->perm_region1  & 7)>> 3);
-	int oldPerm2 = ((as->perm_region2  & 7)>> 3);
-
-	as->perm_region1 = oldPerm1;
-	as->perm_region2 = oldPerm2;
+	//int oldPerm1 = ((as->perm_region1  & 7)>> 3);
+	//int oldPerm2 = ((as->perm_region2  & 7)>> 3);
+	as->perm_region1 = as->perm_region1_temp;
+	as->perm_region2 = as->perm_region2_temp;
+	// as->perm_region1 = oldPerm1;
+	// as->perm_region2 = oldPerm2;
 
 	return 0;
 }

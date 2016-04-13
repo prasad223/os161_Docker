@@ -32,19 +32,19 @@ sys_sbrk(int amount, int *retval){
 	if(curproc == NULL || curproc->p_addrspace == NULL){
 		return EFAULT;
 	}
-	
+
 	vaddr_t heap_end, heap_start, stack_base;
 	heap_start = curproc->p_addrspace->heapStart;
 	heap_end   = curproc->p_addrspace->heapEnd;
 	stack_base = curproc->p_addrspace->as_stackbase;
 
 	heap_end += amount;
-	
+
 	if (heap_end < heap_start || heap_end > stack_base) {
 		return EINVAL;
 	}
 
-	*retval = heap_end;
+	*retval = curproc->p_addrspace->heapEnd;
 	curproc->p_addrspace->heapEnd = heap_end;
 	return 0;
 }
@@ -61,7 +61,7 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
-	
+
 	error = as_copy(curproc->p_addrspace, &(child_proc->p_addrspace));
 	if(error){
 		*retval = -1;
@@ -73,7 +73,7 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		return ENOMEM;
 	}
 	*child_trapframe = *parent_tf;
-	
+
 	error = thread_fork("Child proc", child_proc, child_fork_entry,
 		(struct trapframe *)child_trapframe,(unsigned long)child_proc->p_addrspace);
 
@@ -167,14 +167,14 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 
 int
 sys_execv(const char *program, char **uargs){
- 
+
  	int error = 0;
-	
+
 	if (program == NULL || uargs == NULL) {
-		// is the explicit address check required , won't copy in & out take care of it , 
+		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;
 	}
-	
+
 	char *program_name = (char *)kmalloc(PATH_MAX);
 	size_t prog_name_size;
 
@@ -187,9 +187,9 @@ sys_execv(const char *program, char **uargs){
  	if (prog_name_size == 1) { // see if you should increase this to 1
 		return EINVAL;
 	}
-	
+
 	kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
-	
+
 	char **args = (char **) kmalloc(sizeof(char **));
 
 	if(copyin((const_userptr_t) uargs, args, sizeof(char **))){
@@ -203,7 +203,7 @@ sys_execv(const char *program, char **uargs){
 	size_t size=0;
 	while (uargs[i] != NULL ) {
 		args[i] = (char *) kmalloc(sizeof(char) * PATH_MAX);
-		
+
 		error = copyinstr((const_userptr_t) uargs[i], args[i], PATH_MAX,
 				&size);
 		if (error) {
@@ -219,7 +219,7 @@ sys_execv(const char *program, char **uargs){
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
-	
+
 	error = vfs_open(program_name, O_RDONLY, 0, &v_node);
 	if (error) {
 		kprintf("error in vfs open\n");
@@ -271,7 +271,7 @@ sys_execv(const char *program, char **uargs){
 	while (args[j] != NULL ) {
 		char * arg;
 		arg_length = strlen(args[j])+1; // 1 for NULL
-		
+
 		int pad_length = arg_length;
 		if (arg_length % 4 != 0) {
 			arg_length = arg_length + (4 - arg_length % 4);
@@ -321,7 +321,7 @@ sys_execv(const char *program, char **uargs){
 	}
 	kfree(program_name);
 	kfree(args);
-	
+
 	kprintf("passing following args: argc: %d, stack:%u  entry:%u\n",j,stack_ptr, entry_point);
 	enter_new_process(j /*argc*/,
 			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
@@ -330,7 +330,5 @@ sys_execv(const char *program, char **uargs){
 	//enter_new_process should not return.
 	panic("execv- problem in enter_new_process\n");
 	return EINVAL;
- 
+
 }
-
-
