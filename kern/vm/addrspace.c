@@ -47,23 +47,21 @@
 struct
 page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as) {
 	KASSERT(as != NULL);
+	KASSERT((faultaddress & PAGE_FRAME) == PAGE_FRAME);
 	if (as->first == NULL) {
 		return NULL;
 	}
-	//KASSERT(as->first != NULL);
-	bool bEntryFound = false;
 	struct page_table_entry *tempFirst = as->first;
 	while(tempFirst != NULL) {
+		KASSERT(tempFirst->va < USERSTACK);
 		if (tempFirst->va == faultaddress) {
-			bEntryFound = true;
-			break;
+			return tempFirst;
 		}
 		tempFirst = tempFirst->next;
 	}
-	if (!bEntryFound)
-		tempFirst = NULL;
-	return tempFirst;
+	return NULL;
 }
+
 /*Iterate through all PTE entries, invalidate their TLB entries
 Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
 void
