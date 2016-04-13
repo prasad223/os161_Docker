@@ -51,6 +51,7 @@
    paddr_t phyAddr;
  };
 
+struct lock* coremapLock;
 
 #include <machine/vm.h>
 
