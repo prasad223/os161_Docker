@@ -32,15 +32,28 @@ sys_sbrk(int amount, int *retval){
 	if(curproc == NULL || curproc->p_addrspace == NULL){
 		return EFAULT;
 	}
-
 	vaddr_t heap_end, heap_start, stack_base;
+
 	heap_start = curproc->p_addrspace->heapStart;
 	heap_end   = curproc->p_addrspace->heapEnd;
 	stack_base = curproc->p_addrspace->as_stackbase;
+	// kprintf("\namount passed :%d",amount);
+	// kprintf("\nBEFORE .heap_start %p heapend %p stackbase %p",(void *)heap_start,(void *)heap_end, (void *)stack_base);
+	//heap_end += amount;
 
-	heap_end += amount;
+	long long heap_end_temp = (long long)heap_end + amount;
 
-	if (heap_end < heap_start || heap_end > stack_base) {
+	// kprintf("\nAFTER . heap_start %p heapend %lld stackbase %p",(void *)heap_start,heap_end_temp, (void *)stack_base);
+	if (heap_end_temp > (long long)stack_base) {
+		// kprintf("\nENOMEM failure");
+		return ENOMEM;
+	}
+	if (heap_end_temp < (long long)heap_start) {
+		// kprintf("\nEINVAL failure");
+		return EINVAL;
+	}
+	heap_end= heap_end + amount;
+	if ((heap_end % PAGE_SIZE) != 0) {
 		return EINVAL;
 	}
 
