@@ -68,7 +68,6 @@ void
 deletePageTable(struct addrspace *as) {
 	KASSERT(as != NULL);
 	KASSERT(as->first != NULL);
-	vaddr_t va;
 	struct page_table_entry *tempFirst = as->first;
 	struct page_table_entry *tempFree;
 
@@ -80,7 +79,6 @@ deletePageTable(struct addrspace *as) {
 		kprintf("deletePageTable: tempFree: va: %p, pa: %p\n", (void *)tempFree->va, (void *)tempFree->pa);
 		KASSERT(tempFree->va < USERSTACK);
 		free_kpages(PADDR_TO_KVADDR(tempFree->pa));
-
 		tempFirst= tempFirst->next;
 		tempFree = NULL;
 	}
