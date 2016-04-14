@@ -252,101 +252,29 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       return EFAULT;
     }
   }
-  // if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
-  //   struct page_table_entry* tempNew;
-  //
-  //   tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-  //   KASSERT(tempNew != NULL);
-  //   tempNew->pa = getppages(1);
-  //   KASSERT(tempNew->pa != 0);
-  //   tempNew->va = faultaddress;
-  //   KASSERT(tempNew->va < USERSTACK);
-  //   tempNew->next = as->first;
-  //   as->first = tempNew;
-  //
-  //   //tempNew = as->first;
-  //   ehi = faultaddress;
-  //   elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
-  //   int spl = splhigh();
-  //   KASSERT(tlb_probe(ehi,0) == -1);
-  //   tlb_random(ehi,elo);
-  //   splx(spl);
-  //
-  // }
-  // return 0;
-  //lock_acquire(coremapLock);
-  //kprintf("\nLock1");
+  lock_acquire(coremapLock);
   if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
   {
       /*Things to do :
       1. Do a walk through page table to see the page table entry
       2. If no entry is found based on faultaddress, then allocate a new entry
       3. Write the entry to TLB*/
-      //kprintf("\nLock2");
-      //struct page_table_entry* tempNew = findPageForGivenVirtualAddress(faultaddress,as);
       struct page_table_entry* tempNew = NULL;
-      struct page_table_entry* tempFirst = NULL;
-      int i;
-      //KASSERT(as != NULL);
-    	//KASSERT((faultaddress & PAGE_FRAME) == PAGE_FRAME);
-    	if (as->first == NULL) {
-    		tempNew =  NULL;
-    	} else {
-        tempFirst = as->first;
-      	while(tempFirst != NULL) {
-      		KASSERT(tempFirst->va < USERSTACK);
-      		if (tempFirst->va == faultaddress) {
-
-      			tempNew = tempFirst;
-            break;
-      		}
-          i++;
-      		tempFirst = tempFirst->next;
-      	}
-
-      }
-
-  //    kprintf("\nLock3");
+      tempNew = findPageForGivenVirtualAddress(faultaddress,as);
       if (tempNew == NULL) { //allocate a new entry
-
-          //spinlock_acquire(&tlb_spinlock);
-          //allocatePageTableEntry(&(as->first),faultaddress);
-          int index;
-          index = get_first_free_index();
-          (void)index;
-    //      kprintf("\nLock4");
-          //KASSERT(index < coremap_page_num);
-          tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-        	//KASSERT(tempNew != NULL);
-        	tempNew->pa = getppages(1);
-        	KASSERT(tempNew->pa != 0);
-        	tempNew->va = faultaddress;
-
-        	KASSERT(tempNew->va < USERSTACK);
+          tempNew = allocatePageTableEntry(faultaddress);
           tempNew->next = as->first;
           as->first = tempNew;
-        //  kprintf("\nLock5");
-        //tempNew = as->first;
-          //spinlock_release(&tlb_spinlock);
       } else { //right now, don't know what to do , will be used during swapping stage
-        //kprintf("\nLock6");
-        // ehi = faultaddress;
-        // elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
-        // int spl = splhigh();
-        // KASSERT(tlb_probe(ehi,0) == -1);
-        // tlb_random(ehi,elo);
-        // splx(spl);
-
+      
       }
-      //KASSERT(faultaddress < USERSTACK);
-
+      /*Spinlock doesn't work here; results in deadlock*/
       int spl = splhigh();
       ehi = faultaddress;
       elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
-      //KASSERT(tlb_probe(ehi,0) == -1);
+      KASSERT(tlb_probe(ehi,0) == -1);
       tlb_random(ehi,elo);
       splx(spl);
-      //kprintf("\nLock7");
 
   } else if (faulttype == VM_FAULT_READONLY) {
     /*It's a write operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
@@ -360,28 +288,19 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       tlb_read    -> gets entryhi and entrylo
       tlb_write   -> to set the dirty bit to 1*/
       int index = tlb_probe(faultaddress,0);
-      //if (index == -1) {
-        //kprintf("Could not find index of 0x%x in TLB \n",faultaddress );
-        //spinlock_release(&tlb_spinlock);
-        //return EFAULT;
-      //}
       tlb_read(&ehi,&elo,index);
       ehi = faultaddress;
-      elo = elo | TLBLO_DIRTY;
-      //elo = elo | (1 << 10);
+      elo = elo | TLBLO_DIRTY | TLBLO_VALID;
       tlb_write(ehi,elo,index);
 
       spinlock_release(&tlb_spinlock);
     } else {
-      //lock_release(coremapLock);
-      //panic("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
+      lock_release(coremapLock);
+      kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
       sys__exit(SIGSEGV);
     }
   }
-  //lock_release(coremapLock);
-  // } else if (faultaddress >= as->heapStart && as->heapEnd) {
-  //
-  // }
+  lock_release(coremapLock);
   return 0;
 }
 

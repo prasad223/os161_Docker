@@ -42,12 +42,12 @@
  * assignment, this file is not compiled or linked or in any way
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
-#define OWN_VM_STACKPAGES 64
+#define OWN_VM_STACKPAGES 1000
 
 struct
 page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as) {
 	KASSERT(as != NULL);
-	KASSERT((faultaddress & PAGE_FRAME) == PAGE_FRAME);
+	KASSERT((faultaddress & PAGE_FRAME) == faultaddress);
 	if (as->first == NULL) {
 		return NULL;
 	}
@@ -81,17 +81,15 @@ deletePageTable(struct addrspace *as) {
 }
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
-void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr) {
-	//KASSERT(as != NULL);
+struct
+page_table_entry* allocatePageTableEntry(vaddr_t vaddr) {
 	struct page_table_entry *tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 	KASSERT(tempNew != NULL);
 	tempNew->pa = getppages(1);
 	KASSERT(tempNew->pa != 0);
 	tempNew->va = vaddr;
 	KASSERT(tempNew-> va < USERSTACK);
-	tempNew->next = *old_pte;
-	*old_pte = tempNew;
-	return;
+	return tempNew;
 }
 
 /*Takes the old address space, and copies all the PTE to the new address space

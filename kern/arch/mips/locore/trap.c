@@ -111,10 +111,6 @@ kill_curthread(vaddr_t epc, unsigned code, vaddr_t vaddr)
 	/*
 	 * You will probably want to change this.
 	 */
-	 if (vaddr == 0xaf736f58){
- 		sys__exit(0);
- 	}
-
 	kprintf("Fatal user mode trap %u sig %d (%s, epc 0x%x, vaddr 0x%x)\n",
 		code, sig, trapcodenames[code], epc, vaddr);
 	sys__exit(sig);
@@ -437,6 +433,6 @@ enter_new_process(int argc, userptr_t argv, userptr_t env,
 	tf.tf_a1 = (vaddr_t)argv;
 	tf.tf_a2 = (vaddr_t)env;
 	tf.tf_sp = stack;
-//	kprintf("everything fine, entering user mode\n");
+	kprintf("everything fine, entering user mode\n");
 	mips_usermode(&tf);
 }

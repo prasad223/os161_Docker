@@ -216,7 +216,7 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 	 * might have a larger structure, so we must use e_phentsize
 	 * to find where the phdr starts.
 	 */
-	kprintf("eh.e_phnum %d", eh.e_phnum);
+	//kprintf("eh.e_phnum %d", eh.e_phnum);
 	for (i=0; i<eh.e_phnum; i++) {
 		off_t offset = eh.e_phoff + i*eh.e_phentsize;
 		uio_kinit(&iov, &ku, &ph, sizeof(ph), offset, UIO_READ);
@@ -242,8 +242,8 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-		kprintf("\nph.p_vaddr %p",(void *)ph.p_vaddr);
-		kprintf("\nph.p_memsz %d",ph.p_memsz);
+		//kprintf("\nph.p_vaddr %p",(void *)ph.p_vaddr);
+		//kprintf("\nph.p_memsz %d",ph.p_memsz);
 		result = as_define_region(as,
 					  ph.p_vaddr, ph.p_memsz,
 					  ph.p_flags & PF_R,

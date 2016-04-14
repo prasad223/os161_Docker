@@ -153,7 +153,7 @@ int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 void deletePageTable(struct addrspace *as);
 void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
 struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as);
-void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr);
+struct page_table_entry* allocatePageTableEntry(vaddr_t vaddr);
 void as_zero_region(vaddr_t vaddr, unsigned npages);
 
 /*
