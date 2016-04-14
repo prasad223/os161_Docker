@@ -59,7 +59,7 @@ sys_getpid(int *retval){
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
-	kprintf("Fork called");
+	kprintf("Fork called\n");
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
 
@@ -142,7 +142,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	if(!pid_proc->has_exited){
-		kprintf("waiting for pid_proc %d",pid_proc->pid);
+		kprintf("waiting for pid_proc %d\n",pid_proc->pid);
 		P(pid_proc->exit_sem);
 	}
 	if(status != NULL){
@@ -171,7 +171,7 @@ int
 sys_execv(const char *program, char **uargs){
 
  	int error = 0;
-	kprintf("exec called");
+	kprintf("exec called\n");
 	if (program == NULL || uargs == NULL) {
 		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;
@@ -217,7 +217,7 @@ sys_execv(const char *program, char **uargs){
 		i++;
 	}
 	args[i] = NULL;
-	kprintf("count:%d\n",i);
+	kprintf("count of args:%d\n",i);
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
@@ -324,7 +324,7 @@ sys_execv(const char *program, char **uargs){
 	kfree(program_name);
 	kfree(args);
 
-	kprintf("passing following args: argc: %d, stack:%u  entry:%u\n",j,stack_ptr, entry_point);
+	kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
 	enter_new_process(j /*argc*/,
 			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
 			entry_point);

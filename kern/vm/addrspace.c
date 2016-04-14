@@ -72,24 +72,21 @@ deletePageTable(struct addrspace *as) {
 	struct page_table_entry *tempFirst = as->first;
 	struct page_table_entry *tempFree;
 
-	kprintf("AS_DESTROY deletePageTable start");
+	kprintf("AS_DESTROY deletePageTable start\n");
+	//TODO: Locks might not be required, investigate later and close
 	lock_acquire(coremapLock);
 	while(tempFirst != NULL	) {
 		tempFree = tempFirst;
-		//TODO: we should change this, i dont think its necessary
-		// Its very time consuming process
-		va = tempFree->va;
-		//kprintf("\nAS_DESTROY virtualAddress :%p",(void *)va);
-		KASSERT(va < USERSTACK);
-		free_kpages(va);
+		kprintf("deletePageTable: tempFree: va: %p, pa: %p\n", (void *)tempFree->va, (void *)tempFree->pa);
+		KASSERT(tempFree->va < USERSTACK);
+		free_kpages(PADDR_TO_KVADDR(tempFree->pa));
 
 		tempFirst= tempFirst->next;
-		//kfree(tempFree); // TODO: Error because of this, check why ?
-		//Also commenting this causes huge memory leaks
-		tempFree = NULL; //required to get 150, strange
+		tempFree = NULL;
 	}
+	kfree(tempFree);
 	lock_release(coremapLock);
-	kprintf("AS_DESTROY deletePageTable ends");
+	kprintf("AS_DESTROY deletePageTable ends\n");
 }
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
@@ -118,13 +115,12 @@ copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entr
 		tempNew->va = tempFirst->va;
 		tempNew->pa = getppages(1);
 		KASSERT(tempNew->pa != 0);
-
 		memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
 		if (*new_pte == NULL) {
 			*new_pte = tempNew;
 		} else {
 			tempNew->next  = *new_pte;
-			*new_pte 			 = tempNew;
+			*new_pte 		= tempNew;
 		}
 		tempFirst = tempFirst->next;
 	}
@@ -262,6 +258,7 @@ as_deactivate(void)
 	 */
 	 /*TODO : Not sure what to do here
 	 Leave it as it is for now*/
+	//vm_tlbshootdown_all(); 
 }
 
 /*
