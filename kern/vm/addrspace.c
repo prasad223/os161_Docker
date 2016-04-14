@@ -66,18 +66,30 @@ page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct ad
 Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
 void
 deletePageTable(struct addrspace *as) {
+	KASSERT(as != NULL);
+	KASSERT(as->first != NULL);
+	vaddr_t va;
 	struct page_table_entry *tempFirst = as->first;
 	struct page_table_entry *tempFree;
-	//lock_acquire(coremapLock);
+
+	kprintf("AS_DESTROY deletePageTable start");
+	lock_acquire(coremapLock);
 	while(tempFirst != NULL	) {
+		tempFree = tempFirst;
 		//TODO: we should change this, i dont think its necessary
 		// Its very time consuming process
-		free_kpages(PADDR_TO_KVADDR(tempFirst->pa));
-		tempFree = tempFirst;
+		va = tempFree->va;
+		//kprintf("\nAS_DESTROY virtualAddress :%p",(void *)va);
+		KASSERT(va < USERSTACK);
+		free_kpages(va);
+
 		tempFirst= tempFirst->next;
-		kfree(tempFree);
+		//kfree(tempFree); // TODO: Error because of this, check why ?
+		//Also commenting this causes huge memory leaks
+		tempFree = NULL; //required to get 150, strange
 	}
-	//lock_release(coremapLock);
+	lock_release(coremapLock);
+	kprintf("AS_DESTROY deletePageTable ends");
 }
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
@@ -99,7 +111,7 @@ copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entr
 	*new_pte = NULL;
 	struct page_table_entry *tempFirst = old_pte;
 	struct page_table_entry *tempNew = NULL;
-	//lock_acquire(coremapLock);
+	lock_acquire(coremapLock);
 	while(tempFirst != NULL) {
 		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(tempNew != NULL);
@@ -116,7 +128,7 @@ copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entr
 		}
 		tempFirst = tempFirst->next;
 	}
-	//lock_release(coremapLock);
+	lock_release(coremapLock);
 }
 
 
@@ -183,6 +195,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	copyAllPageTableEntries(old->first,&(newas->first));
 	struct page_table_entry *old_pte = old->first, *new_pte = newas->first;
 	while(old_pte != NULL){
+		/*Removing kprintf fails parallelvm.t test !! Mind blown !!! */
 		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",(void *)old_pte->va,(void *)old_pte->pa, (void *)new_pte->va, (void *)new_pte->pa );
 		old_pte = old_pte->next;
 		new_pte = new_pte->next;
@@ -199,11 +212,16 @@ as_destroy(struct addrspace *as)
 	* Clean up as needed.
 	*/
 	KASSERT(as != NULL);
+	KASSERT(as->first != NULL);
+	kprintf("\nAS_DESTROY assertion passed....\n");
 	/*Shoot down all TLB entries associated with this process's address space*/
 	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
 	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
 	vm_tlbshootdown_all();
+	kprintf("\nAS_DESTROY TLB shootdown done....\n");
 	deletePageTable(as);
+	kprintf("\nAS_DESTROY page table deleted....\n");
+	as->first 			= NULL;
 	as->as_vbase1   = (vaddr_t)0;
 	/*Region 2*/
 	as->as_vbase2   = (vaddr_t)0;
@@ -312,19 +330,11 @@ as_prepare_load(struct addrspace *as)
 	 */
 	 /*Change the permission of each region to read-write*/
 	 KASSERT(as != NULL);
-	 //TODO: Write assert statements here
 	 as->perm_region1_temp = as->perm_region1;
 	 as->perm_region2_temp = as->perm_region2;
-	//  int oldPerm1 = ((as->perm_region1 << 3 ) & 6);
-	//  int oldPerm2 = ((as->perm_region2 << 3) & 6); //store old permissions in MSB 3 bits
 
 	 as->perm_region1 = (PF_R | PF_W ); //set new permissions as R-W
 	 as->perm_region2 = as->perm_region1 ;// R-W here too
-	//  as->perm_region1 = (as->perm_region1 | oldPerm1); //save old permissions in MSB 3 bits
-	//  as->perm_region2 = (as->perm_region2 | oldPerm2); //save old permissions in MSB 3 bits
-	// as_zero_region(as->as_vbase1, as->as_npages1);
-	// as_zero_region(as->as_vbase1, as->as_npages2);
-	// as_zero_region(as->as_stackbase, OWN_VM_STACKPAGES);
 
 	 return 0;
 }

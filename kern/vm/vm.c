@@ -251,6 +251,12 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
+  } else if ((faultaddress >= as->as_stackbase) && (faultaddress < USERSTACK)) {
+    //do nothing
+  } else if ((faultaddress >= as->heapStart) && (faultaddress <= as->heapEnd)) {
+    //do nothing
+  } else {
+    panic("Undefined region !! panic"); //TODO: Check later
   }
   lock_acquire(coremapLock);
   if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
@@ -263,12 +269,16 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       tempNew = findPageForGivenVirtualAddress(faultaddress,as);
       if (tempNew == NULL) { //allocate a new entry
           tempNew = allocatePageTableEntry(faultaddress);
+          KASSERT(tempNew != NULL);
+          KASSERT(tempNew->pa != 0);
+          KASSERT(tempNew->va < USERSTACK);
           tempNew->next = as->first;
           as->first = tempNew;
       } else { //right now, don't know what to do , will be used during swapping stage
-      
+
       }
       /*Spinlock doesn't work here; results in deadlock*/
+      KASSERT(faultaddress < USERSTACK);
       int spl = splhigh();
       ehi = faultaddress;
       elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
@@ -289,6 +299,8 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       tlb_write   -> to set the dirty bit to 1*/
       int index = tlb_probe(faultaddress,0);
       tlb_read(&ehi,&elo,index);
+      KASSERT(ehi < USERSTACK);
+      KASSERT(elo != 0);
       ehi = faultaddress;
       elo = elo | TLBLO_DIRTY | TLBLO_VALID;
       tlb_write(ehi,elo,index);
@@ -310,9 +322,11 @@ vm_tlbshootdown_all(void)
 	//panic("dumbvm tried to do tlb shootdown?!\n");
   int i;
   //spinlock_acquire(&tlb_spinlock);
+  int spl = splhigh();
   for (i=0; i<NUM_TLB; i++) {
   		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
   }
+  splx(spl);
   //spinlock_release(&tlb_spinlock);
 }
 
