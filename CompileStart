@@ -22,6 +22,6 @@ bmake -j8 install
 # bmake -h when you modify userland
 # Launch the compiled kernel
 cd $HOME/os161/src/
-sleep 2
-bmake -j8
-bmake -j8 install 
+#sleep 2
+#bmake -j8
+#bmake -j8 install 

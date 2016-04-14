@@ -68,6 +68,7 @@ void
 deletePageTable(struct addrspace *as) {
 	struct page_table_entry *tempFirst = as->first;
 	struct page_table_entry *tempFree;
+	//lock_acquire(coremapLock);
 	while(tempFirst != NULL	) {
 		//TODO: we should change this, i dont think its necessary
 		// Its very time consuming process
@@ -76,6 +77,7 @@ deletePageTable(struct addrspace *as) {
 		tempFirst= tempFirst->next;
 		kfree(tempFree);
 	}
+	//lock_release(coremapLock);
 }
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
@@ -99,6 +101,7 @@ copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entr
 	*new_pte = NULL;
 	struct page_table_entry *tempFirst = old_pte;
 	struct page_table_entry *tempNew = NULL;
+	//lock_acquire(coremapLock);
 	while(tempFirst != NULL) {
 		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(tempNew != NULL);
@@ -115,6 +118,7 @@ copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entr
 		}
 		tempFirst = tempFirst->next;
 	}
+	//lock_release(coremapLock);
 }
 
 
@@ -158,6 +162,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	if (newas==NULL) {
 		return ENOMEM;
 	}
+	/* (Mis)use as_prepare_load to allocate some physical memory.
+	if (as_prepare_load(newas)) {
+		as_destroy(newas);
+		return ENOMEM;
+	}*/
 
 	newas->as_vbase1   = old->as_vbase1;
 	newas->as_npages1  = old->as_npages1;
@@ -174,6 +183,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->heapEnd     = old->heapEnd;
 
 	copyAllPageTableEntries(old->first,&(newas->first));
+	struct page_table_entry *old_pte = old->first, *new_pte = newas->first;
+	while(old_pte != NULL){
+		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",(void *)old_pte->va,(void *)old_pte->pa, (void *)new_pte->va, (void *)new_pte->pa );
+		old_pte = old_pte->next;
+		new_pte = new_pte->next;
+	}
 	*ret = newas;
 	return 0;
 }
@@ -181,6 +196,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
+	kprintf("AS_DESTROY: start\n");
 	/*
 	* Clean up as needed.
 	*/
@@ -200,6 +216,7 @@ as_destroy(struct addrspace *as)
 	as->heapEnd	= (vaddr_t)0;
 
 	kfree(as);
+	kprintf("AS_DESTROY:exit\n");
 }
 
 void
@@ -283,6 +300,12 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	return EACCES; //permission denied
 }
 
+void
+as_zero_region(vaddr_t vaddr, unsigned npages)
+{
+	bzero((void *)vaddr, npages * PAGE_SIZE);
+}
+
 int
 as_prepare_load(struct addrspace *as)
 {
@@ -301,6 +324,9 @@ as_prepare_load(struct addrspace *as)
 	 as->perm_region2 = as->perm_region1 ;// R-W here too
 	//  as->perm_region1 = (as->perm_region1 | oldPerm1); //save old permissions in MSB 3 bits
 	//  as->perm_region2 = (as->perm_region2 | oldPerm2); //save old permissions in MSB 3 bits
+	// as_zero_region(as->as_vbase1, as->as_npages1);
+	// as_zero_region(as->as_vbase1, as->as_npages2);
+	// as_zero_region(as->as_stackbase, OWN_VM_STACKPAGES);
 
 	 return 0;
 }

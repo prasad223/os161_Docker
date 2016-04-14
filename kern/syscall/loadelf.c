@@ -242,7 +242,8 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-		kprintf("ph.p_vaddr %p",(void *)ph.p_vaddr);
+		kprintf("\nph.p_vaddr %p",(void *)ph.p_vaddr);
+		kprintf("\nph.p_memsz %d",ph.p_memsz);
 		result = as_define_region(as,
 					  ph.p_vaddr, ph.p_memsz,
 					  ph.p_flags & PF_R,

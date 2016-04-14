@@ -61,6 +61,8 @@ struct lock* coremapLock;
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
 
 
+int
+get_first_free_index(void);
 
 /* Initialization function */
 void vm_bootstrap(void);

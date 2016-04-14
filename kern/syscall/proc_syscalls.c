@@ -59,6 +59,7 @@ sys_getpid(int *retval){
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
+	kprintf("Fork called");
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
 
@@ -141,6 +142,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	if(!pid_proc->has_exited){
+		kprintf("waiting for pid_proc %d",pid_proc->pid);
 		P(pid_proc->exit_sem);
 	}
 	if(status != NULL){
@@ -159,7 +161,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		}
 		}
 	}
-
+	kprintf("out of waitpid: pid:%d\n",pid);
 	*retval = pid;
 	proc_destroy(pid_proc);
 	return 0;
@@ -169,7 +171,7 @@ int
 sys_execv(const char *program, char **uargs){
 
  	int error = 0;
-
+	kprintf("exec called");
 	if (program == NULL || uargs == NULL) {
 		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;

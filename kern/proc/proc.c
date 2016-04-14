@@ -192,14 +192,13 @@ proc_destroy(struct proc *proc)
 	spinlock_cleanup(&proc->p_lock);
 
 	kfree(proc->p_name);
-	
+	kprintf("PROC_DESTORY: pid lock\n");
 	lock_acquire(pid_lock);
+	kprintf("lock acquired: freeing pid\n");
 	*(process_list+proc->pid) = NULL;
 	lock_release(pid_lock);
-	
 	kfree(proc);
-
-
+	kprintf("PROC_DESTORY:Exit\n");
 }
 
 /*

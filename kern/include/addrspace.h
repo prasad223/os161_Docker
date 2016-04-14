@@ -154,6 +154,8 @@ void deletePageTable(struct addrspace *as);
 void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
 struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as);
 void allocatePageTableEntry(struct page_table_entry **old_pte, vaddr_t vaddr);
+void as_zero_region(vaddr_t vaddr, unsigned npages);
+
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

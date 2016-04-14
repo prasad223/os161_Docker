@@ -23,5 +23,5 @@ bmake -j8 install
 # Launch the compiled kernel
 cd $HOME/os161/src/
 sleep 2
-#bmake -j8
-#bmake -j8 install 
+bmake -j8
+bmake -j8 install 

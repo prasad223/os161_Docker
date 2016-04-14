@@ -167,7 +167,7 @@ lock_create(const char *name)
 	}
 	// no thread has acquired the lock
 	spinlock_init(&lock->lock_spinlock);
-	lock->counter    = 0; 
+	lock->counter    = 0;
 	lock->lockHolder = NULL;
 	return lock;
 }
@@ -200,26 +200,27 @@ lock_acquire(struct lock *lock)
 	 */
 	KASSERT(curthread->t_in_interrupt == false); // NOT SURE WHY, but taken from semaphore, and it works !
 
-	
+
 	//disable interrupts to ensure atomicity ( NEED TO ASK : why to use spinlocks if we can use interrupts ?)
 	//int spl = splhigh();
 	spinlock_acquire(&lock->lock_spinlock);
+	//kprintf("\nLock name %s",lock->lk_name);
 	KASSERT(!lock_do_i_hold(lock));
-	
+
 	while(lock->counter) {
 		wchan_sleep(lock->lock_wchan,&lock->lock_spinlock);
 	}
-	//if (lock->lockHolder == NULL) 
+	//if (lock->lockHolder == NULL)
 	//{ //lock is free
 	lock->lockHolder = curthread;
 	lock->counter    = 1;
-	
+
 	/*if (lock->lockHolder == curthread) {
 		lock->counter++; //support for re-entrant lock
 	}
 	else */
 	//{
-		//} 
+		//}
 	//}
 	spinlock_release(&lock->lock_spinlock);
 	//splx(spl);
@@ -234,7 +235,7 @@ lock_release(struct lock *lock)
 	KASSERT(lock != NULL);
 	KASSERT(lock->lockHolder);
 	KASSERT(lock->counter);
-	
+
 	spinlock_acquire(&lock->lock_spinlock);
 	lock->counter = 0;
 	lock->lockHolder = NULL;
@@ -254,12 +255,12 @@ lock_do_i_hold(struct lock *lock)
 	* 1. Lock must be non-null
 	* 2. Lock's "counter" must be non-zero
 	* 3. Most importantly, the lock's lockHolder must be equal to curThread
-	* 
+	*
 	*/
 	KASSERT(lock != NULL);
 
 	if (!lock->counter) { // lock not held
-		return 0; 
+		return 0;
 	}
 	if (lock->lockHolder != curthread) { //lock held, but not by curthread
 		return 0;
@@ -297,7 +298,7 @@ cv_create(const char *name)
 		kfree(cv);
 		return NULL;
 	}
-	
+
 	spinlock_init(&cv->cv_spinlock);
 	return cv;
 }
@@ -322,7 +323,7 @@ cv_wait(struct cv *cv, struct lock *lock)
 	KASSERT(cv != NULL);
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock)); //current thread must hold the lock
-	
+
 	spinlock_acquire(&cv->cv_spinlock);
 	lock_release(lock);
 	wchan_sleep(cv->cv_wchan, &cv->cv_spinlock);
@@ -337,7 +338,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 	KASSERT(cv!= NULL);
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock)); //current thread must hold the lock
-	
+
 	spinlock_acquire(&cv->cv_spinlock);
 	wchan_wakeone(cv->cv_wchan, &cv->cv_spinlock);
 	spinlock_release(&cv->cv_spinlock);
@@ -352,7 +353,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	KASSERT(cv != NULL);
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock)); //current thread must hold the lock
-	
+
 	spinlock_acquire(&cv->cv_spinlock);
 	wchan_wakeall(cv->cv_wchan, &cv->cv_spinlock);
 	spinlock_release(&cv->cv_spinlock);
@@ -360,7 +361,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	//(void)lock;  // suppress warning until code gets written
 }
 
-/** Reader writer locks 
+/** Reader writer locks
 Idea taken from https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Implementation
 and	 https://en.wikipedia.org/wiki/Readers–writers_problem
 This reader-writer lock implementation tries to ensure fairness between reader-starvation and Writer-starvation
@@ -375,7 +376,7 @@ and number of waiting writers
 
 reader_acquire_read() :
 
-If there is no active writer OR no waiting writer, threads can safely acquire the resource. Otherwise, all reader threads must be sent to 
+If there is no active writer OR no waiting writer, threads can safely acquire the resource. Otherwise, all reader threads must be sent to
 sleeping state.
 
 rwlock_release_read() :
@@ -387,7 +388,7 @@ Thus if reader count reaches zero, wake up all sleeping threads & exit.
 rwlock_acquire_write():
 
 Update writer_request_count
-If there is no reader / writer currently present, then the writer thread can acquire the resource. Else, it must wait by sleeping in the 
+If there is no reader / writer currently present, then the writer thread can acquire the resource. Else, it must wait by sleeping in the
 wait channel till it can acquire the resource
 Decrement writer_request_count
 Increment writer_count
@@ -399,12 +400,12 @@ release the resource, decrement the writer_count
 Wake up all threads when writer count reaches 0.
 
 **/
-struct 
+struct
 rwlock * rwlock_create(const char *name) {
 	struct rwlock* rwlock;
 	rwlock = kmalloc(sizeof(*rwlock));
 	if (rwlock == NULL) {
-		return NULL;	
+		return NULL;
 	}
 	rwlock->rwlock_name = kstrdup(name);
 	if (rwlock->rwlock_name==NULL) {
@@ -424,11 +425,11 @@ rwlock * rwlock_create(const char *name) {
 	return rwlock;
 }
 
-void 
+void
 rwlock_destroy(struct rwlock * rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->rwlock_name != NULL);
-	/** All active / pending operations must be finished before rwlock can be destroyed**/ 
+	/** All active / pending operations must be finished before rwlock can be destroyed**/
 	KASSERT(rwlock->readCount == 0);
 
 	/** Free all associated memory **/
@@ -439,7 +440,7 @@ rwlock_destroy(struct rwlock * rwlock) {
 	kfree(rwlock);
 }
 
-void 
+void
 rwlock_acquire_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 
@@ -448,15 +449,15 @@ rwlock_acquire_read(struct rwlock *rwlock) {
 
 	if (rwlock->readCount == 0) {
 		P(rwlock->resourceAccess);
-	}	
+	}
 	rwlock->readCount++;
 
 	V(rwlock->serviceQueue);
 	V(rwlock->readCountAccess);
-	
+
 }
 
-void 
+void
 rwlock_release_read(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 	KASSERT(rwlock->readCount > 0); //if reader_count == 0, no sense in trying to releasing lock
@@ -470,7 +471,7 @@ rwlock_release_read(struct rwlock *rwlock) {
 	V(rwlock->readCountAccess);
 }
 
-void 
+void
 rwlock_acquire_write(struct rwlock *rwlock) {
 	KASSERT(rwlock != NULL);
 
