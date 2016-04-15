@@ -43,11 +43,8 @@
  getppages(unsigned long npages);
 
  struct coremap_entry {
-   struct addrspace *as;
    vaddr_t va;
    int allocPageCount;
-
-   char state;
    paddr_t phyAddr;
  };
 

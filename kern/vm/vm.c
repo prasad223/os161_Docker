@@ -49,9 +49,7 @@ paddr_t lastpaddr, freeAddr, firstpaddr;
 
 int coremap_page_num;
 struct coremap_entry* coremap;
-//static bool firstuserboot = true;
 
-//extern paddr_t first_ram_phyAddr;
 /*
  * Wrap ram_stealmem in a spinlock.
  */
@@ -98,14 +96,10 @@ vm_bootstrap(void) {
     coremap[i].allocPageCount = -1;
     coremap[i].va = PADDR_TO_KVADDR(temp);
 	}
-  // Set coremap used size to 0
   coremap_used_size = 0;
-  coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
+  coremapLock = lock_create("coremap lock");
 }
 
-/*
-*
-**/
 paddr_t
 getppages(unsigned long npages)
 {
@@ -257,7 +251,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     //do nothing
   } else {
     kprintf("faultaddresss %p ",(void *)faultaddress);
-    kprintf("\n heapStart %p heapEnd %p",(void *)as->heapStart, (void *)as->heapEnd);    
+    kprintf("\n heapStart %p heapEnd %p\n",(void *)as->heapStart, (void *)as->heapEnd);    
     panic("Undefined region !! panic"); //TODO: Check later
   }
   lock_acquire(coremapLock);
@@ -321,15 +315,15 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 void
 vm_tlbshootdown_all(void)
 {
-	//panic("dumbvm tried to do tlb shootdown?!\n");
-  int i;
-  //spinlock_acquire(&tlb_spinlock);
+	int i;
+  //TODO: Spinlock might not be required, remove later, added for safety for now
+  spinlock_acquire(&tlb_spinlock);
   int spl = splhigh();
   for (i=0; i<NUM_TLB; i++) {
   		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
   }
   splx(spl);
-  //spinlock_release(&tlb_spinlock);
+  spinlock_release(&tlb_spinlock);
 }
 
 void
@@ -345,6 +339,7 @@ tlb_shootdown_page_table_entry(vaddr_t va) {
   int i;
   uint32_t ehi, elo;
   KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
+  // TODO: lock might not be required
   spinlock_acquire(&tlb_spinlock);
   for(i=0; i < NUM_TLB; i++) {
     tlb_read(&ehi, &elo, i);

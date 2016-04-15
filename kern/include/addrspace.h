@@ -63,34 +63,27 @@ struct page_table_entry {
 
 struct addrspace {
 #if OPT_DUMBVM
-        vaddr_t as_vbase1;
-        paddr_t as_pbase1;
-        size_t as_npages1;
-        vaddr_t as_vbase2;
-        paddr_t as_pbase2;
-        size_t as_npages2;
-        paddr_t as_stackpbase;
+    vaddr_t as_vbase1;
+    paddr_t as_pbase1;
+    size_t as_npages1;
+    vaddr_t as_vbase2;
+    paddr_t as_pbase2;
+    size_t as_npages2;
+    paddr_t as_stackpbase;
 #else
-        /* Put stuff here for your VM system */
-        /*We are assuming 2 fixed regions, code and data and use the */
-        struct page_table_entry *first;
-        //struct page_table_entry *last;
-        /*Region 1*/
-        vaddr_t as_vbase1;
-        size_t as_npages1;
-        uint8_t perm_region1:3;
-        uint8_t perm_region1_temp:3; //store temporary permissions during as_prepare_load
-        /*Region 2*/
-        vaddr_t as_vbase2;
-        size_t as_npages2;
-        uint8_t perm_region2:3;
-        uint8_t perm_region2_temp:3; //store temporary permissions during as_prepare_load
-        /*stack base + size*/
-        vaddr_t as_stackbase;
-        size_t nStackPages;
-        /*Heap base + size*/
-        vaddr_t heapStart;
-        vaddr_t heapEnd;
+    struct page_table_entry *first;
+    vaddr_t as_vbase1;
+    size_t as_npages1;
+    uint8_t perm_region1:3;
+    uint8_t perm_region1_temp:3;
+    vaddr_t as_vbase2;
+    size_t as_npages2;
+    uint8_t perm_region2:3;
+    uint8_t perm_region2_temp:3;
+    vaddr_t as_stackbase;
+    size_t nStackPages;
+    vaddr_t heapStart;
+    vaddr_t heapEnd;
 #endif
 };
 

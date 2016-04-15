@@ -37,19 +37,15 @@ sys_sbrk(int amount, int *retval){
 	heap_start = curproc->p_addrspace->heapStart;
 	heap_end   = curproc->p_addrspace->heapEnd;
 	stack_base = curproc->p_addrspace->as_stackbase;
-	// kprintf("\namount passed :%d",amount);
-	// kprintf("\nBEFORE .heap_start %p heapend %p stackbase %p",(void *)heap_start,(void *)heap_end, (void *)stack_base);
-	//heap_end += amount;
-
+	
 	long long heap_end_temp = (long long)heap_end + amount;
+	kprintf("SBRK: hs:%p, he: %p, sb: %p , amnt: %x\t, het:%lx \n",
+		(void *)heap_start, (void *)heap_end, (void *)stack_base, amount ,(long unsigned int)heap_end+amount);
 
-	// kprintf("\nAFTER . heap_start %p heapend %lld stackbase %p",(void *)heap_start,heap_end_temp, (void *)stack_base);
 	if (heap_end_temp > (long long)stack_base) {
-		// kprintf("\nENOMEM failure");
 		return ENOMEM;
 	}
 	if (heap_end_temp < (long long)heap_start) {
-		// kprintf("\nEINVAL failure");
 		return EINVAL;
 	}
 	heap_end= heap_end + amount;
@@ -72,9 +68,9 @@ sys_getpid(int *retval){
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
-	kprintf("Fork called\n");
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
+	kprintf("FORK: ppid:%d, cpid: %d\n", child_proc->ppid, child_proc->pid);
 
 	error = as_copy(curproc->p_addrspace, &(child_proc->p_addrspace));
 	if(error){
@@ -99,13 +95,14 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 	}
 
 	*retval = child_proc->pid;
+	kprintf("FORK: exit\n");
 	return 0;
 }
 
 void child_fork_entry(void *data1, unsigned long data2){
 
+	kprintf("child_fork_entry: start\n");
 	struct trapframe *tf, temp_tf;
-
 	tf = (struct trapframe*) data1;
 	tf->tf_a3 = 0;
 	tf->tf_v0 = 0;
@@ -116,15 +113,16 @@ void child_fork_entry(void *data1, unsigned long data2){
 
 	temp_tf = *tf;
 	mips_usermode(&temp_tf);
+	kprintf("child_fork_entry: exit\n");
 	return;
 }
 
 void
 sys__exit(int _exitcode){
-		curproc->has_exited = true;
-		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
-		V(curproc->exit_sem);
-		thread_exit();
+	curproc->has_exited = true;
+	curproc->exit_code = _MKWAIT_EXIT(_exitcode);
+	V(curproc->exit_sem);
+	thread_exit();
 	return;
 }
 
@@ -133,14 +131,14 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 
 	kprintf("pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
 	if(options != 0){
-		kprintf("Invalid options provided\n");
+	//	kprintf("Invalid options provided\n");
 		*retval = -1;
 		return EINVAL;
 	}
 
 	struct proc* pid_proc = get_pid_proc(pid);
 	if(pid_proc != NULL){
-		kprintf("pid_proc:pid %d, ppid:%d\n",pid_proc->pid,pid_proc->ppid);
+		kprintf("pid_proc: NULL Proc pid:pid %d, ppid:%d\n",pid_proc->pid,pid_proc->ppid);
 	}
 	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid || pid == curproc->ppid){
 		kprintf("Trying to wait invalid pid or self");
@@ -174,7 +172,6 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		}
 		}
 	}
-	kprintf("out of waitpid: pid:%d\n",pid);
 	*retval = pid;
 	proc_destroy(pid_proc);
 	return 0;
@@ -184,7 +181,6 @@ int
 sys_execv(const char *program, char **uargs){
 
  	int error = 0;
-	kprintf("exec called\n");
 	if (program == NULL || uargs == NULL) {
 		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;
@@ -230,7 +226,7 @@ sys_execv(const char *program, char **uargs){
 		i++;
 	}
 	args[i] = NULL;
-	kprintf("count of args:%d\n",i);
+//	kprintf("count of args:%d\n",i);
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
@@ -292,7 +288,7 @@ sys_execv(const char *program, char **uargs){
 			arg_length = arg_length + (4 - arg_length % 4);
 		}
 
-		kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
+//		kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
 		arg = (char *)kmalloc(sizeof(arg_length));
 		arg = kstrdup(args[j]);
 		for (int i = 0; i < arg_length; i++) {
@@ -307,7 +303,7 @@ sys_execv(const char *program, char **uargs){
 
 		error = copyout((const void *) arg, (userptr_t) stack_ptr,
 				(size_t) arg_length);
-		kprintf("copyout error stat: %d\n", error);
+//		kprintf("copyout error stat: %d\n", error);
 		if (error) {
 			kfree(program_name);
 			kfree(args);
