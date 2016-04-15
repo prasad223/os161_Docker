@@ -260,9 +260,7 @@ as_deactivate(void)
 	 * anything. See proc.c for an explanation of why it (might)
 	 * be needed.
 	 */
-	 /*TODO : Not sure what to do here
-	 Leave it as it is for now*/
-	//vm_tlbshootdown_all();
+	vm_tlbshootdown_all();
 }
 
 /*
