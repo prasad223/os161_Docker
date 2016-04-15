@@ -175,11 +175,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	if (newas==NULL) {
 		return ENOMEM;
 	}
-	/* (Mis)use as_prepare_load to allocate some physical memory.
-	if (as_prepare_load(newas)) {
-		as_destroy(newas);
-		return ENOMEM;
-	}*/
 
 	newas->as_vbase1   = old->as_vbase1;
 	newas->as_npages1  = old->as_npages1;
@@ -195,41 +190,26 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->heapStart   = old->heapStart;
 	newas->heapEnd     = old->heapEnd;
 
-	//copyAllPageTableEntries(old->first,&(newas->first));
-	//struct page_table_entry *old_pte = old->first, *new_pte = NULL;
 	struct page_table_entry *old_ptr = old->first;
 	struct page_table_entry *new_ptr = NULL;
-	struct page_table_entry *new_last= NULL;
 
 	lock_acquire(coremapLock);
 	while(old_ptr != NULL){
 		/*Removing kprintf fails parallelvm.t test !! Mind blown !!! */
 
-		//while(tempFirst != NULL)
-		//{
 		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(new_ptr != NULL);
-
 		new_ptr->pa = getppages(1);
-
 		KASSERT(new_ptr->pa != 0);
 		new_ptr->va = old_ptr->va;
 		KASSERT(new_ptr->va < USERSTACK);
-		//as_zero_region();
 		memcpy((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
-		if (newas->first == NULL) {
-			newas->first = new_ptr;
-			new_last		 = newas->first;
-		} else {
-			new_last->next=new_ptr;
-			new_last = new_ptr;
-		}
-		//old_ptr = old_ptr->next;
+		
+		new_ptr->next = newas->first;
+		newas->first  = new_ptr;
 		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",
 		(void *)old_ptr->va,(void *)old_ptr->pa, (void *)new_ptr->va, (void *)new_ptr->pa );
-
 		old_ptr = old_ptr->next;
-		//new_pte = new_pte->next;
 	}
 	lock_release(coremapLock);
 	*ret = newas;
