@@ -72,7 +72,6 @@ sys_getpid(int *retval){
 int
 sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
-	kprintf("Fork called\n");
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
 
@@ -131,7 +130,7 @@ sys__exit(int _exitcode){
 pid_t
 sys_waitpid(pid_t pid, int* status, int options, int *retval){
 
-	kprintf("pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
+	//kprintf("pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
 	if(options != 0){
 		kprintf("Invalid options provided\n");
 		*retval = -1;
@@ -139,9 +138,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	struct proc* pid_proc = get_pid_proc(pid);
-	if(pid_proc != NULL){
-		kprintf("pid_proc:pid %d, ppid:%d\n",pid_proc->pid,pid_proc->ppid);
-	}
+	
 	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid || pid == curproc->ppid){
 		kprintf("Trying to wait invalid pid or self");
 		*retval = -1;
@@ -174,7 +171,6 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		}
 		}
 	}
-	kprintf("out of waitpid: pid:%d\n",pid);
 	*retval = pid;
 	proc_destroy(pid_proc);
 	return 0;
@@ -184,7 +180,6 @@ int
 sys_execv(const char *program, char **uargs){
 
  	int error = 0;
-	kprintf("exec called\n");
 	if (program == NULL || uargs == NULL) {
 		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;
@@ -230,7 +225,7 @@ sys_execv(const char *program, char **uargs){
 		i++;
 	}
 	args[i] = NULL;
-	kprintf("count of args:%d\n",i);
+	//kprintf("count of args:%d\n",i);
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
@@ -292,7 +287,7 @@ sys_execv(const char *program, char **uargs){
 			arg_length = arg_length + (4 - arg_length % 4);
 		}
 
-		kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
+	//	kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
 		arg = (char *)kmalloc(sizeof(arg_length));
 		arg = kstrdup(args[j]);
 		for (int i = 0; i < arg_length; i++) {
@@ -307,7 +302,7 @@ sys_execv(const char *program, char **uargs){
 
 		error = copyout((const void *) arg, (userptr_t) stack_ptr,
 				(size_t) arg_length);
-		kprintf("copyout error stat: %d\n", error);
+	//	kprintf("copyout error stat: %d\n", error);
 		if (error) {
 			kfree(program_name);
 			kfree(args);
