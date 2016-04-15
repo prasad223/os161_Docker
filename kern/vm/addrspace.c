@@ -248,16 +248,6 @@ as_destroy(struct addrspace *as)
 void
 as_activate(void)
 {
-	struct addrspace *as;
-
-	as = proc_getas();
-	if (as == NULL) {
-		/*
-		 * Kernel thread without an address space; leave the
-		 * prior address space in place.
-		 */
-		return;
-	}
 	vm_tlbshootdown_all();
 	return;
 }
