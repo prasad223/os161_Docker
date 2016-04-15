@@ -219,21 +219,21 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	kprintf("AS_DESTROY: start\n");
-	/*
-	* Clean up as needed.
-	*/
 	KASSERT(as != NULL);
 	KASSERT(as->first != NULL);
-	kprintf("\nAS_DESTROY assertion passed....\n");
 	/*Shoot down all TLB entries associated with this process's address space*/
 	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
 	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
 	vm_tlbshootdown_all();
-	kprintf("\nAS_DESTROY TLB shootdown done....\n");
-	deletePageTable(as);
-	kprintf("\nAS_DESTROY page table deleted....\n");
+	struct page_table_entry* current = as->first, *next = NULL;
+	while(current != NULL){
+		next = current->next;
+		free_kpages(PADDR_TO_KVADDR(current->pa));
+		kfree(current);
+		current = next;
+	}
 	as->first 			= NULL;
+	kfree(as->first);
 	as->as_vbase1   = (vaddr_t)0;
 	/*Region 2*/
 	as->as_vbase2   = (vaddr_t)0;
@@ -242,9 +242,7 @@ as_destroy(struct addrspace *as)
 	/*Heap base + size*/
 	as->heapStart	 = (vaddr_t)0;
 	as->heapEnd	= (vaddr_t)0;
-
 	kfree(as);
-	kprintf("AS_DESTROY:exit\n");
 }
 
 void
