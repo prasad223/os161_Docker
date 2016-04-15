@@ -62,31 +62,6 @@ page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct ad
 	return NULL;
 }
 
-/*Iterate through all PTE entries, invalidate their TLB entries
-Then use beloved "kfree" to invalidate coremap entries for all the physical entries*/
-void
-deletePageTable(struct addrspace *as) {
-	KASSERT(as != NULL);
-	KASSERT(as->first != NULL);
-	struct page_table_entry *tempFirst = as->first;
-	struct page_table_entry *tempFree;
-
-	kprintf("AS_DESTROY deletePageTable start\n");
-	//TODO: Locks might not be required, investigate later and close
-	lock_acquire(coremapLock);
-	while(tempFirst != NULL	) {
-		tempFree = tempFirst;
-		kprintf("deletePageTable: tempFree: va: %p, pa: %p\n", (void *)tempFree->va, (void *)tempFree->pa);
-		KASSERT(tempFree->va < USERSTACK);
-		free_kpages(PADDR_TO_KVADDR(tempFree->pa));
-		tempFirst= tempFirst->next;
-		kfree(tempFree);
-		tempFree = NULL;
-	}
-
-	lock_release(coremapLock);
-	kprintf("AS_DESTROY deletePageTable ends\n");
-}
 
 /*Allocates a page table entry and add it to the page table of address space "as"*/
 struct
@@ -101,39 +76,6 @@ page_table_entry* allocatePageTableEntry(vaddr_t vaddr) {
 	//as_zero_region(tempNew->va,1);
 	return tempNew;
 }
-
-/*Takes the old address space, and copies all the PTE to the new address space
-Returns the first entry of PTE for new address space*/
-void
-copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entry **new_pte) {
-	*new_pte = NULL;
-	struct page_table_entry *tempFirst = old_pte;
-	struct page_table_entry *tempNew 	 = NULL;
-	struct page_table_entry *newLast   = NULL;
-	lock_acquire(coremapLock);
-	while(tempFirst != NULL) {
-		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-		KASSERT(tempNew != NULL);
-
-		tempNew->pa = getppages(1);
-
-		KASSERT(tempNew->pa != 0);
-		tempNew->va = tempFirst->va;
-		KASSERT(tempNew->va < USERSTACK);
-		//as_zero_region();
-		memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
-		if (*new_pte == NULL) {
-			*new_pte = tempNew;
-			 newLast = tempNew;
-		} else {
-			newLast->next  = tempNew;
-			//*new_pte->next	= tempNew;
-		}
-		tempFirst = tempFirst->next;
-	}
-	lock_release(coremapLock);
-}
-
 
 struct addrspace *
 as_create(void)
