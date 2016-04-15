@@ -256,6 +256,8 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
   } else if ((faultaddress >= as->heapStart) && (faultaddress <= as->heapEnd)) {
     //do nothing
   } else {
+    kprintf("faultaddresss %p ",(void *)faultaddress);
+    kprintf("\n heapStart %p heapEnd %p",(void *)as->heapStart, (void *)as->heapEnd);    
     panic("Undefined region !! panic"); //TODO: Check later
   }
   lock_acquire(coremapLock);

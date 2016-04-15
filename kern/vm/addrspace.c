@@ -80,9 +80,10 @@ deletePageTable(struct addrspace *as) {
 		KASSERT(tempFree->va < USERSTACK);
 		free_kpages(PADDR_TO_KVADDR(tempFree->pa));
 		tempFirst= tempFirst->next;
+		kfree(tempFree);
 		tempFree = NULL;
 	}
-	kfree(tempFree);
+
 	lock_release(coremapLock);
 	kprintf("AS_DESTROY deletePageTable ends\n");
 }
@@ -93,9 +94,11 @@ page_table_entry* allocatePageTableEntry(vaddr_t vaddr) {
 	struct page_table_entry *tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 	KASSERT(tempNew != NULL);
 	tempNew->pa = getppages(1);
+
 	KASSERT(tempNew->pa != 0);
 	tempNew->va = vaddr;
 	KASSERT(tempNew-> va < USERSTACK);
+	//as_zero_region(tempNew->va,1);
 	return tempNew;
 }
 
@@ -105,20 +108,26 @@ void
 copyAllPageTableEntries(struct page_table_entry *old_pte, struct page_table_entry **new_pte) {
 	*new_pte = NULL;
 	struct page_table_entry *tempFirst = old_pte;
-	struct page_table_entry *tempNew = NULL;
+	struct page_table_entry *tempNew 	 = NULL;
+	struct page_table_entry *newLast   = NULL;
 	lock_acquire(coremapLock);
 	while(tempFirst != NULL) {
 		tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(tempNew != NULL);
-		tempNew->va = tempFirst->va;
+
 		tempNew->pa = getppages(1);
+
 		KASSERT(tempNew->pa != 0);
+		tempNew->va = tempFirst->va;
+		KASSERT(tempNew->va < USERSTACK);
+		//as_zero_region();
 		memcpy((void *) PADDR_TO_KVADDR(tempNew->pa), (const void *) PADDR_TO_KVADDR(tempFirst->pa), PAGE_SIZE);
 		if (*new_pte == NULL) {
 			*new_pte = tempNew;
+			 newLast = tempNew;
 		} else {
-			tempNew->next  = *new_pte;
-			*new_pte 		= tempNew;
+			newLast->next  = tempNew;
+			//*new_pte->next	= tempNew;
 		}
 		tempFirst = tempFirst->next;
 	}
@@ -186,14 +195,43 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->heapStart   = old->heapStart;
 	newas->heapEnd     = old->heapEnd;
 
-	copyAllPageTableEntries(old->first,&(newas->first));
-	struct page_table_entry *old_pte = old->first, *new_pte = newas->first;
-	while(old_pte != NULL){
+	//copyAllPageTableEntries(old->first,&(newas->first));
+	//struct page_table_entry *old_pte = old->first, *new_pte = NULL;
+	struct page_table_entry *old_ptr = old->first;
+	struct page_table_entry *new_ptr = NULL;
+	struct page_table_entry *new_last= NULL;
+
+	lock_acquire(coremapLock);
+	while(old_ptr != NULL){
 		/*Removing kprintf fails parallelvm.t test !! Mind blown !!! */
-		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",(void *)old_pte->va,(void *)old_pte->pa, (void *)new_pte->va, (void *)new_pte->pa );
-		old_pte = old_pte->next;
-		new_pte = new_pte->next;
+
+		//while(tempFirst != NULL)
+		//{
+		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+		KASSERT(new_ptr != NULL);
+
+		new_ptr->pa = getppages(1);
+
+		KASSERT(new_ptr->pa != 0);
+		new_ptr->va = old_ptr->va;
+		KASSERT(new_ptr->va < USERSTACK);
+		//as_zero_region();
+		memcpy((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
+		if (newas->first == NULL) {
+			newas->first = new_ptr;
+			new_last		 = newas->first;
+		} else {
+			new_last->next=new_ptr;
+			new_last = new_ptr;
+		}
+		//old_ptr = old_ptr->next;
+		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",
+		(void *)old_ptr->va,(void *)old_ptr->pa, (void *)new_ptr->va, (void *)new_ptr->pa );
+
+		old_ptr = old_ptr->next;
+		//new_pte = new_pte->next;
 	}
+	lock_release(coremapLock);
 	*ret = newas;
 	return 0;
 }
@@ -256,7 +294,7 @@ as_deactivate(void)
 	 */
 	 /*TODO : Not sure what to do here
 	 Leave it as it is for now*/
-	//vm_tlbshootdown_all(); 
+	//vm_tlbshootdown_all();
 }
 
 /*
