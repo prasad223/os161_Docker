@@ -20,6 +20,7 @@
 #include <vfs.h>
 #include <vnode.h>
 #include <kern/fcntl.h>
+#include <addrspace.h>
 
 
 /*
@@ -37,13 +38,15 @@ sys_sbrk(int amount, int *retval){
 	heap_start = curproc->p_addrspace->heapStart;
 	heap_end   = curproc->p_addrspace->heapEnd;
 	stack_base = curproc->p_addrspace->as_stackbase;
-	// kprintf("\namount passed :%d",amount);
-	// kprintf("\nBEFORE .heap_start %p heapend %p stackbase %p",(void *)heap_start,(void *)heap_end, (void *)stack_base);
-	//heap_end += amount;
-
+	
 	long long heap_end_temp = (long long)heap_end + amount;
+	//kprintf("SBRK: heap_start: %p heapend: %p, temp: %lld, amt: %d\n",(void *)heap_start,(void *)heap_end, heap_end_temp, amount);
+	/*struct page_table_entry* current = curproc->p_addrspace->first;
+	while(current != NULL){
+		kprintf("SBRK: v:%p, p:%p\n",(void *)current->va, (void *)current->pa );
+		current = current->next;
+	}*/
 
-	// kprintf("\nAFTER . heap_start %p heapend %lld stackbase %p",(void *)heap_start,heap_end_temp, (void *)stack_base);
 	if (heap_end_temp > (long long)stack_base) {
 		// kprintf("\nENOMEM failure");
 		return ENOMEM;
@@ -56,10 +59,43 @@ sys_sbrk(int amount, int *retval){
 	if ((heap_end % PAGE_SIZE) != 0) {
 		return EINVAL;
 	}
-
+	//kprintf("SBRK:Start:dva: %p, sb: %p\n", (void *)heap_end, (void *)stack_base);
+	//delete_pte_entry(heap_end, &(curproc->p_addrspace->first), stack_base);
 	*retval = curproc->p_addrspace->heapEnd;
 	curproc->p_addrspace->heapEnd = heap_end;
 	return 0;
+}
+
+void
+delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_base){
+	struct page_table_entry* temp = *head_ref, *prev= NULL;
+	//kprintf("deleting:Start:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
+	while(temp != NULL && temp->va >= va && temp->va < stack_base){
+	//	kprintf("deleting:B:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
+		*head_ref = temp->next;
+		bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
+		free_kpages(PADDR_TO_KVADDR(temp->pa));
+		kfree(temp);
+		temp = *head_ref;
+	}
+	//kprintf("deleting: couldn't find it in beginning\n");
+	while(temp != NULL){
+		while(temp != NULL && (temp->va < va || temp->va >= stack_base)){
+			prev = temp;
+			temp = temp->next;
+		}
+		if(temp == NULL){
+			return;
+		}
+		if(temp->va >= va && temp->va < stack_base){
+			prev->next = temp->next;
+			kprintf("deleting:M:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
+			bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
+			free_kpages(PADDR_TO_KVADDR(temp->pa));
+			kfree(temp);
+			temp = prev->next;
+		}
+	}
 }
 
 int
@@ -120,17 +156,20 @@ void child_fork_entry(void *data1, unsigned long data2){
 
 void
 sys__exit(int _exitcode){
-		curproc->has_exited = true;
-		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
-		V(curproc->exit_sem);
-		thread_exit();
+	
+	kprintf("EX:p:%d, pp:%d\n", curproc->pid, curproc->ppid);
+	curproc->has_exited = true;
+	curproc->exit_code = _MKWAIT_EXIT(_exitcode);
+	//kprintf("SYS_EXIT: returning\n");
+	V(curproc->exit_sem);
+	thread_exit();
 	return;
 }
 
 pid_t
 sys_waitpid(pid_t pid, int* status, int options, int *retval){
 
-	//kprintf("pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
+	//kprintf("WAITPID:pid: passed: %d , curproc->pid:%d, ppid:%d\n",pid,curproc->pid,curproc->ppid);
 	if(options != 0){
 		kprintf("Invalid options provided\n");
 		*retval = -1;
@@ -144,7 +183,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		*retval = -1;
 		return ESRCH;
 	}
-
+	kprintf("WPD:p:%d, pp:%d\n",pid,pid_proc->ppid);
 	if(curproc->pid != pid_proc->ppid){
 		kprintf("Trying to wait on a non-child process\n");
 		*retval = -1;
@@ -171,6 +210,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		}
 		}
 	}
+	//kprintf("WAITPID:out of waitpid: %d, ppid:%d\n",pid_proc->pid, pid_proc->ppid);
 	*retval = pid;
 	proc_destroy(pid_proc);
 	return 0;
@@ -198,7 +238,7 @@ sys_execv(const char *program, char **uargs){
 		return EINVAL;
 	}
 
-	kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
+	//kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
 
 	char **args = (char **) kmalloc(sizeof(char **));
 
@@ -332,7 +372,7 @@ sys_execv(const char *program, char **uargs){
 	kfree(program_name);
 	kfree(args);
 
-	kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
+	//kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
 	enter_new_process(j /*argc*/,
 			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
 			entry_point);

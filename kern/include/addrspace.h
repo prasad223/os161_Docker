@@ -150,12 +150,7 @@ int               as_prepare_load(struct addrspace *as);
 int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
-void deletePageTable(struct addrspace *as);
-void copyAllPageTableEntries(struct page_table_entry *old, struct page_table_entry **ret);
-struct page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as);
-struct page_table_entry* allocatePageTableEntry(vaddr_t vaddr);
-void as_zero_region(vaddr_t vaddr, unsigned npages);
-
+void delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref,vaddr_t stack_base);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

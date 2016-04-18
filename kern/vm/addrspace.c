@@ -44,39 +44,6 @@
  */
 #define OWN_VM_STACKPAGES 1000
 
-struct
-page_table_entry *findPageForGivenVirtualAddress(vaddr_t faultaddress, struct addrspace *as) {
-	KASSERT(as != NULL);
-	KASSERT((faultaddress & PAGE_FRAME) == faultaddress);
-	if (as->first == NULL) {
-		return NULL;
-	}
-	struct page_table_entry *tempFirst = as->first;
-	while(tempFirst != NULL) {
-		KASSERT(tempFirst->va < USERSTACK);
-		if (tempFirst->va == faultaddress) {
-			return tempFirst;
-		}
-		tempFirst = tempFirst->next;
-	}
-	return NULL;
-}
-
-
-/*Allocates a page table entry and add it to the page table of address space "as"*/
-struct
-page_table_entry* allocatePageTableEntry(vaddr_t vaddr) {
-	struct page_table_entry *tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-	KASSERT(tempNew != NULL);
-	tempNew->pa = getppages(1);
-
-	KASSERT(tempNew->pa != 0);
-	tempNew->va = vaddr;
-	KASSERT(tempNew-> va < USERSTACK);
-	//as_zero_region(tempNew->va,1);
-	return tempNew;
-}
-
 struct addrspace *
 as_create(void)
 {
@@ -145,12 +112,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		KASSERT(new_ptr->pa != 0);
 		new_ptr->va = old_ptr->va;
 		KASSERT(new_ptr->va < USERSTACK);
-		memcpy((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
+		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
 		
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
-		kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",
-		(void *)old_ptr->va,(void *)old_ptr->pa, (void *)new_ptr->va, (void *)new_ptr->pa );
+		//kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",
+		//(void *)old_ptr->va,(void *)old_ptr->pa, (void *)new_ptr->va, (void *)new_ptr->pa );
 		old_ptr = old_ptr->next;
 	}
 	lock_release(coremapLock);
@@ -255,12 +222,6 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
 	kprintf("More regions than supported !!! Panic");
 	return EACCES; //permission denied
-}
-
-void
-as_zero_region(vaddr_t vaddr, unsigned npages)
-{
-	bzero((void *)vaddr, npages * PAGE_SIZE);
 }
 
 int

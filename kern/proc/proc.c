@@ -194,7 +194,8 @@ proc_destroy(struct proc *proc)
 	kfree(proc->p_name);
 	//kprintf("PROC_DESTORY: pid lock\n");
 	lock_acquire(pid_lock);
-	//kprintf("lock acquired: freeing pid\n");
+	//kprintf("lock acquired: freeing pid: %d\n",proc->pid);
+	sem_destroy(proc->exit_sem);
 	*(process_list+proc->pid) = NULL;
 	lock_release(pid_lock);
 	kfree(proc);

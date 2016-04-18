@@ -236,6 +236,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	KASSERT((as->as_stackbase & PAGE_FRAME) == as->as_stackbase);
   KASSERT((as->heapStart & PAGE_FRAME) == as->heapStart);
   KASSERT((as->heapEnd & PAGE_FRAME) == as->heapEnd);
+  KASSERT(faultaddress < USERSTACK);
 
   /*Check if faultaddress is within code region
   Also check permissions*/
@@ -268,19 +269,30 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       2. If no entry is found based on faultaddress, then allocate a new entry
       3. Write the entry to TLB*/
       struct page_table_entry* tempNew = NULL;
-      tempNew = findPageForGivenVirtualAddress(faultaddress,as);
-      if (tempNew == NULL) { //allocate a new entry
-          tempNew = allocatePageTableEntry(faultaddress);
-          KASSERT(tempNew != NULL);
-          KASSERT(tempNew->pa != 0);
+      if (as->first != NULL) {
+        tempNew = as->first;
+        while(tempNew != NULL){
           KASSERT(tempNew->va < USERSTACK);
+          if(tempNew->va == faultaddress){
+            break;
+          }
+          tempNew = tempNew->next;
+        }
+      }
+      if (tempNew == NULL) { //allocate a new entry
+          tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+          KASSERT(tempNew != NULL);
+          tempNew->pa = getppages(1);
+          bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
+          KASSERT(tempNew->pa != 0);
+          tempNew->va = faultaddress;
           tempNew->next = as->first;
           as->first = tempNew;
       } else { //right now, don't know what to do , will be used during swapping stage
 
       }
       /*Spinlock doesn't work here; results in deadlock*/
-      KASSERT(faultaddress < USERSTACK);
+    
       int spl = splhigh();
       ehi = faultaddress;
       elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
