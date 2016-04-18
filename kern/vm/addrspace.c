@@ -102,10 +102,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct page_table_entry *old_ptr = old->first;
 	struct page_table_entry *new_ptr = NULL;
 
-	lock_acquire(coremapLock);
+	//lock_acquire(coremapLock);
 	while(old_ptr != NULL){
-		/*Removing kprintf fails parallelvm.t test !! Mind blown !!! */
-
 		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(new_ptr != NULL);
 		new_ptr->pa = getppages(1);
@@ -113,14 +111,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		new_ptr->va = old_ptr->va;
 		KASSERT(new_ptr->va < USERSTACK);
 		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
-		
+
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
-		//kprintf("AS_COPY: old: va:%p , pa:%p  ,  new: va:%p, pa:%p\n",
-		//(void *)old_ptr->va,(void *)old_ptr->pa, (void *)new_ptr->va, (void *)new_ptr->pa );
 		old_ptr = old_ptr->next;
 	}
-	lock_release(coremapLock);
+	//lock_release(coremapLock);
 	*ret = newas;
 	return 0;
 }
@@ -134,6 +130,7 @@ as_destroy(struct addrspace *as)
 	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
 	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
 	vm_tlbshootdown_all();
+  //lock_acquire(coremapLock);
 	struct page_table_entry* current = as->first, *next = NULL;
 	while(current != NULL){
 		next = current->next;
@@ -141,6 +138,7 @@ as_destroy(struct addrspace *as)
 		kfree(current);
 		current = next;
 	}
+  //lock_release(coremapLock);
 	as->first 			= NULL;
 	kfree(as->first);
 	as->as_vbase1   = (vaddr_t)0;
@@ -169,7 +167,7 @@ as_deactivate(void)
 	 * anything. See proc.c for an explanation of why it (might)
 	 * be needed.
 	 */
-	vm_tlbshootdown_all();
+	//vm_tlbshootdown_all();
 }
 
 /*

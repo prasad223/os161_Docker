@@ -183,12 +183,14 @@ free_kpages(vaddr_t addr) {
 int
 get_first_free_index() {
   int result = PATH_MAX,i;
+  //lock_acquire(coremapLock);
   for(i = 0; i < coremap_page_num; i++) {
     if (coremap[i].state == CLEAN) {
       result = i;
       return result;
     }
   }
+  //lock_release(coremapLock);
   return result;
 }
 
@@ -258,10 +260,10 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     //do nothing
   } else {
     kprintf("faultaddresss %p ",(void *)faultaddress);
-    kprintf("\n heapStart %p heapEnd %p",(void *)as->heapStart, (void *)as->heapEnd);    
+    kprintf("\n heapStart %p heapEnd %p",(void *)as->heapStart, (void *)as->heapEnd);
     panic("Undefined region !! panic"); //TODO: Check later
   }
-  lock_acquire(coremapLock);
+  //lock_acquire(coremapLock);
   if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
   {
       /*Things to do :
@@ -282,8 +284,10 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       if (tempNew == NULL) { //allocate a new entry
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
+          //lock_acquire(coremapLock);
           tempNew->pa = getppages(1);
           bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
+          //lock_release(coremapLock);
           KASSERT(tempNew->pa != 0);
           tempNew->va = faultaddress;
           tempNew->next = as->first;
@@ -292,7 +296,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
       }
       /*Spinlock doesn't work here; results in deadlock*/
-    
+
       int spl = splhigh();
       ehi = faultaddress;
       elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
@@ -321,12 +325,12 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
       spinlock_release(&tlb_spinlock);
     } else {
-      lock_release(coremapLock);
+      //lock_release(coremapLock);
       kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
       sys__exit(SIGSEGV);
     }
   }
-  lock_release(coremapLock);
+  //lock_release(coremapLock);
   return 0;
 }
 
