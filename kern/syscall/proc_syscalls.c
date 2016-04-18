@@ -60,7 +60,7 @@ sys_sbrk(int amount, int *retval){
 		return EINVAL;
 	}
 	//kprintf("SBRK:Start:dva: %p, sb: %p\n", (void *)heap_end, (void *)stack_base);
-	//delete_pte_entry(heap_end, &(curproc->p_addrspace->first), stack_base);
+	delete_pte_entry(heap_end, &(curproc->p_addrspace->first), stack_base);
 	*retval = curproc->p_addrspace->heapEnd;
 	curproc->p_addrspace->heapEnd = heap_end;
 	return 0;
@@ -89,7 +89,7 @@ delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_b
 		}
 		if(temp->va >= va && temp->va < stack_base){
 			prev->next = temp->next;
-			kprintf("deleting:M:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
+			//kprintf("deleting:M:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
 			bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
 			free_kpages(PADDR_TO_KVADDR(temp->pa));
 			kfree(temp);
@@ -157,7 +157,6 @@ void child_fork_entry(void *data1, unsigned long data2){
 void
 sys__exit(int _exitcode){
 
-	kprintf("EX:p:%d, pp:%d\n", curproc->pid, curproc->ppid);
 	curproc->has_exited = true;
 	curproc->exit_code = _MKWAIT_EXIT(_exitcode);
 	//kprintf("SYS_EXIT: returning\n");
@@ -183,7 +182,6 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 		*retval = -1;
 		return ESRCH;
 	}
-	kprintf("WPD:p:%d, pp:%d\n",pid,pid_proc->ppid);
 	if(curproc->pid != pid_proc->ppid){
 		kprintf("Trying to wait on a non-child process\n");
 		*retval = -1;
