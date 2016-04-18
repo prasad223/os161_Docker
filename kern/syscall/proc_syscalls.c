@@ -38,7 +38,7 @@ sys_sbrk(int amount, int *retval){
 	heap_start = curproc->p_addrspace->heapStart;
 	heap_end   = curproc->p_addrspace->heapEnd;
 	stack_base = curproc->p_addrspace->as_stackbase;
-	
+
 	long long heap_end_temp = (long long)heap_end + amount;
 	//kprintf("SBRK: heap_start: %p heapend: %p, temp: %lld, amt: %d\n",(void *)heap_start,(void *)heap_end, heap_end_temp, amount);
 	/*struct page_table_entry* current = curproc->p_addrspace->first;
@@ -156,7 +156,7 @@ void child_fork_entry(void *data1, unsigned long data2){
 
 void
 sys__exit(int _exitcode){
-	
+
 	kprintf("EX:p:%d, pp:%d\n", curproc->pid, curproc->ppid);
 	curproc->has_exited = true;
 	curproc->exit_code = _MKWAIT_EXIT(_exitcode);
@@ -177,7 +177,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	struct proc* pid_proc = get_pid_proc(pid);
-	
+
 	if(pid < PID_MIN || pid > PID_MAX || pid_proc == NULL || pid == curproc->pid || pid == curproc->ppid){
 		kprintf("Trying to wait invalid pid or self");
 		*retval = -1;
@@ -191,20 +191,18 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 
 	if(!pid_proc->has_exited){
-		kprintf("waiting for pid_proc %d\n",pid_proc->pid);
 		P(pid_proc->exit_sem);
 	}
 	if(status != NULL){
 		if(pid_proc->pid == 2 && pid_proc->ppid == 1){
 			*status = pid_proc->exit_code;
-			kprintf("special case\n");
 		}else{
 
 		int error = copyout((const void*)&(pid_proc->exit_code),
 			(userptr_t)status, sizeof(int));
 		if(error){
-			kprintf("SYS_waitpid: pid:%d ppid:%d\n",pid_proc->pid, pid_proc->ppid);
-			kprintf("SYS_waitpid: Invalid status pointer\n");
+			//kprintf("SYS_waitpid: pid:%d ppid:%d\n",pid_proc->pid, pid_proc->ppid);
+			//kprintf("SYS_waitpid: Invalid status pointer\n");
 			*retval = -1;
 			return EFAULT;
 		}
