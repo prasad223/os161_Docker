@@ -100,7 +100,7 @@ vm_bootstrap(void) {
 	}
   // Set coremap used size to 0
   coremap_used_size = 0;
-  coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
+  //coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
 }
 
 /*

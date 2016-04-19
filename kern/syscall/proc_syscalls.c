@@ -121,7 +121,7 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 	int error;
 	struct proc *child_proc = proc_create_runprogram("child process");
 	struct trapframe* child_trapframe = NULL;
-
+	//kprintf("FORK:cpid:%d , chpid:%d\n",curproc->pid, child_proc->pid);
 	error = as_copy(curproc->p_addrspace, &(child_proc->p_addrspace));
 	if(error){
 		*retval = -1;
@@ -161,6 +161,7 @@ void child_fork_entry(void *data1, unsigned long data2){
 	as_activate();
 
 	temp_tf = *tf;
+	kfree(tf);
 	mips_usermode(&temp_tf);
 	return;
 }
