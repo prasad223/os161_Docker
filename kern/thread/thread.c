@@ -50,6 +50,7 @@
 #include <addrspace.h>
 #include <mainbus.h>
 #include <vnode.h>
+#include <vfs.h>
 
 
 /* Magic number used as a guard value on kernel thread stacks. */
@@ -284,7 +285,19 @@ thread_destroy(struct thread *thread)
 
 	/* sheer paranoia */
 	thread->t_wchan_name = "DESTROYED";
-
+	for(int i = 0 ;i < OPEN_MAX; i++){
+		if(thread->t_fdtable[i] != NULL){
+			thread->t_fdtable[i]->refCount -= 1;
+			if(thread->t_fdtable[i]->refCount == 0){
+				lock_destroy(thread->t_fdtable[i]->lk);
+      			vfs_close(thread->t_fdtable[i]->vn);
+				kfree(thread->t_fdtable[i]);
+				thread->t_fdtable[i] = NULL;
+			}
+		}else{
+			break;
+		}
+	}
 	kfree(thread);
 }
 
@@ -537,6 +550,8 @@ thread_fork(const char *name,
 		curthread->t_fdtable[i]->refCount = curthread->t_fdtable[i]->refCount+1;
 		newthread->t_fdtable[i] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
 		newthread->t_fdtable[i] = curthread->t_fdtable[i];
+	  }else{
+	  	break;
 	  }
 	}
 	/* Attach the new thread to its process */
