@@ -154,8 +154,11 @@ as_destroy(struct addrspace *as)
 
 void
 as_activate(void)
-{
-	vm_tlbshootdown_all();
+{	
+	struct addrspace *as = proc_getas();
+	if(as != NULL){
+		vm_tlbshootdown_all();
+	}
 	return;
 }
 

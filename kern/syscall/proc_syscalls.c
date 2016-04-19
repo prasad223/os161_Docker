@@ -16,12 +16,14 @@
 #include <current.h>
 #include <synch.h>
 #include <lib.h>
+#include <mips/tlb.h>
 #include <mips/trapframe.h>
 #include <vfs.h>
 #include <vnode.h>
 #include <kern/fcntl.h>
+#include <kern/signal.h>
 #include <addrspace.h>
-
+#include <spl.h>
 
 /*
  * Largely inspired from jinghao's blog
@@ -40,19 +42,11 @@ sys_sbrk(int amount, int *retval){
 	stack_base = curproc->p_addrspace->as_stackbase;
 
 	long long heap_end_temp = (long long)heap_end + amount;
-	//kprintf("SBRK: heap_start: %p heapend: %p, temp: %lld, amt: %d\n",(void *)heap_start,(void *)heap_end, heap_end_temp, amount);
-	/*struct page_table_entry* current = curproc->p_addrspace->first;
-	while(current != NULL){
-		kprintf("SBRK: v:%p, p:%p\n",(void *)current->va, (void *)current->pa );
-		current = current->next;
-	}*/
 
 	if (heap_end_temp > (long long)stack_base) {
-		// kprintf("\nENOMEM failure");
 		return ENOMEM;
 	}
 	if (heap_end_temp < (long long)heap_start) {
-		// kprintf("\nEINVAL failure");
 		return EINVAL;
 	}
 	heap_end= heap_end + amount;
@@ -60,7 +54,9 @@ sys_sbrk(int amount, int *retval){
 		return EINVAL;
 	}
 	//kprintf("SBRK:Start:dva: %p, sb: %p\n", (void *)heap_end, (void *)stack_base);
-	delete_pte_entry(heap_end, &(curproc->p_addrspace->first), stack_base);
+	if(amount < 0){
+		delete_pte_entry(heap_end, &(curproc->p_addrspace->first), stack_base);
+	}
 	*retval = curproc->p_addrspace->heapEnd;
 	curproc->p_addrspace->heapEnd = heap_end;
 	return 0;
@@ -70,11 +66,20 @@ void
 delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_base){
 	struct page_table_entry* temp = *head_ref, *prev= NULL;
 	//kprintf("deleting:Start:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
+
+	int spl = 0;
+	int index = -1;
 	while(temp != NULL && temp->va >= va && temp->va < stack_base){
 	//	kprintf("deleting:B:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
 		*head_ref = temp->next;
 		bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
 		free_kpages(PADDR_TO_KVADDR(temp->pa));
+		spl = splhigh();
+  		index = tlb_probe(temp->va, 0);
+  		if(index >= 0){
+  			tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+  		}
+  		splx(spl);
 		kfree(temp);
 		temp = *head_ref;
 	}
@@ -92,6 +97,12 @@ delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_b
 			//kprintf("deleting:M:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
 			bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
 			free_kpages(PADDR_TO_KVADDR(temp->pa));
+			spl = splhigh();
+  			index = tlb_probe(temp->va, 0);
+  			if(index >= 0){
+  				tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+	  		}
+  			splx(spl);
 			kfree(temp);
 			temp = prev->next;
 		}
@@ -158,8 +169,12 @@ void
 sys__exit(int _exitcode){
 
 	curproc->has_exited = true;
-	curproc->exit_code = _MKWAIT_EXIT(_exitcode);
-	//kprintf("SYS_EXIT: returning\n");
+	// TODO: This is not a clean way to do it, write it to handle all signals
+	if(_exitcode == SIGSEGV){
+		curproc->exit_code = _MKWAIT_SIG(_exitcode);
+	}else{
+		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
+	}
 	V(curproc->exit_sem);
 	thread_exit();
 	return;

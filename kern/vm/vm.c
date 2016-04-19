@@ -201,9 +201,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	uint32_t ehi, elo;
 	struct addrspace *as;
 	faultaddress &= PAGE_FRAME;
-
-	//kprintf("faultaddress : 0x%x\n", faultaddress);
-
+  vaddr_t vb1, vt1, vb2, vt2;
   if (curproc == NULL) {
     /*
 		 * No process. This is probably a kernel fault early
@@ -222,46 +220,38 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
   }
   /* Assert that the address space has been set up properly. */
   /*Region 1*/
-  KASSERT(as->as_vbase1 != 0);
-	KASSERT(as->as_npages1 != 0);
-  /*Region 2*/
-  KASSERT(as->as_vbase2 != 0);
-	KASSERT(as->as_npages2 != 0);
-  /*Stack */
-	KASSERT(as->as_stackbase != 0);
-  /*Heap */
-  KASSERT(as->heapStart != 0);
-  KASSERT(as->heapEnd != 0);
-  /*Check if vaddr are valid or not*/
-	KASSERT((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
-	KASSERT((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
-	KASSERT((as->as_stackbase & PAGE_FRAME) == as->as_stackbase);
-  KASSERT((as->heapStart & PAGE_FRAME) == as->heapStart);
-  KASSERT((as->heapEnd & PAGE_FRAME) == as->heapEnd);
-  KASSERT(faultaddress < USERSTACK);
+  vb1 = as->as_vbase1 & PAGE_FRAME;
+  vt1 = vb1 + as->as_npages1 * PAGE_SIZE;
+  vb2 = as->as_vbase2 & PAGE_FRAME;
+  vt2 = vb2 + as->as_npages2 * PAGE_SIZE;
+
+  KASSERT(vb1 != 0);
+  KASSERT(vt1 != 0);
+  KASSERT(vb2 != 0);
+  KASSERT(vt2 != 0);
+  KASSERT(as->as_stackbase != 0);
 
   /*Check if faultaddress is within code region
   Also check permissions*/
   uint8_t permissions;
-  if ((faultaddress >= as->as_vbase1) && (faultaddress <= ( as->as_vbase1 + as->as_npages1 * PAGE_SIZE))) {
+  if (faultaddress >= vb1 && faultaddress < vt1) {
     permissions = (as->perm_region1 & PF_W);
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
   }
-  else if ((faultaddress >= as->as_vbase2) && (faultaddress <= ( as->as_vbase2 + as->as_npages2 * PAGE_SIZE))) {
+  else if (faultaddress >= vb2 && faultaddress < vt2) {
     permissions = (as->perm_region2 & PF_W);
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
-  } else if ((faultaddress >= as->as_stackbase) && (faultaddress < USERSTACK)) {
-    //do nothing
-  } else if ((faultaddress >= as->heapStart) && (faultaddress <= as->heapEnd)) {
-    //do nothing
-  } else {
-    kprintf("faultaddresss %p ",(void *)faultaddress);
-    kprintf("\n heapStart %p heapEnd %p",(void *)as->heapStart, (void *)as->heapEnd);
-    panic("Undefined region !! panic"); //TODO: Check later
+  }else if(faultaddress >= as->heapStart && faultaddress < as->heapEnd){
+    // Valid region, nothing to worry. Perhaps may be we need to check for permissions
+  }else if( faultaddress >= as->as_stackbase && faultaddress < USERSTACK){
+    // Valid region, nothing to worry. Perhaps may be we need to check for permissions
+  }else{
+    // Invalid access, throw error 
+    return EFAULT;
   }
   //lock_acquire(coremapLock);
   if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
