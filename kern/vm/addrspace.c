@@ -107,7 +107,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
 		KASSERT(new_ptr != NULL);
 		new_ptr->pa = getppages(1);
-		KASSERT(new_ptr->pa != 0);
+		if(new_ptr->pa == 0){
+			return -1;
+		}
 		new_ptr->va = old_ptr->va;
 		KASSERT(new_ptr->va < USERSTACK);
 		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
