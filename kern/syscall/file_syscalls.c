@@ -178,6 +178,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   }
   //check the flags
   if (flags < 0) {
+    kfree(kbuff);
     kprintf_n("Flags cannot be negative\n");
     return EINVAL;
   }
@@ -188,6 +189,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   }
   if ( index == OPEN_MAX) {
     *retval = 1; // error
+    kfree(kbuff);
     return EMFILE; /* Too many open files */
   }
   // create the vnode
@@ -305,11 +307,6 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
     kprintf_n("File handle is invalid in sys_write\n");
     return result;
   }
-  //kprintf_n("curthread->t_fdtable[fd]->openFlags %d\n",curthread->t_fdtable[fd]->openFlags);
-  /*if (curthread->t_fdtable[fd]->openFlags  == O_RDONLY) { // inappropriate permissions
-    kprintf_n("File permissions are invalid. Flags are read only in sys_write");
-    return EBADF;
-  }*/
   if ((curthread->t_fdtable[fd]->openFlags & O_ACCMODE) == 0) {
     kprintf_n("File permissions are invalid. Flags are read only in sys_write\n");
     return EBADF;
@@ -344,24 +341,6 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
     kprintf_n("File handle invalid in sys_read\n");
     return result;
   }
-  //kprintf_n("Flags passed are %d\n",curthread->t_fdtable[fd]->openFlags);
-  /*if ((curthread->t_fdtable[fd]->openFlags  != O_RDONLY) && (curthread->t_fdtable[fd]->openFlags  != O_RDWR)) {
-    kprintf_n("Flags are invalid in sys_read %d\n",curthread->t_fdtable[fd]->openFlags);
-    return EBADF;
-  }*/
-  //void *kbuff;
-  /**this is a clever way to get around the fact that we are not aware
-  * of the "type" of data to write. *buf points to first location of buf, thus sizeof(*buf) gives size of the primitive
-  * held in buf. Then, it is straight forward to allocate kbuff the required number of bytes**/
-  /*kbuff = (char *)kmalloc(sizeof(*buf)*nbytes);
-  if (kbuff == NULL) {
-    kprintf_n("Could not allocate kbuff to sys_read\n");
-    return EFAULT;
-  }
-  if (copyin((const_userptr_t) buf, kbuff, sizeof(kbuff) ) ) {
-    kprintf_n("Could not copy the buffer to kbuff in sys_read\n");
-    return EFAULT;
-  }*/
   /** check the flags **/
   if ((curthread->t_fdtable[fd]->openFlags & O_WRONLY) == O_WRONLY) {
     kprintf_n("File opened with write-only\n");
