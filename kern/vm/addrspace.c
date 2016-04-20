@@ -105,15 +105,15 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	//lock_acquire(coremapLock);
 	while(old_ptr != NULL){
 		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-		KASSERT(new_ptr != NULL);
+		if(new_ptr == NULL){
+			return ENOMEM;
+		}
 		new_ptr->pa = getppages(1);
 		if(new_ptr->pa == 0){
-			return -1;
+			return ENOMEM;
 		}
 		new_ptr->va = old_ptr->va;
-		KASSERT(new_ptr->va < USERSTACK);
 		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
-
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
 		old_ptr = old_ptr->next;
@@ -127,7 +127,7 @@ void
 as_destroy(struct addrspace *as)
 {
 	KASSERT(as != NULL);
-	KASSERT(as->first != NULL);
+	//KASSERT(as->first != NULL);
 	/*Shoot down all TLB entries associated with this process's address space*/
 	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
 	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
@@ -144,13 +144,16 @@ as_destroy(struct addrspace *as)
 	as->first 			= NULL;
 	kfree(as->first);
 	as->as_vbase1   = (vaddr_t)0;
+	as->as_npages1  = 0;
 	/*Region 2*/
 	as->as_vbase2   = (vaddr_t)0;
+	as->as_npages2  = 0;
 	/*stack base + size*/
 	as->as_stackbase= (vaddr_t)0;
+	as->nStackPages = 0;
 	/*Heap base + size*/
-	as->heapStart	 = (vaddr_t)0;
-	as->heapEnd	= (vaddr_t)0;
+	as->heapStart	= (vaddr_t)0;
+	as->heapEnd		= (vaddr_t)0;
 	kfree(as);
 }
 
@@ -249,12 +252,8 @@ as_complete_load(struct addrspace *as)
 {
 	/*Change the permission of each region to original values; */
 	KASSERT(as != NULL);
-	//int oldPerm1 = ((as->perm_region1  & 7)>> 3);
-	//int oldPerm2 = ((as->perm_region2  & 7)>> 3);
 	as->perm_region1 = as->perm_region1_temp;
 	as->perm_region2 = as->perm_region2_temp;
-	// as->perm_region1 = oldPerm1;
-	// as->perm_region2 = oldPerm2;
 
 	return 0;
 }

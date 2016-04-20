@@ -264,7 +264,6 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       if (as->first != NULL) {
         tempNew = as->first;
         while(tempNew != NULL){
-          KASSERT(tempNew->va < USERSTACK);
           if(tempNew->va == faultaddress){
             break;
           }
@@ -278,7 +277,9 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew->pa = getppages(1);
           bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
           //lock_release(coremapLock);
-          KASSERT(tempNew->pa != 0);
+          if(tempNew->pa == 0){
+            return ENOMEM;
+          }
           tempNew->va = faultaddress;
           tempNew->next = as->first;
           as->first = tempNew;
