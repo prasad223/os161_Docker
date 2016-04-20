@@ -29,9 +29,9 @@
 **/
 int
 init_file_descriptor(void) {
-  struct vnode *vin;
-  struct vnode *vout;
-  struct vnode *verr;
+  struct vnode *vin = NULL;
+  struct vnode *vout= NULL;
+  struct vnode *verr= NULL;
 
   char *in    = NULL;
   char *out   = NULL;
@@ -136,6 +136,9 @@ init_file_descriptor(void) {
   curthread->t_fdtable[2]->lk        = lock_create(err);
   curthread->t_fdtable[2]->offset    = 0;
 
+  kfree(in);
+  kfree(out);
+  kfree(err);
   return 0;
 }
 
