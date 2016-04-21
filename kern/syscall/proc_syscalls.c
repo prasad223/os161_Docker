@@ -342,6 +342,7 @@ sys_execv(const char *program, char **uargs){
 	//	kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
 		//arg = (char *)kmalloc(sizeof(arg_length));
 		arg = kstrdup(args[j]);
+		kfree(args[j]);
 		for (int i = 0; i < arg_length; i++) {
 
 			if (i >= pad_length)
