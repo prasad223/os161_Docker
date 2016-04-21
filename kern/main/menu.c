@@ -280,7 +280,9 @@ cmd_quit(int nargs, char **args)
 {
 	(void)nargs;
 	(void)args;
-
+	if (pid_lock != NULL) {
+    	lock_destroy(pid_lock);
+  }
 	vfs_sync();
 	sys_reboot(RB_POWEROFF);
 	thread_exit();
