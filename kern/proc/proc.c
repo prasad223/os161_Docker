@@ -52,7 +52,6 @@
 # define MAX_PROCS 128
 
 static struct proc* process_list[MAX_PROCS];
-static struct lock* pid_lock;
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
