@@ -164,7 +164,7 @@ The best solution is to have a linked list for storing the region's information.
 `struct regionlist {
   paddr_t paddr_base;
   vaddr_t vaddr_base;
-  size_t nPages; // Not sure if this is supposed to be the actual size or npages 
+  size_t nPages; // Not sure if this is supposed to be the actual size or npages
   size_t size; // yet to finalise on this
   int permissions;
   struct regionlist * next, * end;
@@ -199,7 +199,7 @@ Since we need to change the structure of addrspace to support our requirements (
 `struct page_table_entry{
   paddr_t paddr_base;
   vaddr_t vaddr_base;
-  size_t nPages; // Not sure if this is supposed to be the actual size or npages 
+  size_t nPages; // Not sure if this is supposed to be the actual size or npages
   size_t size; // yet to finalise on this
   int permissions;
   struct regionlist * next, * end;
@@ -210,3 +210,35 @@ Below is just a rough outline of what needs to be done in each of as_* functions
 1. as_create() -- In this function, we should instantiate an empty address space and  
 
 as_create
+
+###### Swapping operations
+Note : Only changes required to existing functions plus new functions are explained.
+For swapping, we need to maintain 4 page states :
+
+1. CLEAN
+2. DIRTY
+3. FIXED
+4. FREE
+
+Coremap structure has a time field now, to store the time when page was allocated. This will be used at the time of page replacement.
+
+`vm_bootstrap`
+In coremap, when the pages are first initialized, then the kernel pages are marked as FIXED. These pages are never freed.
+Other all pages are marked as FREE.
+
+`alloc_kpages`
+We need to start our iteration from `noOfFixedPages` ( this stores the number of pages held by kernel).  
+If no page is found free, we find the page with oldest timestamp field (excluding kernel pages of course), and swap it out to disk.
+
+`findOldestPageIndex`
+
+The page with the oldest timestamp is selected as the victim
+
+`vm_fault`
+
+In the vm_fault with type `VM_FAULT_READ` and `VM_FAULT_WRITE` , we will check the PTE is found or not .If no PTE is found, we will see that the coremap is full or not.
+If coremap is full, find a page to swapout. After swapout is done, then the new page is allocated to the freed index
+
+If PTE is found, then we have to check if the page is in disk or memory. If page is in disk,then we will have to again see if we can swapin a page ( if coremap is full, we have to swapout a page). Then swapin is done
+
+``
