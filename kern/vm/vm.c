@@ -159,7 +159,7 @@ alloc_kpages(unsigned npages) {
 
 paddr_t
 make_page_avail(unsigned npages){
-  
+
   if(numPagesAllocated == coremap_page_num){
     int indexToSwap = dequeue();
     if(indexToSwap == 0){
@@ -168,7 +168,7 @@ make_page_avail(unsigned npages){
     while(coremap[indexToSwap].state != DIRTY){
       indexToSwap = dequeue();
     }
-    //page_swapout(indexToSwap);
+    page_swapout(indexToSwap);
     return coremap[indexToSwap].phyAddr;
   }
   return getppages(npages);
@@ -184,10 +184,10 @@ int dequeue(void){
  queue[front] = -1;
  front = (front+1) % SIZE;
  --queue_size;
- return value; 
+ return value;
 }
 
-int enqueue(int value){ 
+int enqueue(int value){
   if(queue_size == SIZE){
     panic("Queue is full\n");
   }
@@ -195,7 +195,7 @@ int enqueue(int value){
   queue[rear] = value;
   ++queue_size;
   //kprintf("enqueue: val:%d, rear:%d, size:%d\n",value,rear,queue_size);
-  return 0; 
+  return 0;
 }
 
 paddr_t

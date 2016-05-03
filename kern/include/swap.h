@@ -27,10 +27,11 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include <addrspace.h>
 #include <types.h>
+#include <addrspace.h>
+#include <bitmap.h>
 
-#define MAX_SWAP_COUNT 16384 // 4096 * 4
+#define MAX_SWAP_COUNT 4096
 
 /**/
 struct swapPageInfo {
@@ -41,15 +42,18 @@ struct swapPageInfo {
 
 struct swapTable *swapPageInfo[MAX_SWAP_COUNT]; // fixed size swap table
 struct vnode *swapFile;
+struct bitmap *swapBitArray;
+/**
+* Finds an offset from swap table, whichever is free is taken
+**/
+int locate_entry_in_swapTable(void);
 
 /**
 Swapping file operations :
 
-openSwapFile - opens the swap file "lhd0raw:" in O_RDWR model
-page_evict   - Evicts a page from memory i.e. change the PTE state from present to swapped and shootdown TLB Entry
 page_swapout - swap out a page to disk
 page_swapin  - swap in a page from disk to memory
-findOldestPageIndex -
+read_page    -
 **/
 /*Functions to do in swapping operations*/
 
@@ -58,23 +62,26 @@ Parameter : indexToSwap => the index of coremap which we have to swap out
 */
 void page_swapout(int indexToSwap);
 
-/*
-Parameter : indexToEvict=> Evicts the page of coremap at the given index
+/*Parameter
+* pteToSwapIn => PTE to swap in from disk
+* pa          => Physical address of the page
 */
-void page_evict(int indexToEvict);
-
+void page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa);
 /**
-Parameter : indexToSwap => the index of coremap which we have to swap out
+Parameter:swapMapOffset => the index in the swapTable bitmap array
+          indexToSwap   => the index of coremap which we have to swap out
+
 Usage of function:
 
 To write a page to swap disk, we have to first locate it using the swapTable
 There will be two cases :
 1. No entry is found in swapTable for the given AS and VA, in that case, we will allocate a new entry in the swapTable
 2. entry is found, in which case contents on disk are overwritten
-
-
 **/
-void write_page_to_swap(int indexToSwap);
-
-
-void locate_entry_in_swapTable();
+void write_page_to_swap(int swapMapOffset, int indexToSwap);
+/**/
+void read_page_from_swap(int swapMapOffset, paddr_t pa);
+/*
+* Finds the page table from the given address space with the given virtual address
+*/
+struct page_table_entry* findPTE(struct addrspace *as, vaddr_t va);
