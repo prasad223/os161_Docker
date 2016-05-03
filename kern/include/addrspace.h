@@ -45,6 +45,7 @@ struct page_table_entry {
     vaddr_t va;
     paddr_t pa;
     struct page_table_entry *next;
+    bool pageInDisk;
 };
 
 // struct regionlist {

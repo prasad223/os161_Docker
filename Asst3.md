@@ -236,9 +236,13 @@ The page with the oldest timestamp is selected as the victim
 
 `vm_fault`
 
+<<<<<<< Updated upstream
 In the vm_fault with type `VM_FAULT_READ` and `VM_FAULT_WRITE` , we will check the PTE is found or not .If no PTE is found, we will see that the coremap is full or not.
 If coremap is full, find a page to swapout. After swapout is done, then the new page is allocated to the freed index
 
 If PTE is found, then we have to check if the page is in disk or memory. If page is in disk,then we will have to again see if we can swapin a page ( if coremap is full, we have to swapout a page). Then swapin is done
 
 ``
+=======
+In the vm_fault with type `VM_FAULT_READ` and `VM_FAULT_WRITE` , we will check the PTE is 
+>>>>>>> Stashed changes

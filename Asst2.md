@@ -133,7 +133,7 @@ NOTE : the parameter ```_mode_``` is ignored as suggested in man pages.
 5. Trick here is to allocate offset correctly. For read mode, we can set it to 0. However, in write mode if O_APPEND is passed, we don't want to overwrite any existing content, thus we need to set offset to file end in such case.
 This is done using VOP_STAT function which gives me file stat, and we use the st_size for this purpose.
 
-This completes the design of sys_write
+This completes the design of sys_open
 
 ###### sys_write
 
@@ -230,24 +230,24 @@ Since user-space library expects buffer to be null-terminated, we will have to i
 
 
 
-Prasad --- 
+Prasad ---
 
 OS 161 Asst2
 
 no support for user processes
-after completion, launch shell 
+after completion, launch shell
 
-design and define data structures 
+design and define data structures
 system calls, interface specifications
 calm down, think, design , think , design again
 
-check how kernel boots up , this might be useful 
-look at __start.S
+check how kernel boots up , this might be useful
+look at start.S
 sys_reboot() in main.c
 system call executes using syscall() in syscall.h
 
 You will also be implementing the subsystem that keeps track of the multiple processes you will have in the future
-what data structures , 
+what data structures ,
 get started in kern/include/proc.h
 
 helpful to look at kernel include files of your favorite operating system for suggestions, specifically the proc structure
@@ -259,7 +259,7 @@ To create new user programs, you will need to edit the Makefile in bin, sbin, or
 Use an existing program and its Makefile as a template
 
 Design doc
- Git Markup 
+ Git Markup
  AsciiDoc
 
 The contents of your design document should include (but not be limited to):
@@ -280,17 +280,17 @@ Design Considerations
 4) Avoid user program from modifying kernel related stuff
 5 )What new data structures will you need to manage multiple processes?
 6) What relationships do these new structures have with the rest of the system?
-7) How will you manage file accesses? 
-	When the shell invokes the cat command, 
-	and the cat command starts to read file1, 
-	what will happen if another program also tries to read file1? 
+7) How will you manage file accesses?
+	When the shell invokes the cat command,
+	and the cat command starts to read file1,
+	what will happen if another program also tries to read file1?
 	What would you like to happen?
 
 Existing process support
 
 Key files to user programs
 
-1) loadelf.c  	- loading elf executable from File System and into Virtual space 
+1) loadelf.c  	- loading elf executable from File System and into Virtual space
 2) runprogram.c - running program from kernel menu, It is a good base for writing the execv system call
 				  Determine what more is required for execv() that runprogram() does not conern itself with (or take care of)
 3) uio.c 		- This file contains functions for moving data between kernel and user space

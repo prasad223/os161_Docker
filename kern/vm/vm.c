@@ -41,6 +41,7 @@
 #include <signal.h>
 #include <kern/proc_syscalls.h>
 #include <spl.h>
+#include <swap.h>
 
 //static bool vm_bootstrap_done = false;
 //struct lock* vm_lock; //no idea why, investigate later
@@ -49,12 +50,13 @@ static paddr_t lastpaddr, freeAddr, firstpaddr;
 static int firstFreeIndex; // not used for now, can be used in case we need performance
 static int minFreeIndex;
 int coremap_page_num;
-struct coremap_entry* coremap;
+
 /*
  * Wrap ram_stealmem in a spinlock.
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
+/*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*
 * Logic is to find the first free physical address from where we can start to initialize our coremap.
 * ram_getsize() returns total ram size, and ram_getfirstfree() returns first free physical address
@@ -79,10 +81,15 @@ vm_bootstrap(void) {
 	freeAddr = ROUNDUP(freeAddr, PAGE_SIZE);
 
   // Allocate memory to coremap
-	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
+	coremap      = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
   minFreeIndex = firstFreeIndex = coremap_size;
+
   // Initiliase each page status in coremap
+  // for(i =0; i < noOfFixedPages; i++) {
+  //   coremap[i].state = FIXED;
+  //   coremap[i].allocPageCount = 1;
+  // }
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
 			coremap[i].state = FIXED;
@@ -92,11 +99,10 @@ vm_bootstrap(void) {
 		temp = firstpaddr + (PAGE_SIZE * i);
     coremap[i].phyAddr= temp;
     coremap[i].allocPageCount = -1;
-    coremap[i].va = PADDR_TO_KVADDR(temp);
+    coremap[i].va             = PADDR_TO_KVADDR(temp);
 	}
   // Set coremap used size to 0
   coremap_used_size = 0;
-  //coremapLock = lock_create("coremap lock"); // TODO: this cannot be created, it'll deadlock
 }
 
 /*
@@ -224,7 +230,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
   }else if( faultaddress >= as->as_stackbase && faultaddress < USERSTACK){
     // Valid region, nothing to worry. Perhaps may be we need to check for permissions
   }else{
-    // Invalid access, throw error 
+    // Invalid access, throw error
     return EFAULT;
   }
   //lock_acquire(coremapLock);
@@ -258,7 +264,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew->next = as->first;
           as->first = tempNew;
       } else { //right now, don't know what to do , will be used during swapping stage
-
+        /***/
       }
       /*Spinlock doesn't work here; results in deadlock*/
 
@@ -324,15 +330,11 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 void
 tlb_shootdown_page_table_entry(vaddr_t va) {
   int i;
-  uint32_t ehi, elo;
+  //uint32_t ehi, elo;
   KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
-  for(i=0; i < NUM_TLB; i++) {
-    tlb_read(&ehi, &elo, i);
-    if (ehi  == va) {
-      tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-      break;
-    }
-
+  i = tlb_probe(va, 0);
+  if (i >= 0) {
+    tlb_write(TLBHI_INVALID(i),TLBLO_INVALID(),i);
   }
 }
 

@@ -30,6 +30,9 @@
 #ifndef _VM_H_
 #define _VM_H_
 
+
+#include <kern/time.h>
+#include <addrspace.h>
 /*
  * VM system-related definitions.
  *
@@ -50,14 +53,14 @@
 #define KVADDR_TO_PADDR(vaddr) ((vaddr)-MIPS_KSEG0)
 
  struct coremap_entry {
+   struct addrspace *as;
    vaddr_t va;
    int allocPageCount;
-
    char state;
    paddr_t phyAddr;
  };
 
-//struct lock* coremapLock;
+struct coremap_entry* coremap;
 
 #include <machine/vm.h>
 
@@ -65,7 +68,6 @@
 #define VM_FAULT_READ        0    /* A read was attempted */
 #define VM_FAULT_WRITE       1    /* A write was attempted */
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
-
 
 /* Initialization function */
 void vm_bootstrap(void);
@@ -90,6 +92,5 @@ unsigned int coremap_used_bytes(void);
 void vm_tlbshootdown_all(void);
 void vm_tlbshootdown(const struct tlbshootdown *);
 void tlb_shootdown_page_table_entry(vaddr_t va);
-
 
 #endif /* _VM_H_ */
