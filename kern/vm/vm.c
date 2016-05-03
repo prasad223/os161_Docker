@@ -45,8 +45,9 @@
 
 static unsigned long coremap_used_size;
 static paddr_t lastpaddr, freeAddr, firstpaddr;
-//static int firstFreeIndex; // not used for now, can be used in case we need performance
 static int minFreeIndex , numPagesAllocated;
+static int queue[SIZE];
+static int front = 0, rear = -1, queue_size = 0;
 int coremap_page_num;
 
 /*
@@ -82,7 +83,11 @@ vm_bootstrap(void) {
 	coremap      = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
   minFreeIndex = numPagesAllocated = coremap_size;
-
+  front = queue_size = 0;
+  rear = -1;
+  for(i = 0; i < SIZE; i++){
+    queue[i] = -1;
+  }
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
 			coremap[i].state = FIXED;
@@ -133,7 +138,7 @@ vaddr_t
 alloc_kpages(unsigned npages) {
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(npages); //getppages(npages);
+  paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
     spinlock_release(&stealmem_lock);
 		return 0;
@@ -154,20 +159,50 @@ alloc_kpages(unsigned npages) {
 
 paddr_t
 make_page_avail(unsigned npages){
+  
   if(numPagesAllocated == coremap_page_num){
-    return 0; // This should be changed to swap out a page later
+    int indexToSwap = dequeue();
+    if(indexToSwap == 0){
+      return 0;
+    }
+    while(coremap[indexToSwap].state != DIRTY){
+      indexToSwap = dequeue();
+    }
+    //page_swapout(indexToSwap);
+    return coremap[indexToSwap].phyAddr;
   }
   return getppages(npages);
 }
 
-int dequeue(void) { return 0; }
-int enqueue(void) { return 0; }
+int dequeue(void){
+ if(queue_size == 0){
+  kprintf("dequeue: numPagesAllocated: %d, coremap_page_num:%d, rear:%d, front:%d\n",numPagesAllocated,coremap_page_num,rear,front);
+  //panic("Queue is empty\n");
+  return 0;
+ }
+ int value = queue[front];
+ queue[front] = -1;
+ front = (front+1) % SIZE;
+ --queue_size;
+ return value; 
+}
+
+int enqueue(int value){ 
+  if(queue_size == SIZE){
+    panic("Queue is full\n");
+  }
+  rear = (rear + 1) % SIZE;
+  queue[rear] = value;
+  ++queue_size;
+  //kprintf("enqueue: val:%d, rear:%d, size:%d\n",value,rear,queue_size);
+  return 0; 
+}
 
 paddr_t
 alloc_upage(struct addrspace* as){
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(1); //getppages(1);
+  paddr_t pa = make_page_avail(1);
   if(pa == 0){
     spinlock_release(&stealmem_lock);
     return pa;
@@ -175,7 +210,7 @@ alloc_upage(struct addrspace* as){
   int index = (pa - firstpaddr) / PAGE_SIZE;
   coremap[index].state = DIRTY;
   coremap[index].as    = as;
-  //enqueue(index);
+  enqueue(index);
   spinlock_release(&stealmem_lock);
   return pa;
 }
@@ -344,12 +379,13 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 void
 tlb_shootdown_page_table_entry(vaddr_t va) {
   int i;
-  //uint32_t ehi, elo;
+  int spl = splhigh();
   KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
   i = tlb_probe(va, 0);
   if (i >= 0) {
     tlb_write(TLBHI_INVALID(i),TLBLO_INVALID(),i);
   }
+  splx(spl);
 }
 
 unsigned

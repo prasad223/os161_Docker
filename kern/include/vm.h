@@ -29,10 +29,8 @@
 
 #ifndef _VM_H_
 #define _VM_H_
-
-
-#include <kern/time.h>
 #include <addrspace.h>
+#include <machine/vm.h>
 /*
  * VM system-related definitions.
  *
@@ -46,6 +44,11 @@
  3. Fixed : These are kernel pages, never to be swapped out
  4. Free  : Available pages (this state is set when page is freed)
  **/
+/* Fault-type arguments to vm_fault() */
+#define VM_FAULT_READ        0    /* A read was attempted */
+#define VM_FAULT_WRITE       1    /* A write was attempted */
+#define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
+
 #define DIRTY 1
 #define CLEAN 2
 #define FIXED 3
@@ -61,12 +64,6 @@
 
 struct coremap_entry* coremap;
 
-#include <machine/vm.h>
-
-/* Fault-type arguments to vm_fault() */
-#define VM_FAULT_READ        0    /* A read was attempted */
-#define VM_FAULT_WRITE       1    /* A write was attempted */
-#define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
 
 /* Initialization function */
 void vm_bootstrap(void);
@@ -80,7 +77,7 @@ void free_kpages(vaddr_t addr);
 paddr_t getppages(unsigned long npages);
 paddr_t alloc_upage(struct addrspace* as);
 int dequeue(void);
-int enqueue(void);
+int enqueue(int value);
 paddr_t make_page_avail(unsigned npages);
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
