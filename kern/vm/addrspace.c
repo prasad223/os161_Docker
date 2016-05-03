@@ -105,6 +105,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	//lock_acquire(coremapLock);
 	while(old_ptr != NULL){
 		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+		new_ptr->pageInDisk = old_ptr->pageInDisk;
 		if(new_ptr == NULL){
 			return ENOMEM;
 		}
@@ -113,7 +114,13 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			return ENOMEM;
 		}
 		new_ptr->va = old_ptr->va;
-		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
+		if (!old_ptr->pageInDisk) {
+			memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
+		} else {
+			/*TODO*/
+			kprintf("\nAS_COPY pageInDisk not copied!!!\n");
+		}
+
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
 		old_ptr = old_ptr->next;
@@ -159,7 +166,7 @@ as_destroy(struct addrspace *as)
 
 void
 as_activate(void)
-{	
+{
 	struct addrspace *as = proc_getas();
 	if(as != NULL){
 		vm_tlbshootdown_all();

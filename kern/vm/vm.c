@@ -167,9 +167,15 @@ make_page_avail(unsigned npages){
     }
     while(coremap[indexToSwap].state != DIRTY){
       indexToSwap = dequeue();
+      if(indexToSwap == 0){
+        return 0;
+      }
     }
-    page_swapout(indexToSwap);
-    return coremap[indexToSwap].phyAddr;
+    if(coremap[indexToSwap].state == DIRTY){
+      page_swapout(indexToSwap);
+      return coremap[indexToSwap].phyAddr;
+    }
+    return 0;
   }
   return getppages(npages);
 }
@@ -189,7 +195,7 @@ int dequeue(void){
 
 int enqueue(int value){
   if(queue_size == SIZE){
-    panic("Queue is full\n");
+    kprintf("enqueue:npa:%d,cpn:%d,f:%d,r:%d\n",numPagesAllocated,coremap_page_num,front,rear);
   }
   rear = (rear + 1) % SIZE;
   queue[rear] = value;
@@ -211,6 +217,7 @@ alloc_upage(struct addrspace* as){
   coremap[index].state = DIRTY;
   coremap[index].as    = as;
   enqueue(index);
+  bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
   spinlock_release(&stealmem_lock);
   return pa;
 }
@@ -303,8 +310,9 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
           //lock_acquire(coremapLock);
+          tempNew->pageInDisk = false;
           tempNew->pa = alloc_upage(as);
-          bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
+
           //lock_release(coremapLock);
           if(tempNew->pa == 0){
             return ENOMEM;
@@ -314,6 +322,14 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           as->first = tempNew;
       } else { //right now, don't know what to do , will be used during swapping stage
         /***/
+        // if (tempNew->pageInDisk) {
+        //   paddr_t pa = alloc_upage(as);
+        //   (void)pa;
+        //   spinlock_acquire(&stealmem_lock);
+        //   page_swapin(tempNew, pa);
+        //   spinlock_release(&stealmem_lock);
+        // }
+
       }
       /*Spinlock doesn't work here; results in deadlock*/
 

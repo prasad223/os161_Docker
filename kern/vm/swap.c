@@ -44,10 +44,10 @@ static int firstFreeIndexInSwap = 0;
 * TODO : Test this for leaks
 */
 struct
-page_table_entry* findPTE(struct addrspace *as, vaddr_t va) {
+page_table_entry* findPTE(struct addrspace *as, paddr_t pa) {
   struct page_table_entry *tempNew = as->first;
   while(tempNew != NULL) {
-    if (tempNew->va == va) {
+    if (!tempNew->pageInDisk && tempNew->pa == pa) {
       return tempNew;
     }
     tempNew = tempNew->next;
@@ -78,8 +78,7 @@ page_swapout(int indexToSwap) {
   3. Update the PTE structure to indicate the page is now in disk
   4. Update coremap to indicate the page is now FREE
   5. as_zero the page and return*/
-  vaddr_t va = PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr);
-  struct page_table_entry *pteToSwap = findPTE(coremap[indexToSwap].as, va);
+  struct page_table_entry *pteToSwap = findPTE(coremap[indexToSwap].as, coremap[indexToSwap].phyAddr);
   KASSERT(pteToSwap != NULL);
 
   /*Find PTE to shootdown*/
@@ -102,15 +101,17 @@ page_swapout(int indexToSwap) {
   /*TODO : update pageInDisk field in addrspace.c*/
 
   //clear the region of memory now TODO : Test if it works , see with zero.t
-  bzero((void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE);
+  //bzero((void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE);
 }
 
 void
 page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa) {
   /* code */
+
   KASSERT(pteToSwapIn->pageInDisk == true);
   /*Get the swap map offset from the PTE; neat hack*/
   int swapMapOffset = pteToSwapIn->pa;
+  //kprintf("\nswapMapOffset %d\n",swapMapOffset);
   KASSERT(bitmap_isset(swapBitArray,swapMapOffset) == 1);
   /*Read the page from memory*/
   read_page_from_swap(swapMapOffset, pa);
@@ -126,7 +127,7 @@ int locate_entry_in_swapTable(void) {
   int i;
   int result = -1;
   for(i= 0; i < MAX_SWAP_COUNT; i++) {
-    if (bitmap_isset(swapBitArray,0)) {
+    if (bitmap_isset(swapBitArray,i) == 0) {
       result = i;
       break;
     }
@@ -147,6 +148,7 @@ read_page_from_swap(int swapMapOffset, paddr_t pa) {
   int result;
 
   bitmap_unmark(swapBitArray, swapMapOffset);
+
   uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(pa),PAGE_SIZE,
             swapMapOffset * PAGE_SIZE, UIO_READ  );
   result = VOP_READ(swapFile,&user_uio);
