@@ -35,12 +35,19 @@
  *
  * You'll probably want to add stuff here.
  */
- #define DIRTY 5
- #define CLEAN 4
+ /**
+ Four states of a page
 
+ 1. Dirty : Page when first allocated is dirty. Content of disk != contents in memory
+ 2. Clean : Clean pages, which mean that the contents of page on memory == contents of page on disk // Not sure on how to handle this case
+ 3. Fixed : These are kernel pages, never to be swapped out
+ 4. Free  : Available pages (this state is set when page is freed)
+ **/
+ #define DIRTY 1
+ #define CLEAN 2
+ #define FIXED 3
+ #define FREE  4
 
- paddr_t
- getppages(unsigned long npages);
 
  struct coremap_entry {
    vaddr_t va;
@@ -60,9 +67,6 @@
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
 
 
-int
-get_first_free_index(void);
-
 /* Initialization function */
 void vm_bootstrap(void);
 
@@ -72,6 +76,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);
+paddr_t getppages(unsigned long npages);
 
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
