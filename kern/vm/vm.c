@@ -43,12 +43,10 @@
 #include <spl.h>
 #include <swap.h>
 
-//static bool vm_bootstrap_done = false;
-//struct lock* vm_lock; //no idea why, investigate later
 static unsigned long coremap_used_size;
 static paddr_t lastpaddr, freeAddr, firstpaddr;
-static int firstFreeIndex; // not used for now, can be used in case we need performance
-static int minFreeIndex;
+//static int firstFreeIndex; // not used for now, can be used in case we need performance
+static int minFreeIndex , numPagesAllocated;
 int coremap_page_num;
 
 /*
@@ -83,13 +81,8 @@ vm_bootstrap(void) {
   // Allocate memory to coremap
 	coremap      = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
-  minFreeIndex = firstFreeIndex = coremap_size;
+  minFreeIndex = numPagesAllocated = coremap_size;
 
-  // Initiliase each page status in coremap
-  // for(i =0; i < noOfFixedPages; i++) {
-  //   coremap[i].state = FIXED;
-  //   coremap[i].allocPageCount = 1;
-  // }
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
 			coremap[i].state = FIXED;
@@ -99,7 +92,7 @@ vm_bootstrap(void) {
 		temp = firstpaddr + (PAGE_SIZE * i);
     coremap[i].phyAddr= temp;
     coremap[i].allocPageCount = -1;
-    coremap[i].va             = PADDR_TO_KVADDR(temp);
+    coremap[i].as = NULL;
 	}
   // Set coremap used size to 0
   coremap_used_size = 0;
@@ -128,7 +121,7 @@ getppages(unsigned long npages)
   if (i == coremap_page_num) { //no free pages
    return 0;
   }
-
+  numPagesAllocated += nPageTemp;
   int index = i - nPageTemp + 1;
   coremap[index].allocPageCount = nPageTemp;
   coremap_used_size = coremap_used_size + (nPageTemp * PAGE_SIZE);
@@ -140,7 +133,7 @@ vaddr_t
 alloc_kpages(unsigned npages) {
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = getppages(npages);
+  paddr_t pa = make_page_avail(npages); //getppages(npages);
 	if (pa == 0) {
     spinlock_release(&stealmem_lock);
 		return 0;
@@ -148,21 +141,41 @@ alloc_kpages(unsigned npages) {
   int index = (pa - firstpaddr) / PAGE_SIZE;
   for(int i = 0; i < (int)npages; i++) {
    coremap[i + index].state = FIXED;
+   coremap[i + index].as    = NULL;
   }
   spinlock_release(&stealmem_lock);
   return PADDR_TO_KVADDR(pa);
 }
 
+/*
+ *  This function is supposed to return the paddr_t of the free physical page
+ *  If no page is free or can be swapped out , then returns 0
+ */
+
 paddr_t
-alloc_upage(void){
+make_page_avail(unsigned npages){
+  if(numPagesAllocated == coremap_page_num){
+    return 0; // This should be changed to swap out a page later
+  }
+  return getppages(npages);
+}
+
+int dequeue(void) { return 0; }
+int enqueue(void) { return 0; }
+
+paddr_t
+alloc_upage(struct addrspace* as){
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = getppages(1);
+  paddr_t pa = make_page_avail(1); //getppages(1);
   if(pa == 0){
     spinlock_release(&stealmem_lock);
     return pa;
   }
-  coremap[(pa - firstpaddr) / PAGE_SIZE].state = DIRTY;
+  int index = (pa - firstpaddr) / PAGE_SIZE;
+  coremap[index].state = DIRTY;
+  coremap[index].as    = as;
+  //enqueue(index);
   spinlock_release(&stealmem_lock);
   return pa;
 }
@@ -178,6 +191,7 @@ free_kpages(vaddr_t addr) {
     coremap[i+j].allocPageCount = -1;
     coremap[i+j].state = FREE;
   }
+  numPagesAllocated -= pgCount;
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
   spinlock_release(&stealmem_lock);
 }
@@ -254,7 +268,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
           //lock_acquire(coremapLock);
-          tempNew->pa = alloc_upage();
+          tempNew->pa = alloc_upage(as);
           bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
           //lock_release(coremapLock);
           if(tempNew->pa == 0){

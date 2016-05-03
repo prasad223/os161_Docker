@@ -51,10 +51,9 @@
 #define FIXED 3
 #define FREE  4
 #define KVADDR_TO_PADDR(vaddr) ((vaddr)-MIPS_KSEG0)
-
+#define SIZE 1000
  struct coremap_entry {
    struct addrspace *as;
-   vaddr_t va;
    int allocPageCount;
    char state;
    paddr_t phyAddr;
@@ -79,8 +78,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);
 paddr_t getppages(unsigned long npages);
-paddr_t alloc_upage(void);
-
+paddr_t alloc_upage(struct addrspace* as);
+int dequeue(void);
+int enqueue(void);
+paddr_t make_page_avail(unsigned npages);
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
  * there are ongoing allocations, this value could change after it is returned
