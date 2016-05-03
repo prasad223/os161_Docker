@@ -43,11 +43,11 @@
  3. Fixed : These are kernel pages, never to be swapped out
  4. Free  : Available pages (this state is set when page is freed)
  **/
- #define DIRTY 1
- #define CLEAN 2
- #define FIXED 3
- #define FREE  4
-
+#define DIRTY 1
+#define CLEAN 2
+#define FIXED 3
+#define FREE  4
+#define KVADDR_TO_PADDR(vaddr) ((vaddr)-MIPS_KSEG0)
 
  struct coremap_entry {
    vaddr_t va;
@@ -77,6 +77,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);
 paddr_t getppages(unsigned long npages);
+paddr_t alloc_upage(void);
 
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
