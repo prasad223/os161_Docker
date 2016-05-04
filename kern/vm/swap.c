@@ -83,7 +83,7 @@ void page_swapout(int indexToSwap){
     }
   }
   KASSERT(index != MAX_SWAP_COUNT);
-  
+
   struct uio user_uio;
   struct iovec iov;
   int result;
@@ -104,21 +104,32 @@ free_swap_index(int index){
   bitmap_unmark(swap_bitmap, index);
 }
 
+int
+read_page_from_swap(int swapMapOffset, paddr_t pa) {
+  /* code */
+  struct uio user_uio;
+  struct iovec iov;
+
+  int result;
+  uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(pa),PAGE_SIZE,
+            swapMapOffset * PAGE_SIZE, UIO_READ  );
+  result = VOP_READ(swap_file,&user_uio);
+  if (result) {
+    panic("Unable to write to swap file , reason  %d",result);
+  }
+  return result;
+}
 void page_swapin(struct page_table_entry *pte, paddr_t pa){
   KASSERT(pte != NULL);
   int offset = (int)pte->pa;
   KASSERT(bitmap_isset(swap_bitmap, offset));
-  struct uio user_uio;
-  struct iovec iov;
   int result;
 
   bitmap_unmark(swap_bitmap, offset);
 
-  uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(pa),PAGE_SIZE,
-            offset * PAGE_SIZE, UIO_READ  );
-  result = VOP_READ(swap_file,&user_uio);
+  result = read_page_from_swap(offset , pa);
   if (result) {
-    panic("Unable to write to swap file , reason  %d",result);
+      /*Dont do anything here*/
   }
   pte->pa = pa;
   pte->pageInDisk = false;

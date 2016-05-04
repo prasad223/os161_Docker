@@ -74,7 +74,22 @@ as_create(void)
 	 as->heapEnd			= (vaddr_t)0;
 	return as;
 }
-
+/**
+**/
+bool
+checkIsVirtualAddressIsFixedPage(struct page_table_entry *pte, struct addrspace *as) {
+	vaddr_t vt1;
+	vt1     = as->as_vbase1   + (as->as_npages1 * PAGE_SIZE);
+	if (pte->va >= as->as_vbase1 && pte->va <vt1) {
+		return true;
+	}
+	if (pte->va >= as->as_stackbase && pte->va < USERSTACK) {
+		return true;
+	}
+	return false;
+}
+/**
+**/
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
@@ -110,16 +125,19 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		if(new_ptr == NULL){
 			return ENOMEM;
 		}
-		new_ptr->pa = alloc_upage(newas);
+		bool bIsCodeOrStackPage = checkIsVirtualAddressIsFixedPage(old_ptr, old);
+		new_ptr->pa = alloc_upage(newas, bIsCodeOrStackPage);
 		if(new_ptr->pa == 0){
 			return ENOMEM;
 		}
 		new_ptr->va = old_ptr->va;
 		if (!old_ptr->pageInDisk) {
 			memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
-		} else {
+		} else { //if old page is in disk, then copy it from disk to memory
 			/*TODO*/
-			kprintf("\nAS_COPY pageInDisk not copied!!!\n");
+			//kprintf("\nAS_COPY pageInDisk not copied!!!\n");
+			int swapMapOffset = (int)old_ptr->pa;
+			read_page_from_swap( swapMapOffset , new_ptr->pa);
 		}
 
 		new_ptr->next = newas->first;

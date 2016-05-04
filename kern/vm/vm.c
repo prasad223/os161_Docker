@@ -208,7 +208,7 @@ int enqueue(int value){
 }
 
 paddr_t
-alloc_upage(struct addrspace* as){
+alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
 
   spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(1,stealmem_lock);
@@ -217,7 +217,11 @@ alloc_upage(struct addrspace* as){
     return pa;
   }
   int index = (pa - firstpaddr) / PAGE_SIZE;
-  coremap[index].state = DIRTY;
+  if (!bIsCodeOrStackPage) {
+    coremap[index].state = DIRTY;
+  } else {
+    coremap[index].state = FIXED;
+  }
   coremap[index].as    = as;
   enqueue(index);
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
@@ -276,11 +280,13 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
   /*Check if faultaddress is within code region
   Also check permissions*/
   uint8_t permissions;
-  if (faultaddress >= vb1 && faultaddress < vt1) {
+  bool bIsCodeOrStackPage = false;
+  if (faultaddress >= vb1 && faultaddress < vt1) { //code region
     permissions = (as->perm_region1 & PF_W);
     if (permissions != PF_W && faulttype == VM_FAULT_WRITE) {
       return EFAULT;
     }
+    bIsCodeOrStackPage = true;
   }
   else if (faultaddress >= vb2 && faultaddress < vt2) {
     permissions = (as->perm_region2 & PF_W);
@@ -291,6 +297,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     // Valid region, nothing to worry. Perhaps may be we need to check for permissions
   }else if( faultaddress >= as->as_stackbase && faultaddress < USERSTACK){
     // Valid region, nothing to worry. Perhaps may be we need to check for permissions
+    bIsCodeOrStackPage = true;
   }else{
     // Invalid access, throw error
     return EFAULT;
@@ -316,7 +323,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
           tempNew->pageInDisk = false;
-          tempNew->pa = alloc_upage(as);
+          tempNew->pa = alloc_upage(as, bIsCodeOrStackPage);
           if(tempNew->pa == 0){
             return ENOMEM;
           }
@@ -325,7 +332,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           as->first = tempNew;
       } else {
          if (tempNew->pageInDisk) {
-          paddr_t pa = alloc_upage(as);
+          paddr_t pa = alloc_upage(as, bIsCodeOrStackPage);
           page_swapin(tempNew, pa);
         }
       }
