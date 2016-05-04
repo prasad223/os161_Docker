@@ -37,151 +37,81 @@
  #include <swap.h>
  #include <proc.h>
  #include <vnode.h>
+ #include <kern/stat.h>
 
-static int firstFreeIndexInSwap = 0;
-/*
-* Finds the PTE from the given addrspace matching the given virtual address
-* TODO : Test this for leaks
-*/
-struct
-page_table_entry* findPTE(struct addrspace *as, paddr_t pa) {
-  struct page_table_entry *tempNew = as->first;
-  while(tempNew != NULL) {
-    if (!tempNew->pageInDisk && tempNew->pa == pa) {
-      return tempNew;
-    }
-    tempNew = tempNew->next;
-  }
-  return NULL;
-}
-void
-page_swapout(int indexToSwap) {
-  /* code */
-  if (swapFile == NULL) { // when the first swap occurs, we open the swap file
-    char *fileName = NULL;
-    fileName = kstrdup("lhd0raw:");
-
-    if (vfs_open(fileName,O_RDWR,0664,&swapFile)) {
-        kfree(fileName);
-        vfs_close(swapFile);
-        panic("Unable to open the swap file !");
-    }
-    kfree(fileName);
-
-    /*Create swapBitArray here*/
-    swapBitArray = bitmap_create(MAX_SWAP_COUNT);
-
-  }
-  /*Steps in swapout :
-  1. Shootdown TLB Entry for the page if it exists
-  2. Copy the contents of page to disk
-  3. Update the PTE structure to indicate the page is now in disk
-  4. Update coremap to indicate the page is now FREE
-  5. as_zero the page and return*/
-  struct page_table_entry *pteToSwap = findPTE(coremap[indexToSwap].as, coremap[indexToSwap].phyAddr);
-  KASSERT(pteToSwap != NULL);
-
-  /*Find PTE to shootdown*/
-  tlb_shootdown_page_table_entry(pteToSwap->va);
-  /*Update PTE to indicate pte is on disk
-  This will be used during vm_fault when PTE is found,
-  but page needs to be swapped in */
-  /*Copy to disk now*/
-
-  firstFreeIndexInSwap = locate_entry_in_swapTable();
-  if (firstFreeIndexInSwap == -1) {
-    panic("\nCould not find freeEntry in swapTable");
-  }
-  //firstFreeIndexInSwap++;
-
-  write_page_to_swap(firstFreeIndexInSwap, indexToSwap);
-
-  pteToSwap->pa = firstFreeIndexInSwap; //an INVALID physical address
-  pteToSwap->pageInDisk = true;
-  /*TODO : update pageInDisk field in addrspace.c*/
-
-  //clear the region of memory now TODO : Test if it works , see with zero.t
-  //bzero((void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE);
-}
+static bool isFirstSwap = true;
 
 void
-page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa) {
-  /* code */
-
-  KASSERT(pteToSwapIn->pageInDisk == true);
-  /*Get the swap map offset from the PTE; neat hack*/
-  int swapMapOffset = pteToSwapIn->pa;
-  //kprintf("\nswapMapOffset %d\n",swapMapOffset);
-  KASSERT(bitmap_isset(swapBitArray,swapMapOffset) == 1);
-  /*Read the page from memory*/
-  read_page_from_swap(swapMapOffset, pa);
-  /*Update the PTE entry*/
-  pteToSwapIn->pa   = pa;
-  pteToSwapIn->pageInDisk= false;
+swap_bootstrap(){
+  int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
+  if(error){
+    panic("vfs file creation failure:%d\n",error);
+  }
+  swap_bitmap = bitmap_create(MAX_SWAP_COUNT);
 }
 
-/**
-* Finds an offset from swap table, whichever is free is taken
-**/
-int locate_entry_in_swapTable(void) {
-  int i;
-  int result = -1;
-  for(i= 0; i < MAX_SWAP_COUNT; i++) {
-    if (bitmap_isset(swapBitArray,i) == 0) {
-      result = i;
+
+void page_swapout(int indexToSwap){
+  (void)indexToSwap;
+  if(isFirstSwap){
+    swap_bootstrap();
+    isFirstSwap = false;
+  }
+
+  struct page_table_entry *pte = coremap[indexToSwap].as->first;
+  while(pte != NULL){
+    if(pte->pa == coremap[indexToSwap].phyAddr){
+      break;
+    }
+    pte = pte->next;
+  }
+  KASSERT(pte != NULL);
+
+  tlb_shootdown_page_table_entry(pte->va);
+  int index = 0;
+  for(;index < MAX_SWAP_COUNT;index++){
+    if(bitmap_isset(swap_bitmap,index) == 0){
       break;
     }
   }
-  return result;
+  KASSERT(index != MAX_SWAP_COUNT);
+  
+  struct uio user_uio;
+  struct iovec iov;
+  int result;
+  bitmap_mark(swap_bitmap, index);
+  uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE,
+            index * PAGE_SIZE, UIO_WRITE  );
+  result = VOP_WRITE(swap_file,&user_uio);
+  if (result) {
+    panic("Unable to write to swap file , reason  %d",result);
+  }
+  pte->pa = index;
+  pte->pageInDisk = true;
 }
 
-/**
-* Two operations are taken :
-* 1. Unmarks the bit in the swapTable
-* 2. Reads the page from disk into memory
-**/
 void
-read_page_from_swap(int swapMapOffset, paddr_t pa) {
-  /* code */
+free_swap_index(int index){
+  KASSERT(bitmap_isset(swap_bitmap, index));
+  bitmap_unmark(swap_bitmap, index);
+}
+
+void page_swapin(struct page_table_entry *pte, paddr_t pa){
+  KASSERT(pte != NULL);
+  int offset = (int)pte->pa;
+  KASSERT(bitmap_isset(swap_bitmap, offset));
   struct uio user_uio;
   struct iovec iov;
   int result;
 
-  bitmap_unmark(swapBitArray, swapMapOffset);
+  bitmap_unmark(swap_bitmap, offset);
 
   uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(pa),PAGE_SIZE,
-            swapMapOffset * PAGE_SIZE, UIO_READ  );
-  result = VOP_READ(swapFile,&user_uio);
+            offset * PAGE_SIZE, UIO_READ  );
+  result = VOP_READ(swap_file,&user_uio);
   if (result) {
     panic("Unable to write to swap file , reason  %d",result);
   }
-
-}
-/**
-**/
-void
-write_page_to_swap(int swapMapOffset, int indexToSwap) {
-  /* code */
-  struct uio user_uio;
-  struct iovec iov;
-  int result;
-//  * 	uio_kinit(&iov, &myuio, buf, sizeof(buf), 0, UIO_READ);
-//  *      result = VOP_READ(vn, &myuio);
-// iov->iov_kbase = kbuf;
-// iov->iov_len = len;
-// u->uio_iov = iov;
-// u->uio_iovcnt = 1;
-// u->uio_offset = pos;
-// u->uio_resid = len;
-// u->uio_segflg = UIO_SYSSPACE;
-// u->uio_rw = rw;
-// u->uio_space = NULL;
-  bitmap_mark(swapBitArray, swapMapOffset);
-  uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE,
-            swapMapOffset * PAGE_SIZE, UIO_WRITE  );
-  result = VOP_WRITE(swapFile,&user_uio);
-  if (result) {
-    panic("Unable to write to swap file , reason  %d",result);
-  }
-
+  pte->pa = pa;
+  pte->pageInDisk = false;
 }

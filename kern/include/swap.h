@@ -33,55 +33,14 @@
 
 #define MAX_SWAP_COUNT 4096
 
-/**/
-struct swapPageInfo {
-  struct addrspace *as;
-  vaddr_t va;
-
-};
-
-struct swapTable *swapPageInfo[MAX_SWAP_COUNT]; // fixed size swap table
-struct vnode *swapFile;
-struct bitmap *swapBitArray;
-/**
-* Finds an offset from swap table, whichever is free is taken
-**/
-int locate_entry_in_swapTable(void);
-
-/**
-Swapping file operations :
-
-page_swapout - swap out a page to disk
-page_swapin  - swap in a page from disk to memory
-read_page    -
-**/
-/*Functions to do in swapping operations*/
+struct vnode *swap_file;
+struct bitmap *swap_bitmap;
 
 /*
-Parameter : indexToSwap => the index of coremap which we have to swap out
-*/
+ *  For now, we are using the MAX SWAP count, but we should actually get the file size and do it
+ */
+
+void swap_bootstrap(void);
 void page_swapout(int indexToSwap);
-
-/*Parameter
-* pteToSwapIn => PTE to swap in from disk
-* pa          => Physical address of the page
-*/
 void page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa);
-/**
-Parameter:swapMapOffset => the index in the swapTable bitmap array
-          indexToSwap   => the index of coremap which we have to swap out
-
-Usage of function:
-
-To write a page to swap disk, we have to first locate it using the swapTable
-There will be two cases :
-1. No entry is found in swapTable for the given AS and VA, in that case, we will allocate a new entry in the swapTable
-2. entry is found, in which case contents on disk are overwritten
-**/
-void write_page_to_swap(int swapMapOffset, int indexToSwap);
-/**/
-void read_page_from_swap(int swapMapOffset, paddr_t pa);
-/*
-* Finds the page table from the given address space with the given virtual address
-*/
-struct page_table_entry* findPTE(struct addrspace *as, vaddr_t va);
+void free_swap_index(int index);

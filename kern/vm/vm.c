@@ -53,7 +53,7 @@ int coremap_page_num;
 /*
  * Wrap ram_stealmem in a spinlock.
  */
-static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+//static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
 /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*
@@ -137,10 +137,10 @@ getppages(unsigned long npages)
 vaddr_t
 alloc_kpages(unsigned npages) {
 
-  spinlock_acquire(&stealmem_lock);
+  //spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
-    spinlock_release(&stealmem_lock);
+    //spinlock_release(&stealmem_lock);
 		return 0;
 	}
   int index = (pa - firstpaddr) / PAGE_SIZE;
@@ -148,7 +148,7 @@ alloc_kpages(unsigned npages) {
    coremap[i + index].state = FIXED;
    coremap[i + index].as    = NULL;
   }
-  spinlock_release(&stealmem_lock);
+  //spinlock_release(&stealmem_lock);
   return PADDR_TO_KVADDR(pa);
 }
 
@@ -207,10 +207,10 @@ int enqueue(int value){
 paddr_t
 alloc_upage(struct addrspace* as){
 
-  spinlock_acquire(&stealmem_lock);
+  //spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(1);
   if(pa == 0){
-    spinlock_release(&stealmem_lock);
+    //spinlock_release(&stealmem_lock);
     return pa;
   }
   int index = (pa - firstpaddr) / PAGE_SIZE;
@@ -218,14 +218,17 @@ alloc_upage(struct addrspace* as){
   coremap[index].as    = as;
   enqueue(index);
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
-  spinlock_release(&stealmem_lock);
+  //spinlock_release(&stealmem_lock);
   return pa;
 }
 
 void
 free_kpages(vaddr_t addr) {
 
-  spinlock_acquire(&stealmem_lock);
+  //spinlock_acquire(&stealmem_lock);
+  if(addr <= MIPS_KSEG0){
+    panic("Invalid address");
+  }
   int i = (KVADDR_TO_PADDR(addr) - firstpaddr)/PAGE_SIZE;
   int pgCount = 0;
   pgCount = coremap[i].allocPageCount;
@@ -235,7 +238,7 @@ free_kpages(vaddr_t addr) {
   }
   numPagesAllocated -= pgCount;
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
-  spinlock_release(&stealmem_lock);
+  //spinlock_release(&stealmem_lock);
 }
 
 
@@ -309,27 +312,19 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       if (tempNew == NULL) { //allocate a new entry
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
-          //lock_acquire(coremapLock);
           tempNew->pageInDisk = false;
           tempNew->pa = alloc_upage(as);
-
-          //lock_release(coremapLock);
           if(tempNew->pa == 0){
             return ENOMEM;
           }
           tempNew->va = faultaddress;
           tempNew->next = as->first;
           as->first = tempNew;
-      } else { //right now, don't know what to do , will be used during swapping stage
-        /***/
-        // if (tempNew->pageInDisk) {
-        //   paddr_t pa = alloc_upage(as);
-        //   (void)pa;
-        //   spinlock_acquire(&stealmem_lock);
-        //   page_swapin(tempNew, pa);
-        //   spinlock_release(&stealmem_lock);
-        // }
-
+      } else {
+         if (tempNew->pageInDisk) {
+          paddr_t pa = alloc_upage(as);
+          page_swapin(tempNew, pa);
+        }
       }
       /*Spinlock doesn't work here; results in deadlock*/
 

@@ -37,6 +37,7 @@
 #include <spl.h>
 #include <elf.h>
 #include <mips/vm.h>
+#include <swap.h>
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -134,20 +135,18 @@ void
 as_destroy(struct addrspace *as)
 {
 	KASSERT(as != NULL);
-	//KASSERT(as->first != NULL);
-	/*Shoot down all TLB entries associated with this process's address space*/
-	/*Then walk through PTE entries, manually change paddr and vaddr of the pages to 0
-	Then do a kfree on the page's vaddr to mark the page clean in coremap*/
 	vm_tlbshootdown_all();
-  //lock_acquire(coremapLock);
 	struct page_table_entry* current = as->first, *next = NULL;
 	while(current != NULL){
 		next = current->next;
-		free_kpages(PADDR_TO_KVADDR(current->pa));
+		if(current->pageInDisk){
+		  free_swap_index((int)current->pa);
+		}else{
+		  free_kpages(PADDR_TO_KVADDR(current->pa));
+		}
 		kfree(current);
 		current = next;
 	}
-  //lock_release(coremapLock);
 	as->first 			= NULL;
 	kfree(as->first);
 	as->as_vbase1   = (vaddr_t)0;
