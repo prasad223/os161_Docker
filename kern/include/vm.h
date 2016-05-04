@@ -31,6 +31,7 @@
 #define _VM_H_
 #include <addrspace.h>
 #include <machine/vm.h>
+#include <spinlock.h>
 /*
  * VM system-related definitions.
  *
@@ -78,7 +79,7 @@ paddr_t getppages(unsigned long npages);
 paddr_t alloc_upage(struct addrspace* as);
 int dequeue(void);
 int enqueue(int value);
-paddr_t make_page_avail(unsigned npages);
+paddr_t make_page_avail(unsigned npages, struct spinlock stealmem_lock);
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
  * there are ongoing allocations, this value could change after it is returned

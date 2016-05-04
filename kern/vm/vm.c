@@ -53,7 +53,7 @@ int coremap_page_num;
 /*
  * Wrap ram_stealmem in a spinlock.
  */
-//static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
 /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*
@@ -137,10 +137,10 @@ getppages(unsigned long npages)
 vaddr_t
 alloc_kpages(unsigned npages) {
 
-  //spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(npages);
+  spinlock_acquire(&stealmem_lock);
+  paddr_t pa = make_page_avail(npages, stealmem_lock);
 	if (pa == 0) {
-    //spinlock_release(&stealmem_lock);
+    spinlock_release(&stealmem_lock);
 		return 0;
 	}
   int index = (pa - firstpaddr) / PAGE_SIZE;
@@ -148,7 +148,7 @@ alloc_kpages(unsigned npages) {
    coremap[i + index].state = FIXED;
    coremap[i + index].as    = NULL;
   }
-  //spinlock_release(&stealmem_lock);
+  spinlock_release(&stealmem_lock);
   return PADDR_TO_KVADDR(pa);
 }
 
@@ -158,7 +158,7 @@ alloc_kpages(unsigned npages) {
  */
 
 paddr_t
-make_page_avail(unsigned npages){
+make_page_avail(unsigned npages, struct spinlock stealmem_lock){
 
   if(numPagesAllocated == coremap_page_num){
     int indexToSwap = dequeue();
@@ -172,7 +172,9 @@ make_page_avail(unsigned npages){
       }
     }
     if(coremap[indexToSwap].state == DIRTY){
+      spinlock_release(&stealmem_lock);
       page_swapout(indexToSwap);
+      spinlock_acquire(&stealmem_lock);
       return coremap[indexToSwap].phyAddr;
     }
     return 0;
@@ -182,7 +184,7 @@ make_page_avail(unsigned npages){
 
 int dequeue(void){
  if(queue_size == 0){
-  kprintf("dequeue: numPagesAllocated: %d, coremap_page_num:%d, rear:%d, front:%d\n",numPagesAllocated,coremap_page_num,rear,front);
+  //kprintf("dequeue: numPagesAllocated: %d, coremap_page_num:%d, rear:%d, front:%d\n",numPagesAllocated,coremap_page_num,rear,front);
   //panic("Queue is empty\n");
   return 0;
  }
@@ -195,7 +197,8 @@ int dequeue(void){
 
 int enqueue(int value){
   if(queue_size == SIZE){
-    kprintf("enqueue:npa:%d,cpn:%d,f:%d,r:%d\n",numPagesAllocated,coremap_page_num,front,rear);
+    //kprintf("enqueue:npa:%d,cpn:%d,f:%d,r:%d\n",numPagesAllocated,coremap_page_num,front,rear);
+    return -1;
   }
   rear = (rear + 1) % SIZE;
   queue[rear] = value;
@@ -207,10 +210,10 @@ int enqueue(int value){
 paddr_t
 alloc_upage(struct addrspace* as){
 
-  //spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(1);
+  spinlock_acquire(&stealmem_lock);
+  paddr_t pa = make_page_avail(1,stealmem_lock);
   if(pa == 0){
-    //spinlock_release(&stealmem_lock);
+    spinlock_release(&stealmem_lock);
     return pa;
   }
   int index = (pa - firstpaddr) / PAGE_SIZE;
@@ -218,14 +221,14 @@ alloc_upage(struct addrspace* as){
   coremap[index].as    = as;
   enqueue(index);
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
-  //spinlock_release(&stealmem_lock);
+  spinlock_release(&stealmem_lock);
   return pa;
 }
 
 void
 free_kpages(vaddr_t addr) {
 
-  //spinlock_acquire(&stealmem_lock);
+  spinlock_acquire(&stealmem_lock);
   if(addr <= MIPS_KSEG0){
     panic("Invalid address");
   }
@@ -238,7 +241,7 @@ free_kpages(vaddr_t addr) {
   }
   numPagesAllocated -= pgCount;
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
-  //spinlock_release(&stealmem_lock);
+  spinlock_release(&stealmem_lock);
 }
 
 
@@ -401,5 +404,5 @@ tlb_shootdown_page_table_entry(vaddr_t va) {
 
 unsigned
 int coremap_used_bytes(void) {
-  return coremap_used_size;
+  return numPagesAllocated * PAGE_SIZE;
 }

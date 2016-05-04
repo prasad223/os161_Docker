@@ -40,14 +40,22 @@
  #include <kern/stat.h>
 
 static bool isFirstSwap = true;
-
+static int swap_num_pages = 0;
 void
 swap_bootstrap(){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
   if(error){
     panic("vfs file creation failure:%d\n",error);
   }
-  swap_bitmap = bitmap_create(MAX_SWAP_COUNT);
+  (void)swap_num_pages;
+  struct stat file_stat;
+  error = VOP_STAT(swap_file, &file_stat);
+  if(error){
+    panic("error in reading swap file size");
+  }
+  swap_num_pages = file_stat.st_size / PAGE_SIZE;
+  KASSERT(swap_num_pages != 0);
+  swap_bitmap = bitmap_create(swap_num_pages);
 }
 
 
@@ -69,7 +77,7 @@ void page_swapout(int indexToSwap){
 
   tlb_shootdown_page_table_entry(pte->va);
   int index = 0;
-  for(;index < MAX_SWAP_COUNT;index++){
+  for(;index < swap_num_pages;index++){
     if(bitmap_isset(swap_bitmap,index) == 0){
       break;
     }
