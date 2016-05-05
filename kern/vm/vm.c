@@ -158,20 +158,12 @@ alloc_kpages(unsigned npages) {
 void
 free_kpages(vaddr_t addr) {
   spinlock_acquire(&stealmem_lock);
-  int i;
-  int pgCount = 0;
-
-  for(i = 0; i < coremap_page_num; i++){
-    if(coremap[i].va == addr){
-      pgCount = coremap[i].allocPageCount;
-      break;
-    }
-  }
-
-  int j;
-  for( j = 0; j < pgCount; j++){
-    coremap[i+j].allocPageCount = -1;
-    coremap[i+j].state = CLEAN;
+  int index = (KVADDR_TO_PADDR(addr)-firstpaddr) / PAGE_SIZE;
+  int pgCount = coremap[index].allocPageCount;
+  
+  for(int j = 0; j < pgCount; j++){
+    coremap[index + j].allocPageCount = -1;
+    coremap[index + j].state = CLEAN;
   }
 
   // Remove the memory of removed pages from counter

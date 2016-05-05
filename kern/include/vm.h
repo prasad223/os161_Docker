@@ -37,7 +37,7 @@
  */
  #define DIRTY 5
  #define CLEAN 4
-
+ #define KVADDR_TO_PADDR(paddr) ((paddr)-MIPS_KSEG0)
 
  paddr_t
  getppages(unsigned long npages);
