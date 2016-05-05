@@ -40,6 +40,7 @@
 #include <elf.h>
 #include <signal.h>
 #include <kern/proc_syscalls.h>
+#include <swap.h>
 #include <spl.h>
 
 static int num_pages_allocated;

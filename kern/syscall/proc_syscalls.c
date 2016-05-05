@@ -24,7 +24,7 @@
 #include <kern/signal.h>
 #include <addrspace.h>
 #include <spl.h>
-
+#define MAX_ARG_LENGTH 100
 /*
  * Largely inspired from jinghao's blog
  */
@@ -218,6 +218,8 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	return 0;
 }
 
+
+
 int
 sys_execv(const char *program, char **uargs){
 
@@ -241,23 +243,22 @@ sys_execv(const char *program, char **uargs){
 	}
 
 	//kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
-
-	char **args = (char **) kmalloc(sizeof(char **));
-
-	if(copyin((const_userptr_t) uargs, args, sizeof(char **))){
-		kprintf("error in copying in args\n");
-		kfree(program_name);
-		kfree(args);
-		return EFAULT;
+	char *u_uargs[100];
+	error = copyin((const userptr_t)uargs,u_uargs,MAX_ARG_LENGTH);
+	if (error)
+	{
+		return error;
 	}
+	char *args[100];
 
 	int i=0;
 	size_t size=0;
-	while (uargs[i] != NULL ) {
-		args[i] = (char *) kmalloc(sizeof(char) * PATH_MAX);
+	(void)size;
+	int argc;
+	while (u_uargs[i] != NULL ) {
+		args[i] = (char *) kmalloc(MAX_ARG_LENGTH);
 
-		error = copyinstr((const_userptr_t) uargs[i], args[i], PATH_MAX,
-				&size);
+		error = copyin((const userptr_t) u_uargs[i], (char *)args[i], (size_t)MAX_ARG_LENGTH);
 		if (error) {
 			kprintf("error in copying individual args: error: %d\n",error);
 			kfree(program_name);
@@ -267,7 +268,7 @@ sys_execv(const char *program, char **uargs){
 		i++;
 	}
 	args[i] = NULL;
-	//kprintf("count of args:%d\n",i);
+	argc = i;
 	//	 Open the file.
 	struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
@@ -329,8 +330,6 @@ sys_execv(const char *program, char **uargs){
 			arg_length = arg_length + (4 - arg_length % 4);
 		}
 
-	//	kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
-		//arg = (char *)kmalloc(sizeof(arg_length));
 		arg = kstrdup(args[j]);
 		for (int i = 0; i < arg_length; i++) {
 
@@ -372,8 +371,18 @@ sys_execv(const char *program, char **uargs){
 		}
 	}
 	kfree(program_name);
-	kfree(args);
-
+	//kfree(args);
+	for(int k=0; k < argc; k++) {
+		if (args[k] != NULL) {
+			//kfree(args[k]);
+			vaddr_t va = (vaddr_t)args[k];
+			if (va % PAGE_SIZE == 0) {
+				kfree(args[k]);
+			} else {
+				//kprintf("VADDR %p\n",(void *)va);
+			}
+		}
+	}
 	//kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
 	enter_new_process(j /*argc*/,
 			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,

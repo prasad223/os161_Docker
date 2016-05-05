@@ -46,6 +46,7 @@ struct coremap_entry {
   int page_count;
   char state;
   paddr_t pa;
+  bool is_busy;
   struct page_table_entry* pte;
 };
 

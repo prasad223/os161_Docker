@@ -45,7 +45,7 @@ static int swap_num_pages = 0;
 static bool is_swap_enabled = false;
 
 int
-swap_bootstrap(){
+swap_bootstrap(void){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
   if(error){
     kprintf("vfs file creation failure:%d\n",error);
@@ -69,6 +69,10 @@ int
 page_swapout(int index){
   (void)index;
   return 0;
+}
+
+bool can_i_swap(void){
+  return is_swap_enabled;
 }
 
 int

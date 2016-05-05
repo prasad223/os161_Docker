@@ -44,15 +44,10 @@ struct vnode;
 struct page_table_entry {
     vaddr_t va;
     paddr_t pa;
+    bool is_swapped;
+    struct lock* pte_lock;
     struct page_table_entry *next;
 };
-
-// struct regionlist {
-//   paddr_t pa_start;
-//   vaddr_t va_start;
-//   int region_permissions; /*set it from as_define_region*/
-//   struct regionlist *next, *last;
-// };
 
 /*
  * Address space - data structure associated with the virtual memory
