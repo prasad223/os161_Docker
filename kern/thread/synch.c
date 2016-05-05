@@ -198,7 +198,7 @@ lock_acquire(struct lock *lock)
 	 * For robustness, always check, even if we can actually
 	 * complete the P without blocking.
 	 */
-	KASSERT(curthread->t_in_interrupt == false); // NOT SURE WHY, but taken from semaphore, and it works !
+	//KASSERT(curthread->t_in_interrupt == false); // NOT SURE WHY, but taken from semaphore, and it works !
 
 
 	//disable interrupts to ensure atomicity ( NEED TO ASK : why to use spinlocks if we can use interrupts ?)
