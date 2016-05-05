@@ -65,7 +65,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);
-
+int dequeue(void);
+int enqueue(int);
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
  * there are ongoing allocations, this value could change after it is returned

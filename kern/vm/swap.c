@@ -132,8 +132,8 @@ page_swapin(struct page_table_entry* pte, paddr_t pa){
 
 int
 free_swap_index(int index){
-  
-  KASSERT(bitmap_isset(swap_bitmap, index));
-  bitmap_unmark(swap_bitmap, index);
+  (void)index;
+  // KASSERT(bitmap_isset(swap_bitmap, index));
+  //bitmap_unmark(swap_bitmap, index);
   return 0;
 }

@@ -37,6 +37,7 @@
 #include <spl.h>
 #include <elf.h>
 #include <mips/vm.h>
+#include <swap.h>
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -151,7 +152,12 @@ as_destroy(struct addrspace *as)
 	struct page_table_entry* current = as->first, *next = NULL;
 	while(current != NULL){
 		next = current->next;
-		free_kpages(PADDR_TO_KVADDR(current->pa));
+		if(current->is_swapped){
+			kprintf("as_destroy:swapped page: %d\n",current->pa);
+			free_swap_index(current->pa);
+		}else{
+			free_kpages(PADDR_TO_KVADDR(current->pa));
+		}
 		kfree(current);
 		current = next;
 	}

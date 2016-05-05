@@ -42,10 +42,12 @@
 #include <kern/proc_syscalls.h>
 #include <swap.h>
 #include <spl.h>
+#define SIZE 1000
 
 static int num_pages_allocated;
 paddr_t lastpaddr, freeAddr, firstpaddr;
-
+static int queue[SIZE];
+static int front = 0, rear = -1, queue_size = 0;
 int coremap_page_num;
 static struct coremap_entry* coremap;
 
@@ -79,7 +81,12 @@ vm_bootstrap(void) {
 	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
   num_pages_allocated = coremap_size;
-
+  front = queue_size = 0;
+  rear = -1;
+  for(i = 0; i < SIZE; i++){
+    queue[i] = -1;
+  }
+  
   // Initiliase each page status in coremap
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
@@ -163,7 +170,7 @@ int evict_page(int index){
   if(result == -1){
     return result;
   }
-  bzero((void *)PADDR_TO_KVADDR(coremap[index].pa),PAGE_SIZE);
+  //bzero((void *)PADDR_TO_KVADDR(coremap[index].pa),PAGE_SIZE);
   coremap[index].pte->pa = result;
   coremap[index].pte->is_swapped = true;
   return 0;
@@ -178,7 +185,21 @@ make_page_avail(unsigned npages){
     spinlock_release(&stealmem_lock);
     return pa;
   }
-  pa = get_dirty_pages(npages);
+  if(npages > 1){
+   pa = get_dirty_pages(npages); 
+  }
+  else{
+    int index = dequeue();
+    while(index != 0 && coremap[index].state != DIRTY){
+      index = dequeue();
+    }
+    if(coremap[index].state == DIRTY){
+      spinlock_release(&stealmem_lock);
+      return coremap[index].pa;
+    }
+    spinlock_release(&stealmem_lock);
+    return 0;
+  }
   spinlock_release(&stealmem_lock);
   return pa;
 }
@@ -235,8 +256,31 @@ alloc_upage(struct page_table_entry* pte){
   coremap[index].state = DIRTY;
   coremap[index].pte = pte; // pte
   coremap[index].is_busy = false;
+  enqueue(index);
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
   return pa;
+}
+
+
+int dequeue(void){
+ if(queue_size == 0){
+  return 0;
+ }
+ int value = queue[front];
+ queue[front] = -1;
+ front = (front+1) % SIZE;
+ --queue_size;
+ return value;
+}
+
+int enqueue(int value){
+  if(queue_size == SIZE){
+    return -1;
+  }
+  rear = (rear + 1) % SIZE;
+  queue[rear] = value;
+  ++queue_size;
+  return 0;
 }
 
 void
@@ -339,8 +383,17 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           }
           tempNew->next = as->first;
           as->first = tempNew;
-      } else { //right now, don't know what to do , will be used during swapping stage
-
+      }else{
+        if(tempNew->is_swapped){
+          paddr_t pa = alloc_upage(tempNew);
+          if(pa == 0){
+            return ENOMEM;
+          }
+          int error = page_swapin(tempNew,pa);
+          if(error){
+            return EFAULT;
+          }
+        }
       }
       /*Spinlock doesn't work here; results in deadlock*/
 
