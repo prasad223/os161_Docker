@@ -348,6 +348,7 @@ file      proc/proc.c
 file      vm/kmalloc.c
 optofffile dumbvm   vm/addrspace.c
 file vm/vm.c
+file vm/swap.c
 #
 # Network
 # (nothing here yet)
