@@ -138,7 +138,7 @@ vaddr_t
 alloc_kpages(unsigned npages) {
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(npages, stealmem_lock);
+  paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
     spinlock_release(&stealmem_lock);
 		return 0;
@@ -158,7 +158,7 @@ alloc_kpages(unsigned npages) {
  */
 
 paddr_t
-make_page_avail(unsigned npages, struct spinlock stealmem_lock){
+make_page_avail(unsigned npages){
 
   if(numPagesAllocated == coremap_page_num){
     int indexToSwap = dequeue();
@@ -211,7 +211,7 @@ paddr_t
 alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
 
   spinlock_acquire(&stealmem_lock);
-  paddr_t pa = make_page_avail(1,stealmem_lock);
+  paddr_t pa = make_page_avail(1);
   if(pa == 0){
     spinlock_release(&stealmem_lock);
     return pa;

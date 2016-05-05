@@ -38,9 +38,12 @@
  #include <proc.h>
  #include <vnode.h>
  #include <kern/stat.h>
+ #include <cpu.h>
+ #include <bitmap.h>
 
-static bool isFirstSwap = true;
 static int swap_num_pages = 0;
+static bool isFirstSwap = true;
+/**/
 void
 swap_bootstrap(){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
@@ -76,6 +79,10 @@ void page_swapout(int indexToSwap){
   KASSERT(pte != NULL);
 
   tlb_shootdown_page_table_entry(pte->va);
+
+  /* Also, shootdown other TLB entries from different cores*/
+	ipi_broadcast(IPI_TLBSHOOTDOWN);
+
   int index = 0;
   for(;index < swap_num_pages;index++){
     if(bitmap_isset(swap_bitmap,index) == 0){
@@ -87,21 +94,29 @@ void page_swapout(int indexToSwap){
   struct uio user_uio;
   struct iovec iov;
   int result;
+
+  lock_acquire(bitmapLock);
   bitmap_mark(swap_bitmap, index);
+  lock_release(bitmapLock);
+
   uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(coremap[indexToSwap].phyAddr),PAGE_SIZE,
             index * PAGE_SIZE, UIO_WRITE  );
   result = VOP_WRITE(swap_file,&user_uio);
   if (result) {
     panic("Unable to write to swap file , reason  %d",result);
   }
+  lock_acquire(pteLock);
   pte->pa = index;
   pte->pageInDisk = true;
+  lock_release(pteLock);
 }
 
 void
 free_swap_index(int index){
+  lock_acquire(bitmapLock);
   KASSERT(bitmap_isset(swap_bitmap, index));
   bitmap_unmark(swap_bitmap, index);
+  lock_release(bitmapLock);
 }
 
 int
@@ -121,12 +136,16 @@ read_page_from_swap(int swapMapOffset, paddr_t pa) {
 }
 void page_swapin(struct page_table_entry *pte, paddr_t pa){
   KASSERT(pte != NULL);
+  lock_acquire(pteLock);
   int offset = (int)pte->pa;
+  lock_release(pteLock);
   KASSERT(bitmap_isset(swap_bitmap, offset));
+
   int result;
-
+  KASSERT(offset < swap_bitmap->nbits);
+  lock_acquire(bitmapLock);
   bitmap_unmark(swap_bitmap, offset);
-
+  lock_release(bitmapLock);
   result = read_page_from_swap(offset , pa);
   if (result) {
       /*Dont do anything here*/

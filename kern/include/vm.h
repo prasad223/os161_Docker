@@ -64,7 +64,8 @@
  };
 
 struct coremap_entry* coremap;
-
+struct lock *pteLock;
+struct lock *bitmapLock;
 
 /* Initialization function */
 void vm_bootstrap(void);
@@ -79,7 +80,7 @@ paddr_t getppages(unsigned long npages);
 paddr_t alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage);
 int dequeue(void);
 int enqueue(int value);
-paddr_t make_page_avail(unsigned npages, struct spinlock stealmem_lock);
+paddr_t make_page_avail(unsigned npages);
 /*
  * Return amount of memory (in bytes) used by allocated coremap pages.  If
  * there are ongoing allocations, this value could change after it is returned
