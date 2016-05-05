@@ -28,7 +28,8 @@
 /*
  * Largely inspired from jinghao's blog
  */
-
+#define MAX_ARG_NUM 100
+#define MAX_ARG_LENGTH 2048
 int
 sys_sbrk(int amount, int *retval){
 
@@ -245,37 +246,47 @@ sys_execv(const char *program, char **uargs){
 	if (error){
 		return EFAULT;
 	}
-
  	if (prog_name_size == 1) { // see if you should increase this to 1
 		return EINVAL;
 	}
 
 	//kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
 
-	char **args = (char **) kmalloc(sizeof(char **));
+	//char **args = (char **) kmalloc(sizeof(char **));
+	char *tempKernelBuffer[MAX_ARG_NUM];
 
-	if(copyin((const_userptr_t) uargs, args, sizeof(char **))){
-		kprintf("error in copying in args\n");
-		kfree(program_name);
-		kfree(args);
-		return EFAULT;
+	error = copyin((const_userptr_t)uargs, tempKernelBuffer,MAX_ARG_NUM);
+	if (error) {
+		// /kfree(program_name);
+		return error;
 	}
+	char *args[MAX_ARG_NUM];
+	int argc =0;
+	// if(copyin((const_userptr_t) tempKernelBuffer, args, sizeof(char **))){
+	// 	kprintf("error in copying in args\n");
+	// 	kfree(program_name);
+	// 	kfree(args);
+	// 	return EFAULT;
+	// }
 
 	int i=0;
-	size_t size=0;
-	while (uargs[i] != NULL ) {
-		args[i] = (char *) kmalloc(sizeof(char) * PATH_MAX);
-
-		error = copyinstr((const_userptr_t) uargs[i], args[i], PATH_MAX,
-				&size);
+	//size_t size=0;
+	while (tempKernelBuffer[i] != NULL ) {
+		args[i] = kmalloc(MAX_ARG_LENGTH);
+		if (args[i] == NULL) {
+			return ENOMEM;
+		}
+		error = copyin((const_userptr_t) tempKernelBuffer[i], args[i], (size_t)MAX_ARG_LENGTH);
 		if (error) {
 			kprintf("error in copying individual args: error: %d\n",error);
-			kfree(program_name);
-			kfree(args);
+			//kfree(program_name);
+
+			//kfree(args);
 			return EFAULT;
 		}
 		i++;
 	}
+	argc = i;
 	args[i] = NULL;
 	//kprintf("count of args:%d\n",i);
 	//	 Open the file.
@@ -285,12 +296,12 @@ sys_execv(const char *program, char **uargs){
 	error = vfs_open(program_name, O_RDONLY, 0, &v_node);
 	if (error) {
 		kprintf("error in vfs open\n");
-		kfree(program_name);
-		kfree(args);
+		//kfree(program_name);
+		//kfree(args);
 		vfs_close(v_node);
 		return error;
 	}
-
+	kfree(program_name);
 	if(curproc->p_addrspace != NULL){
 		as_destroy(curproc->p_addrspace);
 		curproc->p_addrspace = NULL;
@@ -301,8 +312,8 @@ sys_execv(const char *program, char **uargs){
 	curproc->p_addrspace = as_create();
 	if (curproc->p_addrspace == NULL) {
 		kprintf("error in clearning curproc addressspace\n");
-		kfree(program_name);
-		kfree(args);
+		//kfree(program_name);
+		//kfree(args);
 		vfs_close(v_node);
 		return ENOMEM;
 	}
@@ -312,8 +323,8 @@ sys_execv(const char *program, char **uargs){
 	error = load_elf(v_node, &entry_point);
 	if (error) {
 		kprintf("error in loading elf\n");
-		kfree(program_name);
-		kfree(args);
+		//kfree(program_name);
+		//kfree(args);
 		vfs_close(v_node);
 		return error;
 	}
@@ -323,13 +334,13 @@ sys_execv(const char *program, char **uargs){
 	error = as_define_stack(curproc->p_addrspace, &stack_ptr);
 	if (error) {
 		kprintf("error in defiingin stack\n");
-		kfree(program_name);
-		kfree(args);
+		//kfree(program_name);
+		//kfree(args);
 		return error;
 	}
 
 	int j = 0 , arg_length=0;
-
+	char *final_buf[100];
 	while (args[j] != NULL ) {
 		char * arg;
 		arg_length = strlen(args[j])+1; // 1 for NULL
@@ -356,13 +367,14 @@ sys_execv(const char *program, char **uargs){
 				(size_t) arg_length);
 	//	kprintf("copyout error stat: %d\n", error);
 		if (error) {
-			kfree(program_name);
-			kfree(args);
+			//kfree(program_name);
+			//kfree(args);
 			kfree(arg);
 			return error;
 		}
 		kfree(arg);
-		args[j] = (char *) stack_ptr;
+		final_buf[j] = (char *)stack_ptr;
+		//args[j] = (char *) stack_ptr;
 		j++;
 	}
 
@@ -372,17 +384,29 @@ sys_execv(const char *program, char **uargs){
 
 	for (int i = (j - 1); i >= 0; i--) {
 		stack_ptr = stack_ptr - sizeof(char*);
-		error = copyout((const void *) (args + i), (userptr_t) stack_ptr,
+		error = copyout((const void *) (final_buf + i), (userptr_t) stack_ptr,
 				(sizeof(char *)));
 		if (error) {
 			kprintf("error in setting args to stack\n");
-			kfree(program_name);
-			kfree(args);
+			//kfree(program_name);
+			//kfree(args);
 			return error;
 		}
 	}
-	kfree(program_name);
-	kfree(args);
+	//kfree(program_name);
+	for(int k=0; k < argc; k++) {
+		if (args[k] != NULL) {
+			//kfree(args[k]);
+			vaddr_t va = (vaddr_t)args[k];
+			if (va % PAGE_SIZE == 0) {
+				kfree(args[k]);
+			} else {
+				kprintf("\nVADDR %p\n",(void *)va);
+			}
+		}
+	}
+
+	//kfree(args);
 
 	//kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
 	enter_new_process(j /*argc*/,

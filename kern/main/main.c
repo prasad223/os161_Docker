@@ -50,9 +50,14 @@
 #include <test.h>
 #include <kern/test161.h>
 #include <version.h>
+#include <swap.h>
 #include "autoconf.h"  // for pseudoconfig
 
-
+ extern int mallocCounter;
+ extern int freeCounter;
+//
+ extern vaddr_t kmallocAddress[100];
+ extern vaddr_t freeAddrress[100];
 /*
  * These two pieces of data are maintained by the makefiles and build system.
  * buildconfig is the name of the config file the kernel was configured with.
@@ -135,7 +140,8 @@ boot(void)
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
-
+  pteLock     = lock_create("pteLock");
+  bitmapLock  = lock_create("bitmapLock");
 	/*
 	 * Make sure various things aren't screwed up.
 	 */
@@ -143,6 +149,20 @@ boot(void)
 	COMPILE_ASSERT(sizeof(*(userptr_t)0) == sizeof(char));
 }
 
+static
+void
+printArrays() {
+  /* code */
+  for(int i=0; i < mallocCounter; i++)
+  {
+    //kprintf("\n%p\n",(void *)kmallocAddress[i]);
+  }
+
+  //kprintf("\n************FREE address starts below********************\n");
+  for(int i=0; i < freeCounter; i++) {
+    //kprintf("\n%p\n",(void *)freeAddrress[i]);
+  }
+}
 /*
  * Shutdown sequence. Opposite to boot().
  */
@@ -150,7 +170,8 @@ static
 void
 shutdown(void)
 {
-
+  kprintf("\nTo print address arrays\n");
+  printArrays();
 	kprintf("Shutting down.\n");
 
 	vfs_clearbootfs();

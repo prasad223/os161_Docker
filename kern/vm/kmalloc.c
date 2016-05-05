@@ -37,7 +37,11 @@
 /*
  * Kernel malloc.
  */
+ int mallocCounter =0;
+ int freeCounter   =0;
 
+ vaddr_t kmallocAddress[300];
+ vaddr_t freeAddrress[300];
 
 /*
  * Fill a block with 0xdeadbeef.
@@ -232,6 +236,8 @@ allocpagerefpage(struct kheap_root *root)
 	 */
 	spinlock_release(&kmalloc_spinlock);
 	va = alloc_kpages(1);
+	// kmallocAddress[mallocCounter] = va;
+	// mallocCounter++;
 	spinlock_acquire(&kmalloc_spinlock);
 	if (va == 0) {
 		kprintf("kmalloc: Couldn't get a pageref page\n");
@@ -1187,6 +1193,8 @@ subpage_kfree(void *ptr)
 		remove_lists(pr, blktype);
 		freepageref(pr);
 		/* Call free_kpages without kmalloc_spinlock. */
+		// freeAddrress[freeCounter] = prpage;
+		// freeCounter++;
 		spinlock_release(&kmalloc_spinlock);
 		free_kpages(prpage);
 	}
@@ -1225,7 +1233,8 @@ kmalloc(size_t sz)
 #error "Don't know how to get return address with this compiler"
 #endif /* __GNUC__ */
 #endif /* LABELS */
-
+	//vaddr_t va;
+	void *ptr;
 	checksz = sz + GUARD_OVERHEAD + LABEL_OVERHEAD;
 	if (checksz >= LARGEST_SUBPAGE_SIZE) {
 		unsigned long npages;
@@ -1234,6 +1243,8 @@ kmalloc(size_t sz)
 		/* Round up to a whole number of pages. */
 		npages = (sz + PAGE_SIZE - 1)/PAGE_SIZE;
 		address = alloc_kpages(npages);
+		// kmallocAddress[mallocCounter] = address;
+		// mallocCounter++;
 		if (address==0) {
 			return NULL;
 		}
@@ -1243,9 +1254,20 @@ kmalloc(size_t sz)
 	}
 
 #ifdef LABELS
-	return subpage_kmalloc(sz, label);
+	// kmallocAddress[mallocCounter] = (int)subpage_kmalloc(sz, label);
+	// mallocCounter++;
+	ptr = subpage_kmalloc(sz, label);
+	// kmallocAddress[mallocCounter] = (vaddr_t) ptr;
+	// mallocCounter++;
+	return ptr;
 #else
-	return subpage_kmalloc(sz);
+	// kmallocAddress[mallocCounter] = (int)subpage_kmalloc(sz);
+	// mallocCounter++;
+	//return (void *)kmallocAddress[mallocCounter-1];
+	ptr = subpage_kmalloc(sz);
+	// kmallocAddress[mallocCounter] = (vaddr_t) ptr;
+	// mallocCounter++;
+	return ptr;
 #endif
 }
 
@@ -1260,9 +1282,12 @@ kfree(void *ptr)
 	 */
 	if (ptr == NULL) {
 		return;
-	} else if (subpage_kfree(ptr)) {
-		KASSERT((vaddr_t)ptr%PAGE_SIZE==0);
-		free_kpages((vaddr_t)ptr);
+	} else {
+		// freeAddrress[freeCounter] = (vaddr_t)ptr;
+		// freeCounter++;
+		if (subpage_kfree(ptr)) {
+			KASSERT((vaddr_t)ptr%PAGE_SIZE==0);
+			free_kpages((vaddr_t)ptr);
+		}
 	}
 }
-
