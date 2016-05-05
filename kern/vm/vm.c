@@ -42,21 +42,13 @@
 #include <kern/proc_syscalls.h>
 #include <spl.h>
 
-//static bool vm_bootstrap_done = false;
-//struct lock* vm_lock; //no idea why, investigate later
-static unsigned long coremap_used_size;
+static int num_pages_allocated;
 paddr_t lastpaddr, freeAddr, firstpaddr;
 
 int coremap_page_num;
 struct coremap_entry* coremap;
-//static bool firstuserboot = true;
 
-//extern paddr_t first_ram_phyAddr;
-/*
- * Wrap ram_stealmem in a spinlock.
- */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
-static struct spinlock tlb_spinlock  = SPINLOCK_INITIALIZER;
 
 /*
 * Logic is to find the first free physical address from where we can start to initialize our coremap.
@@ -68,7 +60,7 @@ static struct spinlock tlb_spinlock  = SPINLOCK_INITIALIZER;
 void
 vm_bootstrap(void) {
   int i;
-	paddr_t freeAddr, temp;
+	paddr_t temp;
 	int coremap_size;
 
   // Get the total size of the RAM
@@ -85,27 +77,22 @@ vm_bootstrap(void) {
   // Allocate memory to coremap
 	coremap  = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
 	coremap_size = ROUNDUP( (freeAddr - firstpaddr),PAGE_SIZE) / PAGE_SIZE;
+  num_pages_allocated = coremap_size;
 
   // Initiliase each page status in coremap
 	for(i =0 ; i < coremap_page_num; i++ ) {
 		if (i < coremap_size) {
-			coremap[i].state = DIRTY;
+			coremap[i].state = FIXED;
 		} else {
-			coremap[i].state = CLEAN;
+			coremap[i].state = FREE;
 		}
 		temp = firstpaddr + (PAGE_SIZE * i);
-    coremap[i].phyAddr= temp;
-    coremap[i].allocPageCount = -1;
-    coremap[i].va = PADDR_TO_KVADDR(temp);
+    coremap[i].pa= temp;
+    coremap[i].page_count = -1;
 	}
-  // Set coremap used size to 0
-  coremap_used_size = 0;
-  //coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
 }
 
-/*
-*
-**/
+
 paddr_t
 getppages(unsigned long npages)
 {
@@ -116,7 +103,7 @@ getppages(unsigned long npages)
 
    block_count = nPageTemp;
    for(i=0; i < coremap_page_num; i++) {
-     if (coremap[i].state == CLEAN) {
+     if (coremap[i].state == FREE) {
        block_count--;
        if (block_count == 0) {
          break; //
@@ -135,10 +122,10 @@ getppages(unsigned long npages)
    for(i = 0; i < nPageTemp; i++) {
      coremap[i + page_block_start].state = DIRTY;
    }
-   addr = coremap[page_block_start].phyAddr;
-   coremap[page_block_start].allocPageCount = nPageTemp;
+   addr = coremap[page_block_start].pa;
+   coremap[page_block_start].page_count = nPageTemp;
 
-   coremap_used_size = coremap_used_size + (nPageTemp * PAGE_SIZE);
+   num_pages_allocated += nPageTemp;
    spinlock_release(&stealmem_lock);
    return addr;
 }
@@ -159,32 +146,18 @@ void
 free_kpages(vaddr_t addr) {
   spinlock_acquire(&stealmem_lock);
   int index = (KVADDR_TO_PADDR(addr)-firstpaddr) / PAGE_SIZE;
-  int pgCount = coremap[index].allocPageCount;
+  int page_count = coremap[index].page_count;
   
-  for(int j = 0; j < pgCount; j++){
-    coremap[index + j].allocPageCount = -1;
-    coremap[index + j].state = CLEAN;
+  for(int j = 0; j < page_count; j++){
+    coremap[index + j].page_count = -1;
+    coremap[index + j].state = FREE;
   }
 
   // Remove the memory of removed pages from counter
-  coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
-
+  num_pages_allocated -= page_count;
   spinlock_release(&stealmem_lock);
 }
 
-int
-get_first_free_index() {
-  int result = PATH_MAX,i;
-  //lock_acquire(coremapLock);
-  for(i = 0; i < coremap_page_num; i++) {
-    if (coremap[i].state == CLEAN) {
-      result = i;
-      return result;
-    }
-  }
-  //lock_release(coremapLock);
-  return result;
-}
 
 int
 vm_fault(int faulttype, vaddr_t faultaddress) {
@@ -294,7 +267,6 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     1. This means that the process needs to have write permissions to the page
     2. Also page need not be allocated, simply change the dirty bit to 1*/
     if (permissions == PF_W) {
-      spinlock_acquire(&tlb_spinlock);
       /*tlb_probe -> finds index of faultaddress
       tlb_read    -> gets entryhi and entrylo
       tlb_write   -> to set the dirty bit to 1*/
@@ -305,8 +277,6 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       ehi = faultaddress;
       elo = elo | TLBLO_DIRTY | TLBLO_VALID;
       tlb_write(ehi,elo,index);
-
-      spinlock_release(&tlb_spinlock);
     } else {
       //lock_release(coremapLock);
       kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
@@ -320,15 +290,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 void
 vm_tlbshootdown_all(void)
 {
-	//panic("dumbvm tried to do tlb shootdown?!\n");
-  int i;
-  //spinlock_acquire(&tlb_spinlock);
-  int spl = splhigh();
-  for (i=0; i<NUM_TLB; i++) {
-  		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	int spl = splhigh();
+  for (int i=0; i<NUM_TLB; i++) {
+    tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
   }
   splx(spl);
-  //spinlock_release(&tlb_spinlock);
 }
 
 void
@@ -341,22 +307,15 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 /*Shoot down a TLB entry based on given virtual address*/
 void
 tlb_shootdown_page_table_entry(vaddr_t va) {
-  int i;
-  uint32_t ehi, elo;
-  KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address
-  spinlock_acquire(&tlb_spinlock);
-  for(i=0; i < NUM_TLB; i++) {
-    tlb_read(&ehi, &elo, i);
-    if (ehi  == va) {
-      tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-      break;
-    }
-
+  int spl = splhigh();
+  int index = tlb_probe(va,0);
+  if(index >= 0){
+    tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
   }
-  spinlock_release(&tlb_spinlock);
+  splx(spl);
 }
 
 unsigned
 int coremap_used_bytes(void) {
-  return coremap_used_size;
+  return num_pages_allocated * PAGE_SIZE;
 }

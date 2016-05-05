@@ -30,41 +30,28 @@
 #ifndef _VM_H_
 #define _VM_H_
 
-/*
- * VM system-related definitions.
- *
- * You'll probably want to add stuff here.
- */
- #define DIRTY 5
- #define CLEAN 4
- #define KVADDR_TO_PADDR(paddr) ((paddr)-MIPS_KSEG0)
-
- paddr_t
- getppages(unsigned long npages);
-
- struct coremap_entry {
-   vaddr_t va;
-   int allocPageCount;
-
-   char state;
-   paddr_t phyAddr;
- };
-
-//struct lock* coremapLock;
-
 #include <machine/vm.h>
 
-/* Fault-type arguments to vm_fault() */
 #define VM_FAULT_READ        0    /* A read was attempted */
 #define VM_FAULT_WRITE       1    /* A write was attempted */
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
 
+#define FIXED 0
+#define FREE  1
+#define DIRTY 2
+#define CLEAN 3
+#define KVADDR_TO_PADDR(paddr) ((paddr)-MIPS_KSEG0)
 
-int
-get_first_free_index(void);
+struct coremap_entry {
+  int page_count;
+  char state;
+  paddr_t pa;
+  struct page_table_entry* pte;
+};
 
 /* Initialization function */
 void vm_bootstrap(void);
+paddr_t getppages(unsigned long npages);
 
 /* Fault handling function called by trap code */
 int vm_fault(int faulttype, vaddr_t faultaddress);
@@ -84,6 +71,5 @@ unsigned int coremap_used_bytes(void);
 void vm_tlbshootdown_all(void);
 void vm_tlbshootdown(const struct tlbshootdown *);
 void tlb_shootdown_page_table_entry(vaddr_t va);
-
 
 #endif /* _VM_H_ */
