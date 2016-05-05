@@ -173,7 +173,11 @@ make_page_avail(unsigned npages){
     }
     if(coremap[indexToSwap].state == DIRTY){
       spinlock_release(&stealmem_lock);
-      page_swapout(indexToSwap);
+      int result = page_swapout(indexToSwap);
+      if(result){
+        spinlock_acquire(&stealmem_lock);
+        return 0;
+      }
       spinlock_acquire(&stealmem_lock);
       return coremap[indexToSwap].phyAddr;
     }
@@ -333,7 +337,10 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       } else {
          if (tempNew->pageInDisk) {
           paddr_t pa = alloc_upage(as, bIsCodeOrStackPage);
-          page_swapin(tempNew, pa);
+          int error = page_swapin(tempNew, pa);
+          if(error){
+            return EFAULT;
+          }
         }
       }
       /*Spinlock doesn't work here; results in deadlock*/

@@ -41,7 +41,8 @@ struct bitmap *swap_bitmap;
  */
 
 void swap_bootstrap(void);
-void page_swapout(int indexToSwap);
-void page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa);
+void swap_shutdown(void);
+int page_swapout(int indexToSwap);
+int page_swapin(struct page_table_entry *pteToSwapIn, paddr_t pa);
 void free_swap_index(int index);
 int read_page_from_swap(int swapMapOffset, paddr_t pa) ;

@@ -37,11 +37,11 @@
 /*
  * Kernel malloc.
  */
- int mallocCounter =0;
- int freeCounter   =0;
+ // int mallocCounter =0;
+ // int freeCounter   =0;
 
- vaddr_t kmallocAddress[300];
- vaddr_t freeAddrress[300];
+ // vaddr_t kmallocAddress[1000];
+ // vaddr_t freeAddrress[1000];
 
 /*
  * Fill a block with 0xdeadbeef.
@@ -1233,7 +1233,6 @@ kmalloc(size_t sz)
 #error "Don't know how to get return address with this compiler"
 #endif /* __GNUC__ */
 #endif /* LABELS */
-	//vaddr_t va;
 	void *ptr;
 	checksz = sz + GUARD_OVERHEAD + LABEL_OVERHEAD;
 	if (checksz >= LARGEST_SUBPAGE_SIZE) {
@@ -1249,16 +1248,11 @@ kmalloc(size_t sz)
 			return NULL;
 		}
 		KASSERT(address % PAGE_SIZE == 0);
-
 		return (void *)address;
 	}
 
 #ifdef LABELS
-	// kmallocAddress[mallocCounter] = (int)subpage_kmalloc(sz, label);
-	// mallocCounter++;
 	ptr = subpage_kmalloc(sz, label);
-	// kmallocAddress[mallocCounter] = (vaddr_t) ptr;
-	// mallocCounter++;
 	return ptr;
 #else
 	// kmallocAddress[mallocCounter] = (int)subpage_kmalloc(sz);

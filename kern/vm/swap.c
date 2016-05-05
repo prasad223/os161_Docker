@@ -42,31 +42,43 @@
  #include <bitmap.h>
 
 static int swap_num_pages = 0;
-static bool isFirstSwap = true;
+static bool is_swap_enabled = false;
 /**/
 void
 swap_bootstrap(){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
   if(error){
-    panic("vfs file creation failure:%d\n",error);
+    kprintf("vfs file creation failure:%d\n",error);
+    return;
   }
-  (void)swap_num_pages;
   struct stat file_stat;
   error = VOP_STAT(swap_file, &file_stat);
   if(error){
-    panic("error in reading swap file size");
+    kprintf("error in reading swap file size");
+    return;
   }
   swap_num_pages = file_stat.st_size / PAGE_SIZE;
   KASSERT(swap_num_pages != 0);
   swap_bitmap = bitmap_create(swap_num_pages);
+  is_swap_enabled = true;
 }
 
 
-void page_swapout(int indexToSwap){
+void
+swap_shutdown(void){
+  if(!is_swap_enabled){
+    return;
+  }
+  KASSERT(swap_file != NULL);
+  vfs_close(swap_file);
+  KASSERT(swap_bitmap != NULL);
+  bitmap_destroy(swap_bitmap);
+}
+
+int page_swapout(int indexToSwap){
   (void)indexToSwap;
-  if(isFirstSwap){
-    swap_bootstrap();
-    isFirstSwap = false;
+  if(!is_swap_enabled){
+    return -1;
   }
 
   struct page_table_entry *pte = coremap[indexToSwap].as->first;
@@ -103,12 +115,14 @@ void page_swapout(int indexToSwap){
             index * PAGE_SIZE, UIO_WRITE  );
   result = VOP_WRITE(swap_file,&user_uio);
   if (result) {
-    panic("Unable to write to swap file , reason  %d",result);
+    kprintf("Unable to write to swap file , reason  %d",result);
+    return -1;
   }
   lock_acquire(pteLock);
   pte->pa = index;
   pte->pageInDisk = true;
   lock_release(pteLock);
+  return 0;
 }
 
 void
@@ -134,7 +148,10 @@ read_page_from_swap(int swapMapOffset, paddr_t pa) {
   }
   return result;
 }
-void page_swapin(struct page_table_entry *pte, paddr_t pa){
+int page_swapin(struct page_table_entry *pte, paddr_t pa){
+  if(!is_swap_enabled){
+    return -1;
+  }
   KASSERT(pte != NULL);
   lock_acquire(pteLock);
   int offset = (int)pte->pa;
@@ -147,8 +164,9 @@ void page_swapin(struct page_table_entry *pte, paddr_t pa){
   lock_release(bitmapLock);
   result = read_page_from_swap(offset , pa);
   if (result) {
-      /*Dont do anything here*/
+      return -1;
   }
   pte->pa = pa;
   pte->pageInDisk = false;
+  return 0;
 }

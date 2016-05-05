@@ -135,6 +135,7 @@ boot(void)
 	kprintf_bootstrap();
 	thread_start_cpus();
 	test161_bootstrap();
+	swap_bootstrap();
 
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");
@@ -155,12 +156,12 @@ boot(void)
 //   /* code */
 //   for(int i=0; i < mallocCounter; i++)
 //   {
-//     //kprintf("\n%p\n",(void *)kmallocAddress[i]);
+//     kprintf("%p\n",(void *)kmallocAddress[i]);
 //   }
 
-//   //kprintf("\n************FREE address starts below********************\n");
+//   kprintf("\n************FREE address starts below********************\n");
 //   for(int i=0; i < freeCounter; i++) {
-//     //kprintf("\n%p\n",(void *)freeAddrress[i]);
+//     kprintf("%p\n",(void *)freeAddrress[i]);
 //   }
 // }
 /*
@@ -173,7 +174,7 @@ shutdown(void)
   // kprintf("\nTo print address arrays\n");
   // printArrays();
 	kprintf("Shutting down.\n");
-
+	swap_shutdown();
 	vfs_clearbootfs();
 	vfs_clearcurdir();
 	vfs_unmountall();
