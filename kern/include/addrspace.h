@@ -45,7 +45,7 @@ struct page_table_entry {
     vaddr_t va;
     paddr_t pa;
     bool is_swapped;
-    struct lock* pte_lock;
+    //struct lock* pte_lock;
     struct page_table_entry *next;
 };
 

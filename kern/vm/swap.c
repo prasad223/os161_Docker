@@ -55,7 +55,7 @@ swap_bootstrap(void){
   struct stat file_stat;
   error = VOP_STAT(swap_file, &file_stat);
   if(error){
-    panic("error in reading swap file size");
+    kprintf("error in reading swap file size");
     return 0;
   }
   swap_num_pages = file_stat.st_size / PAGE_SIZE;
@@ -66,24 +66,74 @@ swap_bootstrap(void){
 }
 
 int
-page_swapout(int index){
-  (void)index;
-  return 0;
-}
+page_swapout(vaddr_t va){
 
-bool can_i_swap(void){
-  return is_swap_enabled;
+  if(!is_swap_enabled){
+    return -1;
+  }
+
+  /* Also, shootdown other TLB entries from different cores*/
+  //ipi_broadcast(IPI_TLBSHOOTDOWN);
+
+  int swap_index = 0;
+  for(;swap_index < swap_num_pages;swap_index++){
+    if(!bitmap_isset(swap_bitmap,swap_index)){
+      break;
+    }
+  }
+
+  if(swap_index == swap_num_pages){
+    return -1;
+  }
+
+  struct uio user_uio;
+  struct iovec iov;
+  int result;
+
+  bitmap_mark(swap_bitmap, swap_index);
+  uio_kinit(&iov,&user_uio,(void *)va,PAGE_SIZE,
+            swap_index * PAGE_SIZE, UIO_WRITE  );
+  result = VOP_WRITE(swap_file,&user_uio);
+  if (result) {
+    kprintf("Unable to write to swap file , reason  %d",result);
+    return -1;
+  }
+  return 0;
 }
 
 int
 page_swapin(struct page_table_entry* pte, paddr_t pa){
-  (void)pte;
-  (void)pa;
+  
+  if(!is_swap_enabled){
+    return -1;
+  }
+
+  KASSERT(pte != NULL);
+  int offset = (int)pte->pa;
+  KASSERT(offset < swap_num_pages);
+  KASSERT(bitmap_isset(swap_bitmap, offset));
+
+  int result;
+  struct uio user_uio;
+  struct iovec iov;
+
+  uio_kinit(&iov,&user_uio,(void *)PADDR_TO_KVADDR(pa),PAGE_SIZE,
+            offset * PAGE_SIZE, UIO_READ  );
+  result = VOP_READ(swap_file,&user_uio);
+  if (result) {
+    return -1;
+  }
+  
+  bitmap_unmark(swap_bitmap, offset);
+  pte->pa = pa;
+  pte->is_swapped = false;
   return 0;
 }
 
 int
 free_swap_index(int index){
-  (void)index;
+  
+  KASSERT(bitmap_isset(swap_bitmap, index));
+  bitmap_unmark(swap_bitmap, index);
   return 0;
 }

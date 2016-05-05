@@ -108,7 +108,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		if(new_ptr == NULL){
 			return ENOMEM;
 		}
-		new_ptr->pa = getppages(1);
+		new_ptr->pa = alloc_upage(new_ptr);
 		if(new_ptr->pa == 0){
 			return ENOMEM;
 		}

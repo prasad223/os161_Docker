@@ -47,7 +47,7 @@ static int num_pages_allocated;
 paddr_t lastpaddr, freeAddr, firstpaddr;
 
 int coremap_page_num;
-struct coremap_entry* coremap;
+static struct coremap_entry* coremap;
 
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
@@ -98,16 +98,14 @@ paddr_t
 getppages(unsigned long npages)
 {
    spinlock_acquire(&stealmem_lock);
-   paddr_t addr;
    int nPageTemp = (int)npages;
-   int i, block_count , page_block_start = 0;
+   int i, block_count = nPageTemp, page_block_start = 0;
 
-   block_count = nPageTemp;
    for(i=0; i < coremap_page_num; i++) {
-     if (coremap[i].state == FREE) {
+     if (!coremap[i].is_busy  && coremap[i].state == FREE) { //
        block_count--;
        if (block_count == 0) {
-         break; //
+         break;
        }
      } else {
        block_count = nPageTemp;
@@ -121,26 +119,112 @@ getppages(unsigned long npages)
    page_block_start = i - nPageTemp + 1;
 
    for(i = 0; i < nPageTemp; i++) {
-     coremap[i + page_block_start].state = DIRTY;
+     coremap[i + page_block_start].is_busy = true;
    }
-   addr = coremap[page_block_start].pa;
    coremap[page_block_start].page_count = nPageTemp;
-
    num_pages_allocated += nPageTemp;
    spinlock_release(&stealmem_lock);
-   return addr;
+   return coremap[page_block_start].pa;
 }
 
 /*kmalloc-routines*/
 vaddr_t
 alloc_kpages(unsigned npages) {
 
-  paddr_t pa = getppages(npages);
+  paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
 		return 0;
-	}else{
-	  return PADDR_TO_KVADDR(pa);
+	}
+  int index = ( pa - firstpaddr) / PAGE_SIZE;
+  for(int i = 0 ; i < (int)npages; i++){
+    if(coremap[i + index].state == DIRTY){
+      KASSERT(coremap[i + index].pte != NULL);
+      panic("This should not run\n");
+    }
+    coremap[i + index].state = FIXED;
+    coremap[i + index].is_busy = false;
   }
+  return PADDR_TO_KVADDR(pa);
+}
+
+int evict_page(int index){
+  // acquire lock
+  // locking not implemented yet, will do it after basic swap is working
+
+  KASSERT(coremap[index].pte != NULL);
+  KASSERT(coremap[index].state == DIRTY);
+  tlb_shootdown_page_table_entry(coremap[index].pte->va);
+  int result = page_swapout(PADDR_TO_KVADDR(coremap[index].pa));
+  if(result == -1){
+    return -1;
+  }
+  coremap[index].pte->is_swapped = true;
+  coremap[index].pte->pa = result;
+  return 0;
+}
+
+paddr_t
+make_page_avail(unsigned npages){
+  // if(num_pages_allocated < coremap_page_num){
+    return getppages(npages);
+  // }
+  // return get_dirty_pages(npages);
+}
+
+// Finds pages that are either FREE or DIRTY or both
+// sets them busy, does not increase page_alloc count
+// returns pa in success or 0 if failure
+paddr_t
+get_dirty_pages(unsigned long npages)
+{
+   spinlock_acquire(&stealmem_lock);
+   int nPageTemp = (int)npages;
+   int i, block_count = nPageTemp, page_block_start = 0;
+
+   for(i=0; i < coremap_page_num; i++) {
+     if (!coremap[i].is_busy  && (coremap[i].state == FREE || coremap[i].state == DIRTY)) {
+       block_count--;
+       if (block_count == 0) {
+         break;
+       }
+     } else {
+       block_count = nPageTemp;
+     }
+   }
+
+   if (i == coremap_page_num) { //no free pages
+     spinlock_release(&stealmem_lock);
+     return 0;
+   }
+   page_block_start = i - nPageTemp + 1;
+
+   for(i = 0; i < nPageTemp; i++) {
+     coremap[i + page_block_start].is_busy = true;
+   }
+   coremap[page_block_start].page_count = nPageTemp;
+   spinlock_release(&stealmem_lock);
+   return coremap[page_block_start].pa;
+}
+
+paddr_t
+alloc_upage(struct page_table_entry* pte){
+  (void)pte;
+  paddr_t pa = make_page_avail(1);
+  if(pa == 0){
+    return 0;
+  }
+  int index = (pa - firstpaddr) / PAGE_SIZE;
+  if(coremap[index].state == DIRTY){
+    panic("this shud never run\n");
+    int result = evict_page(index);
+    if(result){
+      return 0;
+    }
+  }
+  coremap[index].state = DIRTY;
+  coremap[index].pte = NULL; // pte
+  coremap[index].is_busy = false;
+  return pa;
 }
 
 void
@@ -240,7 +324,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
           tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
           KASSERT(tempNew != NULL);
           //lock_acquire(coremapLock);
-          tempNew->pa = getppages(1);
+          tempNew->pa = alloc_upage(tempNew);
           bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
           //lock_release(coremapLock);
           if(tempNew->pa == 0){

@@ -54,6 +54,11 @@ struct coremap_entry {
 void vm_bootstrap(void);
 paddr_t getppages(unsigned long npages);
 
+paddr_t alloc_upage(struct page_table_entry*);
+int evict_page(int index);
+paddr_t get_dirty_pages(unsigned long npages);
+paddr_t make_page_avail(unsigned npages);
+
 /* Fault handling function called by trap code */
 int vm_fault(int faulttype, vaddr_t faultaddress);
 
