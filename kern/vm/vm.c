@@ -97,7 +97,7 @@ vm_bootstrap(void) {
 paddr_t
 getppages(unsigned long npages)
 {
-   spinlock_acquire(&stealmem_lock);
+   // spinlock_acquire(&stealmem_lock);
    int nPageTemp = (int)npages;
    int i, block_count = nPageTemp, page_block_start = 0;
 
@@ -113,7 +113,7 @@ getppages(unsigned long npages)
    }
 
    if (i == coremap_page_num) { //no free pages
-     spinlock_release(&stealmem_lock);
+     // spinlock_release(&stealmem_lock);
      return 0;
    }
    page_block_start = i - nPageTemp + 1;
@@ -123,7 +123,7 @@ getppages(unsigned long npages)
    }
    coremap[page_block_start].page_count = nPageTemp;
    num_pages_allocated += nPageTemp;
-   spinlock_release(&stealmem_lock);
+   // spinlock_release(&stealmem_lock);
    return coremap[page_block_start].pa;
 }
 
@@ -139,10 +139,15 @@ alloc_kpages(unsigned npages) {
   for(int i = 0 ; i < (int)npages; i++){
     if(coremap[i + index].state == DIRTY){
       KASSERT(coremap[i + index].pte != NULL);
-      panic("This should not run\n");
+      int result = evict_page(i + index);
+      if(result == -1){
+        return 0;
+      }
     }
     coremap[i + index].state = FIXED;
     coremap[i + index].is_busy = false;
+    coremap[i + index].pte = NULL;
+    bzero((void *)PADDR_TO_KVADDR(coremap[i + index].pa),PAGE_SIZE);
   }
   return PADDR_TO_KVADDR(pa);
 }
@@ -156,19 +161,26 @@ int evict_page(int index){
   tlb_shootdown_page_table_entry(coremap[index].pte->va);
   int result = page_swapout(PADDR_TO_KVADDR(coremap[index].pa));
   if(result == -1){
-    return -1;
+    return result;
   }
-  coremap[index].pte->is_swapped = true;
+  bzero((void *)PADDR_TO_KVADDR(coremap[index].pa),PAGE_SIZE);
   coremap[index].pte->pa = result;
+  coremap[index].pte->is_swapped = true;
   return 0;
 }
 
 paddr_t
 make_page_avail(unsigned npages){
-  // if(num_pages_allocated < coremap_page_num){
-    return getppages(npages);
-  // }
-  // return get_dirty_pages(npages);
+  paddr_t pa = 0;
+  spinlock_acquire(&stealmem_lock);
+  if(num_pages_allocated < coremap_page_num){
+    pa = getppages(npages);
+    spinlock_release(&stealmem_lock);
+    return pa;
+  }
+  pa = get_dirty_pages(npages);
+  spinlock_release(&stealmem_lock);
+  return pa;
 }
 
 // Finds pages that are either FREE or DIRTY or both
@@ -177,7 +189,7 @@ make_page_avail(unsigned npages){
 paddr_t
 get_dirty_pages(unsigned long npages)
 {
-   spinlock_acquire(&stealmem_lock);
+   // spinlock_acquire(&stealmem_lock);
    int nPageTemp = (int)npages;
    int i, block_count = nPageTemp, page_block_start = 0;
 
@@ -193,7 +205,7 @@ get_dirty_pages(unsigned long npages)
    }
 
    if (i == coremap_page_num) { //no free pages
-     spinlock_release(&stealmem_lock);
+     // spinlock_release(&stealmem_lock);
      return 0;
    }
    page_block_start = i - nPageTemp + 1;
@@ -202,7 +214,7 @@ get_dirty_pages(unsigned long npages)
      coremap[i + page_block_start].is_busy = true;
    }
    coremap[page_block_start].page_count = nPageTemp;
-   spinlock_release(&stealmem_lock);
+   // spinlock_release(&stealmem_lock);
    return coremap[page_block_start].pa;
 }
 
@@ -215,14 +227,13 @@ alloc_upage(struct page_table_entry* pte){
   }
   int index = (pa - firstpaddr) / PAGE_SIZE;
   if(coremap[index].state == DIRTY){
-    panic("this shud never run\n");
     int result = evict_page(index);
     if(result){
       return 0;
     }
   }
   coremap[index].state = DIRTY;
-  coremap[index].pte = NULL; // pte
+  coremap[index].pte = pte; // pte
   coremap[index].is_busy = false;
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
   return pa;
