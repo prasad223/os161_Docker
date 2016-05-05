@@ -49,12 +49,14 @@ swap_bootstrap(){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
   if(error){
     kprintf("vfs file creation failure:%d\n",error);
+    return 0;
   }
 
   struct stat file_stat;
   error = VOP_STAT(swap_file, &file_stat);
   if(error){
     panic("error in reading swap file size");
+    return 0;
   }
   swap_num_pages = file_stat.st_size / PAGE_SIZE;
   KASSERT(swap_num_pages != 0);
