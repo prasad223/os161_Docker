@@ -149,20 +149,20 @@ boot(void)
 	COMPILE_ASSERT(sizeof(*(userptr_t)0) == sizeof(char));
 }
 
-static
-void
-printArrays() {
-  /* code */
-  for(int i=0; i < mallocCounter; i++)
-  {
-    //kprintf("\n%p\n",(void *)kmallocAddress[i]);
-  }
+// static
+// void
+// printArrays() {
+//   /* code */
+//   for(int i=0; i < mallocCounter; i++)
+//   {
+//     //kprintf("\n%p\n",(void *)kmallocAddress[i]);
+//   }
 
-  //kprintf("\n************FREE address starts below********************\n");
-  for(int i=0; i < freeCounter; i++) {
-    //kprintf("\n%p\n",(void *)freeAddrress[i]);
-  }
-}
+//   //kprintf("\n************FREE address starts below********************\n");
+//   for(int i=0; i < freeCounter; i++) {
+//     //kprintf("\n%p\n",(void *)freeAddrress[i]);
+//   }
+// }
 /*
  * Shutdown sequence. Opposite to boot().
  */
@@ -170,8 +170,8 @@ static
 void
 shutdown(void)
 {
-  kprintf("\nTo print address arrays\n");
-  printArrays();
+  // kprintf("\nTo print address arrays\n");
+  // printArrays();
 	kprintf("Shutting down.\n");
 
 	vfs_clearbootfs();
