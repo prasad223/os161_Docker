@@ -42,12 +42,24 @@
  #include <bitmap.h>
 
 static int swap_num_pages = 0;
-static bool is_first_swap = true;
+static bool is_swap_enabled = false;
 
 int
 swap_bootstrap(){
-  (void)swap_num_pages;
-  (void)is_first_swap;
+  int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
+  if(error){
+    kprintf("vfs file creation failure:%d\n",error);
+  }
+
+  struct stat file_stat;
+  error = VOP_STAT(swap_file, &file_stat);
+  if(error){
+    panic("error in reading swap file size");
+  }
+  swap_num_pages = file_stat.st_size / PAGE_SIZE;
+  KASSERT(swap_num_pages != 0);
+  swap_bitmap = bitmap_create(swap_num_pages);
+  is_swap_enabled = true;
   return 0;
 }
 
