@@ -214,6 +214,7 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	}
 	//kprintf("WAITPID:out of waitpid: %d, ppid:%d\n",pid_proc->pid, pid_proc->ppid);
 	*retval = pid;
+	while(pid_proc->p_numthreads > 0);
 	proc_destroy(pid_proc);
 	return 0;
 }
