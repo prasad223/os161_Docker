@@ -146,6 +146,7 @@ int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 
 void delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref,vaddr_t stack_base);
+struct page_table_entry* create_pte(vaddr_t);
 /*
  * Functions in loadelf.c
  *    load_elf - load an ELF user program executable into the current

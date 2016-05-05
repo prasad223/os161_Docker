@@ -74,6 +74,22 @@ as_create(void)
 	return as;
 }
 
+struct page_table_entry* create_pte(vaddr_t va){
+	struct page_table_entry* new_ptr = (struct page_table_entry*)kmalloc(sizeof(struct page_table_entry));
+	if(new_ptr == NULL){
+		return NULL;
+	}
+	new_ptr->va = va;
+	new_ptr->pa = alloc_upage(new_ptr);
+	if(new_ptr->pa == 0){
+		kfree(new_ptr);
+		return NULL;
+	}
+	new_ptr->is_swapped = false;
+	new_ptr->next = NULL;
+	return new_ptr;
+}
+
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
@@ -104,16 +120,15 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	//lock_acquire(coremapLock);
 	while(old_ptr != NULL){
-		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+		new_ptr = create_pte(old_ptr->va);
 		if(new_ptr == NULL){
 			return ENOMEM;
 		}
-		new_ptr->pa = alloc_upage(new_ptr);
-		if(new_ptr->pa == 0){
-			return ENOMEM;
+		if(old_ptr->is_swapped == true){
+			panic("This case should not happen for now");
+		}else{
+			memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);	
 		}
-		new_ptr->va = old_ptr->va;
-		memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
 		old_ptr = old_ptr->next;

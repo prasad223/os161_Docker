@@ -224,6 +224,7 @@ alloc_upage(struct page_table_entry* pte){
   coremap[index].state = DIRTY;
   coremap[index].pte = NULL; // pte
   coremap[index].is_busy = false;
+  bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
   return pa;
 }
 
@@ -321,16 +322,10 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
         }
       }
       if (tempNew == NULL) { //allocate a new entry
-          tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-          KASSERT(tempNew != NULL);
-          //lock_acquire(coremapLock);
-          tempNew->pa = alloc_upage(tempNew);
-          bzero((void *)PADDR_TO_KVADDR(tempNew->pa),PAGE_SIZE);
-          //lock_release(coremapLock);
-          if(tempNew->pa == 0){
+          tempNew = create_pte(faultaddress);
+          if(tempNew == NULL){
             return ENOMEM;
           }
-          tempNew->va = faultaddress;
           tempNew->next = as->first;
           as->first = tempNew;
       } else { //right now, don't know what to do , will be used during swapping stage
