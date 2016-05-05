@@ -142,7 +142,6 @@ void page_swapin(struct page_table_entry *pte, paddr_t pa){
   KASSERT(bitmap_isset(swap_bitmap, offset));
 
   int result;
-  KASSERT(offset < swap_bitmap->nbits);
   lock_acquire(bitmapLock);
   bitmap_unmark(swap_bitmap, offset);
   lock_release(bitmapLock);
