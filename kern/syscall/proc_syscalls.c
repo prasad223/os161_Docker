@@ -128,6 +128,12 @@ sys_fork(struct trapframe* parent_tf, int *retval){
 		*retval = -1;
 		return error;
 	}
+	for(int i=0 ;i<OPEN_MAX;i++){
+	  if(curproc->t_fdtable[i]!=NULL){
+	  	child_proc->t_fdtable[i] = curproc->t_fdtable[i];
+	    curproc->t_fdtable[i]->refCount = curproc->t_fdtable[i]->refCount+1;
+	  }
+	}
 	child_trapframe = (struct trapframe*)kmalloc(sizeof(struct trapframe));
 	if(child_trapframe == NULL){
 		*retval = -1;
@@ -177,7 +183,6 @@ sys__exit(int _exitcode){
 	}else{
 		curproc->exit_code = _MKWAIT_EXIT(_exitcode);
 	}
-	V(curproc->exit_sem);
 	thread_exit();
 	return;
 }

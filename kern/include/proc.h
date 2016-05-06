@@ -39,7 +39,11 @@
 #include <spinlock.h>
 #include <lib.h>
 #include <synch.h>
+#include <kern/file_syscalls.h>
+#include <vnode.h>
+#include <vfs.h>
 
+ 
 struct addrspace;
 struct thread;
 struct vnode;
@@ -78,6 +82,7 @@ struct proc {
 	pid_t ppid;
 	bool has_exited;
 	int exit_code;
+	struct file_descriptor* t_fdtable[OPEN_MAX];
 };
 
 struct lock* pid_lock;

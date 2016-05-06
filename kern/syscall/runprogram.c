@@ -61,7 +61,7 @@ runprogram(char *progname)
 	int result;
 
   /** Initialize the file descriptors for console**/
-	if (curthread->t_fdtable[0] == NULL) {
+	if (curproc->t_fdtable[0] == NULL) {
 			result = init_file_descriptor();
 			if (result ) { // file descriptors not initialized
 				 kprintf_n("init_file_descriptor failed");

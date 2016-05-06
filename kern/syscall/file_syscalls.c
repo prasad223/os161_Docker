@@ -48,93 +48,93 @@ init_file_descriptor(void) {
 
   }
 /**Allocate memory for Fdesc 0 **/
-  curthread->t_fdtable[0] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-  if (curthread->t_fdtable[0] == NULL) { /** failed to allocate memory **/
+  curproc->t_fdtable[0] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curproc->t_fdtable[0] == NULL) { /** failed to allocate memory **/
     kfree(in);
     kfree(out);
     kfree(err);
     vfs_close(vin);
     return EFAULT;
   }
-  strcpy(curthread->t_fdtable[0]->fileName,"con:");
-  curthread->t_fdtable[0]->vn        = vin;
-  curthread->t_fdtable[0]->openFlags = O_RDONLY;
-  curthread->t_fdtable[0]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
-  curthread->t_fdtable[0]->lk        = lock_create(in);
-  curthread->t_fdtable[0]->offset    = 0;
+  strcpy(curproc->t_fdtable[0]->fileName,"con:");
+  curproc->t_fdtable[0]->vn        = vin;
+  curproc->t_fdtable[0]->openFlags = O_RDONLY;
+  curproc->t_fdtable[0]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
+  curproc->t_fdtable[0]->lk        = lock_create(in);
+  curproc->t_fdtable[0]->offset    = 0;
 
   if (vfs_open(out,O_WRONLY,0664, &vout)) {
     kfree(in);
     kfree(out);
     kfree(err);
-    lock_destroy(curthread->t_fdtable[0]->lk);
-    vfs_close(curthread->t_fdtable[0]->vn);
-    kfree(curthread->t_fdtable[0]);
-    curthread->t_fdtable[0] = NULL;
+    lock_destroy(curproc->t_fdtable[0]->lk);
+    vfs_close(curproc->t_fdtable[0]->vn);
+    kfree(curproc->t_fdtable[0]);
+    curproc->t_fdtable[0] = NULL;
     return EINVAL; //still deciding on error return values
 
   }
   /**Allocate memory for Fdesc 1 **/
-  curthread->t_fdtable[1] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-  if (curthread->t_fdtable[1] == NULL) { /** failed to allocate memory **/
+  curproc->t_fdtable[1] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curproc->t_fdtable[1] == NULL) { /** failed to allocate memory **/
     kfree(in);
     kfree(out);
     kfree(err);
-    lock_destroy(curthread->t_fdtable[0]->lk);
-    vfs_close(curthread->t_fdtable[0]->vn);
-    kfree(curthread->t_fdtable[0]);
-    curthread->t_fdtable[0] = NULL;
+    lock_destroy(curproc->t_fdtable[0]->lk);
+    vfs_close(curproc->t_fdtable[0]->vn);
+    kfree(curproc->t_fdtable[0]);
+    curproc->t_fdtable[0] = NULL;
 
     vfs_close(vout);
     return EFAULT;
   }
-  strcpy(curthread->t_fdtable[1]->fileName,"con:");
-  curthread->t_fdtable[1]->vn        = vout;
-  curthread->t_fdtable[1]->openFlags = O_WRONLY;
-  curthread->t_fdtable[1]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
-  curthread->t_fdtable[1]->lk        = lock_create(out);
-  curthread->t_fdtable[1]->offset    = 0;
+  strcpy(curproc->t_fdtable[1]->fileName,"con:");
+  curproc->t_fdtable[1]->vn        = vout;
+  curproc->t_fdtable[1]->openFlags = O_WRONLY;
+  curproc->t_fdtable[1]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
+  curproc->t_fdtable[1]->lk        = lock_create(out);
+  curproc->t_fdtable[1]->offset    = 0;
 
   if (vfs_open(err,O_WRONLY,0664, &verr)) {
     kfree(in);
     kfree(out);
     kfree(err);
-    lock_destroy(curthread->t_fdtable[0]->lk);
-    vfs_close(curthread->t_fdtable[0]->vn);
-    kfree(curthread->t_fdtable[0]);
-    curthread->t_fdtable[0]= NULL;
+    lock_destroy(curproc->t_fdtable[0]->lk);
+    vfs_close(curproc->t_fdtable[0]->vn);
+    kfree(curproc->t_fdtable[0]);
+    curproc->t_fdtable[0]= NULL;
 
-    lock_destroy(curthread->t_fdtable[1]->lk);
-    vfs_close(curthread->t_fdtable[1]->vn);
-    kfree(curthread->t_fdtable[1]);
-    curthread->t_fdtable[1]= NULL;
+    lock_destroy(curproc->t_fdtable[1]->lk);
+    vfs_close(curproc->t_fdtable[1]->vn);
+    kfree(curproc->t_fdtable[1]);
+    curproc->t_fdtable[1]= NULL;
     return EINVAL; //still deciding on error return values
   }
 
   /**Allocate memory for Fdesc 1 **/
-  curthread->t_fdtable[2] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-  if (curthread->t_fdtable[2] == NULL) { /** failed to allocate memory **/
+  curproc->t_fdtable[2] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curproc->t_fdtable[2] == NULL) { /** failed to allocate memory **/
     kfree(in);
     kfree(out);
     kfree(err);
 
-    lock_destroy(curthread->t_fdtable[0]->lk);
-    vfs_close(curthread->t_fdtable[0]->vn);
-    kfree(curthread->t_fdtable[0]);
-    curthread->t_fdtable[0]= NULL;
+    lock_destroy(curproc->t_fdtable[0]->lk);
+    vfs_close(curproc->t_fdtable[0]->vn);
+    kfree(curproc->t_fdtable[0]);
+    curproc->t_fdtable[0]= NULL;
 
-    lock_destroy(curthread->t_fdtable[1]->lk);
-    vfs_close(curthread->t_fdtable[1]->vn);
-    kfree(curthread->t_fdtable[1]);
-    curthread->t_fdtable[1]= NULL;
+    lock_destroy(curproc->t_fdtable[1]->lk);
+    vfs_close(curproc->t_fdtable[1]->vn);
+    kfree(curproc->t_fdtable[1]);
+    curproc->t_fdtable[1]= NULL;
     return EFAULT;
   }
-  strcpy(curthread->t_fdtable[2]->fileName,"con:");
-  curthread->t_fdtable[2]->vn        = verr;
-  curthread->t_fdtable[2]->openFlags = O_WRONLY;
-  curthread->t_fdtable[2]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
-  curthread->t_fdtable[2]->lk        = lock_create(err);
-  curthread->t_fdtable[2]->offset    = 0;
+  strcpy(curproc->t_fdtable[2]->fileName,"con:");
+  curproc->t_fdtable[2]->vn        = verr;
+  curproc->t_fdtable[2]->openFlags = O_WRONLY;
+  curproc->t_fdtable[2]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
+  curproc->t_fdtable[2]->lk        = lock_create(err);
+  curproc->t_fdtable[2]->offset    = 0;
 
   kfree(in);
   kfree(out);
@@ -149,7 +149,7 @@ check_isFileHandleValid(int fHandle) {
     return EBADF;
   }
 
-  if (curthread->t_fdtable[fHandle] == NULL) {
+  if (curproc->t_fdtable[fHandle] == NULL) {
     return EBADF;
   }
   return 0;
@@ -187,7 +187,7 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
   }
 
   /** **/
-  while(curthread->t_fdtable[index] != NULL) {
+  while(curproc->t_fdtable[index] != NULL) {
     index++;
   }
   if ( index == OPEN_MAX) {
@@ -203,43 +203,43 @@ sys_open(const char *filename, int flags, mode_t mode, int *retval) {
     kfree(kbuff);
     return result;
   }
-  curthread->t_fdtable[index] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-  if (curthread->t_fdtable[index] == NULL) {
+  curproc->t_fdtable[index] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curproc->t_fdtable[index] == NULL) {
     kprintf_n("Could not create new file descriptor in sys_open\n");
     kfree(kbuff);
     vfs_close(vn);
     return EFAULT;
   }
-  strcpy(curthread->t_fdtable[index]->fileName, kbuff);
-  curthread->t_fdtable[index]->vn        = vn;
-  curthread->t_fdtable[index]->openFlags = flags;
-  curthread->t_fdtable[index]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
-  curthread->t_fdtable[index]->lk        = lock_create(kbuff); // never trust user buffers, always use kbuff
+  strcpy(curproc->t_fdtable[index]->fileName, kbuff);
+  curproc->t_fdtable[index]->vn        = vn;
+  curproc->t_fdtable[index]->openFlags = flags;
+  curproc->t_fdtable[index]->refCount  = 1; // ref count set to 1, as it is only init once, and passed around after that
+  curproc->t_fdtable[index]->lk        = lock_create(kbuff); // never trust user buffers, always use kbuff
   if (flags && O_APPEND == O_APPEND) { //set offset to end of file
     /*file_stat = (struct stat *)kmalloc(sizeof(struct stat));
     if (file_stat == NULL) {
       kprintf_n("Unable to allocate memory for stat\n");
       kfree(kbuff);
-      lock_destroy(curthread->t_fdtable[index]->lk);
-      vfs_close(curthread->t_fdtable[index]->vn);
-      kfree(curthread->t_fdtable[index]);
-      curthread->t_fdtable[index] = NULL;
+      lock_destroy(curproc->t_fdtable[index]->lk);
+      vfs_close(curproc->t_fdtable[index]->vn);
+      kfree(curproc->t_fdtable[index]);
+      curproc->t_fdtable[index] = NULL;
       return EFAULT;
     }*/
-    result = VOP_STAT(curthread->t_fdtable[index]->vn,&file_stat);
+    result = VOP_STAT(curproc->t_fdtable[index]->vn,&file_stat);
     if (result) {
       kprintf_n("Unable to stat file for getting offset\n");
       kfree(kbuff);
       //kfree(file_stat);
-      lock_destroy(curthread->t_fdtable[index]->lk);
-      vfs_close(curthread->t_fdtable[index]->vn);
-      kfree(curthread->t_fdtable[index]);
-      curthread->t_fdtable[index] = NULL;
+      lock_destroy(curproc->t_fdtable[index]->lk);
+      vfs_close(curproc->t_fdtable[index]->vn);
+      kfree(curproc->t_fdtable[index]);
+      curproc->t_fdtable[index] = NULL;
       return EFAULT;
     }
-    curthread->t_fdtable[index]->offset    = file_stat.st_size; // gives file size ** TODO : Test this ** /
+    curproc->t_fdtable[index]->offset    = file_stat.st_size; // gives file size ** TODO : Test this ** /
   } else {
-    curthread->t_fdtable[index]->offset    = 0;
+    curproc->t_fdtable[index]->offset    = 0;
   }
 
   *retval = index; /** return file handle on success**/
@@ -257,20 +257,20 @@ sys_close(int fHandle,int *retval) {
     kprintf_n("file handle passed in not valid in sys_close!\n");
     return result;
   }
-  if (curthread->t_fdtable[fHandle]->vn == NULL) {
+  if (curproc->t_fdtable[fHandle]->vn == NULL) {
     //*retval = 1; // for any future uses
     kprintf_n("vnode is NULL in sys_close \n");
     return EBADF;
   }
-  curthread->t_fdtable[fHandle]->refCount = curthread->t_fdtable[fHandle]->refCount-1;
-  if (curthread->t_fdtable[fHandle]->refCount == 0) {
-    vfs_close(curthread->t_fdtable[fHandle]->vn);
-    lock_destroy(curthread->t_fdtable[fHandle]->lk);
-    curthread->t_fdtable[fHandle]->refCount  = 0;
-    curthread->t_fdtable[fHandle]->openFlags = 0; // probably not required, but I like to clean up
-    curthread->t_fdtable[fHandle]->offset    = 0;
-    kfree(curthread->t_fdtable[fHandle]);
-    curthread->t_fdtable[fHandle] = NULL;
+  curproc->t_fdtable[fHandle]->refCount = curproc->t_fdtable[fHandle]->refCount-1;
+  if (curproc->t_fdtable[fHandle]->refCount == 0) {
+    vfs_close(curproc->t_fdtable[fHandle]->vn);
+    lock_destroy(curproc->t_fdtable[fHandle]->lk);
+    curproc->t_fdtable[fHandle]->refCount  = 0;
+    curproc->t_fdtable[fHandle]->openFlags = 0; // probably not required, but I like to clean up
+    curproc->t_fdtable[fHandle]->offset    = 0;
+    kfree(curproc->t_fdtable[fHandle]);
+    curproc->t_fdtable[fHandle] = NULL;
   }
   *retval = 0;
   result  = 0;
@@ -297,7 +297,7 @@ uio_uinit(struct iovec *iov, struct uio *uio,
   uio->uio_rw    = rw;
   uio->uio_offset= pos;
   uio->uio_resid = len;
-  uio->uio_space = curthread->t_proc->p_addrspace;
+  uio->uio_space = curproc->p_addrspace;
 }
 /** system call function for  sys_write
 * Note : ssize_t is a typecast for int
@@ -310,26 +310,26 @@ sys_write(int fd, const void *buf, size_t nbytes, int *retval) {
     kprintf_n("File handle is invalid in sys_write\n");
     return result;
   }
-  if ((curthread->t_fdtable[fd]->openFlags & O_ACCMODE) == 0) {
+  if ((curproc->t_fdtable[fd]->openFlags & O_ACCMODE) == 0) {
     kprintf_n("File permissions are invalid. Flags are read only in sys_write\n");
     return EBADF;
   }
-  lock_acquire(curthread->t_fdtable[fd]->lk);
+  lock_acquire(curproc->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
 
   /** Write nbytes to UIO**/
-  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_WRITE);
-  result = VOP_WRITE(curthread->t_fdtable[fd]->vn,&user_uio);
+  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curproc->t_fdtable[fd]->offset,UIO_WRITE);
+  result = VOP_WRITE(curproc->t_fdtable[fd]->vn,&user_uio);
   if (result) {
       //kfree(kbuff);
-      lock_release(curthread->t_fdtable[fd]->lk);
+      lock_release(curproc->t_fdtable[fd]->lk);
       return result;
   }
   *retval = nbytes - user_uio.uio_resid;
-  curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
+  curproc->t_fdtable[fd]->offset = user_uio.uio_offset;
   //kfree(kbuff);
-  lock_release(curthread->t_fdtable[fd]->lk);
+  lock_release(curproc->t_fdtable[fd]->lk);
   return 0;
 }
 
@@ -345,27 +345,27 @@ sys_read(int fd, void *buf, size_t nbytes, int *retval) {
     return result;
   }
   /** check the flags **/
-  if ((curthread->t_fdtable[fd]->openFlags & O_WRONLY) == O_WRONLY) {
+  if ((curproc->t_fdtable[fd]->openFlags & O_WRONLY) == O_WRONLY) {
     kprintf_n("File opened with write-only\n");
     return EBADF;
   }
 
-  lock_acquire(curthread->t_fdtable[fd]->lk);
+  lock_acquire(curproc->t_fdtable[fd]->lk);
   struct iovec iov;
   struct uio user_uio;
 
   /** Read nbytes from UIO**/
-  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curthread->t_fdtable[fd]->offset,UIO_READ);
-  result = VOP_READ(curthread->t_fdtable[fd]->vn,&user_uio);
+  uio_uinit(&iov,&user_uio,(userptr_t)buf,nbytes,curproc->t_fdtable[fd]->offset,UIO_READ);
+  result = VOP_READ(curproc->t_fdtable[fd]->vn,&user_uio);
   if (result) {
       //kfree(kbuff);
-      lock_release(curthread->t_fdtable[fd]->lk);
+      lock_release(curproc->t_fdtable[fd]->lk);
       return result;
   }
   *retval = nbytes - user_uio.uio_resid;
-  curthread->t_fdtable[fd]->offset = user_uio.uio_offset;
+  curproc->t_fdtable[fd]->offset = user_uio.uio_offset;
   //kfree(kbuff);
-  lock_release(curthread->t_fdtable[fd]->lk);
+  lock_release(curproc->t_fdtable[fd]->lk);
   return 0;
 
 }
@@ -415,9 +415,9 @@ sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
   }
   /*offset itself can be negative. The resultant seek position however, cannot be. This is also verified in man
   * pages "Note that pos is a signed quantity."*/
-  lock_acquire(curthread->t_fdtable[fd]->lk);
-  if (!VOP_ISSEEKABLE(curthread->t_fdtable[fd]->vn)) {
-    lock_release(curthread->t_fdtable[fd]->lk);
+  lock_acquire(curproc->t_fdtable[fd]->lk);
+  if (!VOP_ISSEEKABLE(curproc->t_fdtable[fd]->vn)) {
+    lock_release(curproc->t_fdtable[fd]->lk);
     kprintf_n("File does not support seeking \n");
     return ESPIPE;
   }
@@ -426,27 +426,27 @@ sys_lseek(int fd, off_t pos, int whence, int *retval1, int *retval2) {
   if (whence == SEEK_SET) {
     newPos = pos;
   } else if (whence == SEEK_CUR) {
-    newPos = curthread->t_fdtable[fd]->offset + pos;
+    newPos = curproc->t_fdtable[fd]->offset + pos;
   } else if (whence == SEEK_END) {
-    result = VOP_STAT(curthread->t_fdtable[fd]->vn,&file_stat);
+    result = VOP_STAT(curproc->t_fdtable[fd]->vn,&file_stat);
     if (result) {
       kprintf_n("Unable to stat file for getting offset\n");
-      lock_release(curthread->t_fdtable[fd]->lk);
+      lock_release(curproc->t_fdtable[fd]->lk);
       return result;
     }
     newPos = file_stat.st_size + pos;
-    //curthread->t_fdtable[fd]->offset =
+    //curproc->t_fdtable[fd]->offset =
   }
   if (newPos < (off_t)0) {
     kprintf_n("Resulting seek would be negative\n");
-    lock_release(curthread->t_fdtable[fd]->lk);
+    lock_release(curproc->t_fdtable[fd]->lk);
     return EINVAL;
   }
-  curthread->t_fdtable[fd]->offset = newPos;
+  curproc->t_fdtable[fd]->offset = newPos;
   *retval1 = (uint32_t)((newPos & 0xFFFFFFFF00000000) >> 32); // higher 32 bits
   *retval2 = (uint32_t)(newPos & 0x0FFFFFFFFF) ; //lower 32 bits
 
-  lock_release(curthread->t_fdtable[fd]->lk);
+  lock_release(curproc->t_fdtable[fd]->lk);
   return 0;
 }
 
@@ -468,8 +468,8 @@ sys_dup2(int oldfd, int newfd, int *retval) {
     return 0;
   }
   int retval1;
-  lock_acquire(curthread->t_fdtable[oldfd]->lk);
-  if (curthread->t_fdtable[newfd] != NULL) {
+  lock_acquire(curproc->t_fdtable[oldfd]->lk);
+  if (curproc->t_fdtable[newfd] != NULL) {
       result = sys_close(newfd,&retval1);
       if (result) {
         kprintf_n("Unable to close newfd handle in sys_dup2\n");
@@ -477,21 +477,21 @@ sys_dup2(int oldfd, int newfd, int *retval) {
       }
   }
   /** Allocate memory to newfd and copy everything from oldfd**/
-  curthread->t_fdtable[newfd] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
-  if (curthread->t_fdtable[newfd] == NULL) {
+  curproc->t_fdtable[newfd] = (struct file_descriptor*)kmalloc(sizeof(struct file_descriptor));
+  if (curproc->t_fdtable[newfd] == NULL) {
     kprintf_n("Could not create new file descriptor in sys_dup2\n");
-    lock_release(curthread->t_fdtable[oldfd]->lk);
+    lock_release(curproc->t_fdtable[oldfd]->lk);
     return EFAULT;
   }
-  strcpy(curthread->t_fdtable[newfd]->fileName, curthread->t_fdtable[oldfd]->fileName);
-  curthread->t_fdtable[newfd]->vn        = curthread->t_fdtable[oldfd]->vn;
-  curthread->t_fdtable[newfd]->openFlags = curthread->t_fdtable[oldfd]->openFlags;
-  curthread->t_fdtable[oldfd]->refCount  = curthread->t_fdtable[oldfd]->refCount + 1;
-  curthread->t_fdtable[newfd]->refCount  = 1;
-  curthread->t_fdtable[newfd]->lk        = lock_create(curthread->t_fdtable[newfd]->fileName); // never trust user buffers, always use kbuff
+  strcpy(curproc->t_fdtable[newfd]->fileName, curproc->t_fdtable[oldfd]->fileName);
+  curproc->t_fdtable[newfd]->vn        = curproc->t_fdtable[oldfd]->vn;
+  curproc->t_fdtable[newfd]->openFlags = curproc->t_fdtable[oldfd]->openFlags;
+  curproc->t_fdtable[oldfd]->refCount  = curproc->t_fdtable[oldfd]->refCount + 1;
+  curproc->t_fdtable[newfd]->refCount  = 1;
+  curproc->t_fdtable[newfd]->lk        = lock_create(curproc->t_fdtable[newfd]->fileName); // never trust user buffers, always use kbuff
 
   *retval = newfd;
-  lock_release(curthread->t_fdtable[oldfd]->lk);
+  lock_release(curproc->t_fdtable[oldfd]->lk);
 
   return 0;
 }

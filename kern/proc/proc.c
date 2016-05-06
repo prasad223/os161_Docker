@@ -88,8 +88,8 @@ proc_create(const char *name)
 
 	if(strcmp("[kernel]",name)){
 		lock_acquire(pid_lock);
-		int i = PID_MIN;
-		for(;i<MAX_PROCS;i++){
+		
+		for(int i = PID_MIN;i<MAX_PROCS;i++){
 			if(*(process_list+i) == NULL){
 				proc->pid = i;
 				*(process_list+i) = proc;
@@ -103,7 +103,9 @@ proc_create(const char *name)
 		proc->pid = 1;
 		proc->ppid = 0;
 	}
-
+	for(int i= 0;i < OPEN_MAX; i++) {
+		proc->t_fdtable[i] = NULL;
+	}
 	return proc;
 }
 
@@ -189,11 +191,20 @@ proc_destroy(struct proc *proc)
 
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
-
+	
 	kfree(proc->p_name);
-	//kprintf("PROC_DESTORY: pid lock\n");
 	lock_acquire(pid_lock);
-	//kprintf("lock acquired: freeing pid: %d\n",proc->pid);
+	for(int i = 0 ;i < OPEN_MAX; i++){
+		if(proc->t_fdtable[i] != NULL){
+			proc->t_fdtable[i]->refCount -= 1;
+			if(proc->t_fdtable[i]->refCount == 0){
+				lock_destroy(proc->t_fdtable[i]->lk);
+      			vfs_close(proc->t_fdtable[i]->vn);
+				kfree(proc->t_fdtable[i]);
+				proc->t_fdtable[i] = NULL;
+			}
+		}
+	}
 	sem_destroy(proc->exit_sem);
 	*(process_list+proc->pid) = NULL;
 	lock_release(pid_lock);

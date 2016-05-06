@@ -49,9 +49,6 @@
 #include <synch.h>
 #include <addrspace.h>
 #include <mainbus.h>
-#include <vnode.h>
-#include <vfs.h>
-
 
 /* Magic number used as a guard value on kernel thread stacks. */
 #define THREAD_STACK_MAGIC 0xbaadf00d
@@ -124,7 +121,6 @@ struct thread *
 thread_create(const char *name)
 {
 	struct thread *thread;
-	int i;
 	DEBUGASSERT(name != NULL);
 	if (strlen(name) > MAX_NAME_LENGTH) {
 		return NULL;
@@ -153,9 +149,7 @@ thread_create(const char *name)
 	thread->t_iplhigh_count = 1; /* corresponding to t_curspl */
 
 	/* If you add to struct thread, be sure to initialize here */
-	for(i= 0;i < OPEN_MAX; i++) {
-		thread->t_fdtable[i] = NULL;
-	}
+	
 	return thread;
 }
 
@@ -285,19 +279,6 @@ thread_destroy(struct thread *thread)
 
 	/* sheer paranoia */
 	thread->t_wchan_name = "DESTROYED";
-	for(int i = 0 ;i < OPEN_MAX; i++){
-		if(thread->t_fdtable[i] != NULL){
-			thread->t_fdtable[i]->refCount -= 1;
-			if(thread->t_fdtable[i]->refCount == 0){
-				lock_destroy(thread->t_fdtable[i]->lk);
-      			vfs_close(thread->t_fdtable[i]->vn);
-				kfree(thread->t_fdtable[i]);
-				thread->t_fdtable[i] = NULL;
-			}
-		}else{
-			break;
-		}
-	}
 	kfree(thread);
 }
 
@@ -544,13 +525,6 @@ thread_fork(const char *name,
 
 	/* Thread subsystem fields */
 	newthread->t_cpu = curthread->t_cpu;
-
-	for(int i=0 ;i<OPEN_MAX;i++){
-	  newthread->t_fdtable[i] = curthread->t_fdtable[i];
-	  if(curthread->t_fdtable[i]!=NULL){
-	    curthread->t_fdtable[i]->refCount = curthread->t_fdtable[i]->refCount+1;
-	  }
-	}
 
 	/* Attach the new thread to its process */
 	if (proc == NULL) {
@@ -824,7 +798,7 @@ thread_exit(void)
 	struct thread *cur;
 
 	cur = curthread;
-
+	struct semaphore* exit_sem = cur->t_proc->exit_sem;
 	/*
 	 * Detach from our process. You might need to move this action
 	 * around, depending on how your wait/exit works.
@@ -847,6 +821,9 @@ thread_exit(void)
 
 	/* Interrupts off on this processor */
 	splhigh();
+	if(exit_sem != NULL){
+		V(exit_sem);
+	}
 	thread_switch(S_ZOMBIE, NULL, NULL);
 	panic("braaaaaaaiiiiiiiiiiinssssss\n");
 }
