@@ -1242,8 +1242,6 @@ kmalloc(size_t sz)
 		/* Round up to a whole number of pages. */
 		npages = (sz + PAGE_SIZE - 1)/PAGE_SIZE;
 		address = alloc_kpages(npages);
-		// kmallocAddress[mallocCounter] = address;
-		// mallocCounter++;
 		if (address==0) {
 			return NULL;
 		}
@@ -1255,12 +1253,7 @@ kmalloc(size_t sz)
 	ptr = subpage_kmalloc(sz, label);
 	return ptr;
 #else
-	// kmallocAddress[mallocCounter] = (int)subpage_kmalloc(sz);
-	// mallocCounter++;
-	//return (void *)kmallocAddress[mallocCounter-1];
 	ptr = subpage_kmalloc(sz);
-	// kmallocAddress[mallocCounter] = (vaddr_t) ptr;
-	// mallocCounter++;
 	return ptr;
 #endif
 }
@@ -1277,8 +1270,6 @@ kfree(void *ptr)
 	if (ptr == NULL) {
 		return;
 	} else {
-		// freeAddrress[freeCounter] = (vaddr_t)ptr;
-		// freeCounter++;
 		if (subpage_kfree(ptr)) {
 			KASSERT((vaddr_t)ptr%PAGE_SIZE==0);
 			free_kpages((vaddr_t)ptr);

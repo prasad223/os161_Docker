@@ -53,11 +53,6 @@
 #include <swap.h>
 #include "autoconf.h"  // for pseudoconfig
 
- extern int mallocCounter;
- extern int freeCounter;
-//
- extern vaddr_t kmallocAddress[100];
- extern vaddr_t freeAddrress[100];
 /*
  * These two pieces of data are maintained by the makefiles and build system.
  * buildconfig is the name of the config file the kernel was configured with.
@@ -141,6 +136,7 @@ boot(void)
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
+
   pteLock     = lock_create("pteLock");
   bitmapLock  = lock_create("bitmapLock");
 	/*
