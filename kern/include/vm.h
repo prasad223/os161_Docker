@@ -64,8 +64,7 @@
  };
 
 struct coremap_entry* coremap;
-struct lock *pteLock;
-struct lock *bitmapLock;
+struct lock *coremap_lock;
 
 /* Initialization function */
 void vm_bootstrap(void);

@@ -108,8 +108,8 @@ boot(void)
 
 	/* Early initialization. */
 	ram_bootstrap();
-  vm_bootstrap();
-  proc_bootstrap();
+    vm_bootstrap();
+    proc_bootstrap();
 	thread_bootstrap();
 	hardclock_bootstrap();
 	vfs_bootstrap();
@@ -137,29 +137,14 @@ boot(void)
 
 	kheap_nextgeneration();
 
-  pteLock     = lock_create("pteLock");
-  bitmapLock  = lock_create("bitmapLock");
-	/*
+  	coremap_lock = lock_create("coremap_lock");
+  	/*
 	 * Make sure various things aren't screwed up.
 	 */
 	COMPILE_ASSERT(sizeof(userptr_t) == sizeof(char *));
 	COMPILE_ASSERT(sizeof(*(userptr_t)0) == sizeof(char));
 }
 
-// static
-// void
-// printArrays() {
-//   /* code */
-//   for(int i=0; i < mallocCounter; i++)
-//   {
-//     kprintf("%p\n",(void *)kmallocAddress[i]);
-//   }
-
-//   kprintf("\n************FREE address starts below********************\n");
-//   for(int i=0; i < freeCounter; i++) {
-//     kprintf("%p\n",(void *)freeAddrress[i]);
-//   }
-// }
 /*
  * Shutdown sequence. Opposite to boot().
  */
@@ -167,16 +152,13 @@ static
 void
 shutdown(void)
 {
-  // kprintf("\nTo print address arrays\n");
-  // printArrays();
 	kprintf("Shutting down.\n");
 	swap_shutdown();
+	lock_destroy(coremap_lock);
 	vfs_clearbootfs();
 	vfs_clearcurdir();
 	vfs_unmountall();
-
 	thread_shutdown();
-
 	splhigh();
 }
 
