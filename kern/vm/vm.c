@@ -97,8 +97,10 @@ vm_bootstrap(void) {
 		temp = firstpaddr + (PAGE_SIZE * i);
     coremap[i].phyAddr= temp;
     coremap[i].allocPageCount = -1;
-    coremap[i].as = NULL;
+    coremap[i].pte = NULL;
 	}
+  coremap_lock = NULL;
+  is_swap_enabled = false;
   // Set coremap used size to 0
   coremap_used_size = 0;
 }
@@ -136,27 +138,18 @@ getppages(unsigned long npages)
 /*kmalloc-routines*/
 vaddr_t
 alloc_kpages(unsigned npages) {
-  if(is_swap_enabled && coremap_lock != NULL){
-    lock_acquire(coremap_lock);
-  }
   spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
     spinlock_release(&stealmem_lock);
-    if(is_swap_enabled && coremap_lock != NULL){
-      lock_release(coremap_lock);
-    }
-		return 0;
+  	return 0;
 	}
   int index = (pa - firstpaddr) / PAGE_SIZE;
   for(int i = 0; i < (int)npages; i++) {
    coremap[i + index].state = FIXED;
-   coremap[i + index].as    = NULL;
+   coremap[i + index].pte    = NULL;
   }
   spinlock_release(&stealmem_lock);
-  if(is_swap_enabled && coremap_lock != NULL){
-    lock_release(coremap_lock);
-  }
   return PADDR_TO_KVADDR(pa);
 }
 
@@ -196,8 +189,6 @@ make_page_avail(unsigned npages){
 
 int dequeue(void){
  if(queue_size == 0){
-  //kprintf("dequeue: numPagesAllocated: %d, coremap_page_num:%d, rear:%d, front:%d\n",numPagesAllocated,coremap_page_num,rear,front);
-  //panic("Queue is empty\n");
   return 0;
  }
  int value = queue[front];
@@ -209,18 +200,16 @@ int dequeue(void){
 
 int enqueue(int value){
   if(queue_size == SIZE){
-    //kprintf("enqueue:npa:%d,cpn:%d,f:%d,r:%d\n",numPagesAllocated,coremap_page_num,front,rear);
     return -1;
   }
   rear = (rear + 1) % SIZE;
   queue[rear] = value;
   ++queue_size;
-  //kprintf("enqueue: val:%d, rear:%d, size:%d\n",value,rear,queue_size);
   return 0;
 }
 
 paddr_t
-alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
+alloc_upage(struct page_table_entry* pte, bool bIsCodeOrStackPage ){
 
   spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(1);
@@ -234,7 +223,7 @@ alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
   } else {
     coremap[index].state = FIXED;
   }
-  coremap[index].as    = as;
+  coremap[index].pte    = pte;
   enqueue(index);
   bzero((void *)PADDR_TO_KVADDR(pa),PAGE_SIZE);
   spinlock_release(&stealmem_lock);
@@ -243,12 +232,9 @@ alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
 
 void
 free_kpages(vaddr_t addr) {
-  if(is_swap_enabled && coremap_lock != NULL){
-    lock_acquire(coremap_lock);
-  }
   spinlock_acquire(&stealmem_lock);
   if(addr <= MIPS_KSEG0){
-    panic("Invalid address");
+    panic("Invalid address:%x\n",addr);
   }
   int i = (KVADDR_TO_PADDR(addr) - firstpaddr)/PAGE_SIZE;
   int pgCount = 0;
@@ -260,9 +246,6 @@ free_kpages(vaddr_t addr) {
   numPagesAllocated -= pgCount;
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
   spinlock_release(&stealmem_lock);
-  if(is_swap_enabled && coremap_lock != NULL){
-    lock_release(coremap_lock);
-  }
 }
 
 
@@ -319,7 +302,10 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
     // Invalid access, throw error
     return EFAULT;
   }
-  //lock_acquire(coremapLock);
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_acquire(coremap_lock);
+  }
+  
   if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE)
   {
       /*Things to do :
@@ -337,19 +323,18 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
         }
       }
       if (tempNew == NULL) { //allocate a new entry
-          tempNew = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+          tempNew = create_pte(faultaddress);
           KASSERT(tempNew != NULL);
           tempNew->pageInDisk = false;
-          tempNew->pa = alloc_upage(as, bIsCodeOrStackPage);
+          tempNew->pa = alloc_upage(tempNew, bIsCodeOrStackPage);
           if(tempNew->pa == 0){
             return ENOMEM;
           }
-          tempNew->va = faultaddress;
           tempNew->next = as->first;
           as->first = tempNew;
       } else {
          if (tempNew->pageInDisk) {
-          paddr_t pa = alloc_upage(as, bIsCodeOrStackPage);
+          paddr_t pa = alloc_upage(tempNew, bIsCodeOrStackPage);
           int error = page_swapin(tempNew, pa);
           if(error){
             return EFAULT;
@@ -385,12 +370,16 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       tlb_write(ehi,elo,index);
       splx(spl);
     } else {
-      //lock_release(coremapLock);
+      if(is_swap_enabled && coremap_lock != NULL){
+        lock_release(coremap_lock);
+      }
       kprintf("\nUnusual behaviour by process ! Tried to write to a page without write access\n");
       sys__exit(SIGSEGV);
     }
   }
-  //lock_release(coremapLock);
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_release(coremap_lock);
+  }
   return 0;
 }
 

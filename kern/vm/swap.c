@@ -83,16 +83,7 @@ int page_swapout(int indexToSwap){
     return -1;
   }
 
-  struct page_table_entry *pte = coremap[indexToSwap].as->first;
-  while(pte != NULL){
-    if(pte->pa == coremap[indexToSwap].phyAddr){
-      break;
-    }
-    pte = pte->next;
-  }
-  KASSERT(pte != NULL);
-
-  tlb_shootdown_page_table_entry(pte->va);
+  tlb_shootdown_page_table_entry(coremap[indexToSwap].pte->va);
 
   /* Also, shootdown other TLB entries from different cores*/
 	ipi_broadcast(IPI_TLBSHOOTDOWN);
@@ -113,8 +104,8 @@ int page_swapout(int indexToSwap){
     kprintf("Unable to write to swap file , reason  %d",result);
     return -1;
   }
-  pte->pa = index;
-  pte->pageInDisk = true;
+  coremap[indexToSwap].pte->pa = index;
+  coremap[indexToSwap].pte->pageInDisk = true;
   return 0;
 }
 

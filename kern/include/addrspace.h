@@ -44,6 +44,7 @@ struct vnode;
 struct page_table_entry {
     vaddr_t va;
     paddr_t pa;
+    struct lock* pte_lock;
     struct page_table_entry *next;
     bool pageInDisk;
 };
@@ -150,7 +151,8 @@ int               as_define_region(struct addrspace *as,
 int               as_prepare_load(struct addrspace *as);
 int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
-
+struct page_table_entry* create_pte(vaddr_t va);
+void free_pte(struct page_table_entry* pte);
 void delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref,vaddr_t stack_base);
 bool checkIsVirtualAddressIsFixedPage(struct page_table_entry *pte, struct addrspace *as);
 /*

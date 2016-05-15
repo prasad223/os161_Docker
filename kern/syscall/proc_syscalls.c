@@ -66,25 +66,12 @@ sys_sbrk(int amount, int *retval){
 void
 delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_base){
 	struct page_table_entry* temp = *head_ref, *prev= NULL;
-	//kprintf("deleting:Start:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
-
-	int spl = 0;
-	int index = -1;
 	while(temp != NULL && temp->va >= va && temp->va < stack_base){
-	//	kprintf("deleting:B:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
 		*head_ref = temp->next;
-		bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
-		free_kpages(PADDR_TO_KVADDR(temp->pa));
-  		index = tlb_probe(temp->va, 0);
-  		if(index >= 0){
-			spl = splhigh();
-  			tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
-  			splx(spl);
-  		}
-		kfree(temp);
+  		tlb_shootdown_page_table_entry(temp->va);
+  		free_pte(temp);
 		temp = *head_ref;
 	}
-	//kprintf("deleting: couldn't find it in beginning\n");
 	while(temp != NULL){
 		while(temp != NULL && (temp->va < va || temp->va >= stack_base)){
 			prev = temp;
@@ -95,16 +82,8 @@ delete_pte_entry(vaddr_t va, struct page_table_entry **head_ref, vaddr_t stack_b
 		}
 		if(temp->va >= va && temp->va < stack_base){
 			prev->next = temp->next;
-			//kprintf("deleting:M:dva: %p, sb: %p va:%p, pa:%p\n", (void *)va, (void *)stack_base, (void *)temp->va, (void *)temp->pa);
-			//bzero((void *)PADDR_TO_KVADDR(temp->pa),PAGE_SIZE);
-			free_kpages(PADDR_TO_KVADDR(temp->pa));
-  			index = tlb_probe(temp->va, 0);
-  			if(index >= 0){
-				spl = splhigh();
-  				tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
-  				splx(spl);
-	  		}
-			kfree(temp);
+			tlb_shootdown_page_table_entry(temp->va);
+			free_pte(temp);
 			temp = prev->next;
 		}
 	}

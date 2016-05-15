@@ -57,7 +57,7 @@
 #define KVADDR_TO_PADDR(vaddr) ((vaddr)-MIPS_KSEG0)
 #define SIZE 1000
  struct coremap_entry {
-   struct addrspace *as;
+   struct page_table_entry* pte;
    int allocPageCount;
    char state;
    paddr_t phyAddr;
@@ -76,7 +76,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);
 paddr_t getppages(unsigned long npages);
-paddr_t alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage);
+paddr_t alloc_upage(struct page_table_entry* pte, bool bIsCodeOrStackPage);
 int dequeue(void);
 int enqueue(int value);
 paddr_t make_page_avail(unsigned npages);

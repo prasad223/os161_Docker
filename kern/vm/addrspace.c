@@ -88,6 +88,33 @@ checkIsVirtualAddressIsFixedPage(struct page_table_entry *pte, struct addrspace 
 	}
 	return false;
 }
+
+struct page_table_entry* create_pte(vaddr_t va){
+	struct page_table_entry* new_pte = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
+	if(new_pte == NULL){
+		return NULL;
+	}
+	new_pte->va = va;
+	new_pte->pageInDisk = false;
+	new_pte->pte_lock = lock_create("pte_lock");
+	if(new_pte->pte_lock == NULL){
+		kfree(new_pte);
+		return NULL;
+	}
+	return new_pte;
+}
+
+void free_pte(struct page_table_entry* pte){
+	KASSERT(pte != NULL);
+	if(pte->pageInDisk){
+		free_swap_index(pte->pa);
+	}else{
+		free_kpages(PADDR_TO_KVADDR(pte->pa));
+	}
+	KASSERT(pte->pte_lock != NULL);
+	lock_destroy(pte->pte_lock);
+	kfree(pte);
+}
 /**
 **/
 int
@@ -96,6 +123,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	KASSERT(old != NULL);
 	struct addrspace *newas;
 
+	if(is_swap_enabled && coremap_lock != NULL){
+		lock_acquire(coremap_lock);
+	}
 	newas = as_create();
 	if (newas==NULL) {
 		return ENOMEM;
@@ -118,34 +148,29 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct page_table_entry *old_ptr = old->first;
 	struct page_table_entry *new_ptr = NULL;
 
-	//lock_acquire(coremapLock);
 	while(old_ptr != NULL){
-		new_ptr = (struct page_table_entry *)kmalloc(sizeof(struct page_table_entry));
-		new_ptr->pageInDisk = old_ptr->pageInDisk;
+		new_ptr = create_pte(old_ptr->va);
 		if(new_ptr == NULL){
 			return ENOMEM;
 		}
 		bool bIsCodeOrStackPage = checkIsVirtualAddressIsFixedPage(old_ptr, old);
-		new_ptr->pa = alloc_upage(newas, bIsCodeOrStackPage);
+		new_ptr->pa = alloc_upage(new_ptr, bIsCodeOrStackPage);
 		if(new_ptr->pa == 0){
 			return ENOMEM;
 		}
-		new_ptr->va = old_ptr->va;
 		if (!old_ptr->pageInDisk) {
 			memmove((void *) PADDR_TO_KVADDR(new_ptr->pa), (const void *) PADDR_TO_KVADDR(old_ptr->pa), PAGE_SIZE);
 		} else { //if old page is in disk, then copy it from disk to memory
-			/*TODO*/
-			//kprintf("\nAS_COPY pageInDisk not copied!!!\n");
-			int swapMapOffset = (int)old_ptr->pa;
-			read_page_from_swap( swapMapOffset , new_ptr->pa);
+			read_page_from_swap((int)old_ptr->pa , new_ptr->pa);
 		}
-
 		new_ptr->next = newas->first;
 		newas->first  = new_ptr;
 		old_ptr = old_ptr->next;
 	}
-	//lock_release(coremapLock);
 	*ret = newas;
+	if(is_swap_enabled && coremap_lock != NULL){
+		lock_release(coremap_lock);
+	}
 	return 0;
 }
 
@@ -154,15 +179,13 @@ as_destroy(struct addrspace *as)
 {
 	KASSERT(as != NULL);
 	vm_tlbshootdown_all();
+	if(is_swap_enabled && coremap_lock != NULL){
+		lock_acquire(coremap_lock);
+	}
 	struct page_table_entry* current = as->first, *next = NULL;
 	while(current != NULL){
 		next = current->next;
-		if(current->pageInDisk){
-		  free_swap_index((int)current->pa);
-		}else{
-		  free_kpages(PADDR_TO_KVADDR(current->pa));
-		}
-		kfree(current);
+		free_pte(current);
 		current = next;
 	}
 	as->first 			= NULL;
@@ -179,6 +202,9 @@ as_destroy(struct addrspace *as)
 	as->heapStart	= (vaddr_t)0;
 	as->heapEnd		= (vaddr_t)0;
 	kfree(as);
+	if(is_swap_enabled && coremap_lock != NULL){
+		lock_release(coremap_lock);
+	}
 }
 
 void
