@@ -49,7 +49,7 @@ static int minFreeIndex , numPagesAllocated;
 static int queue[SIZE];
 static int front = 0, rear = -1, queue_size = 0;
 int coremap_page_num;
-
+extern bool is_swap_enabled;
 /*
  * Wrap ram_stealmem in a spinlock.
  */
@@ -136,11 +136,16 @@ getppages(unsigned long npages)
 /*kmalloc-routines*/
 vaddr_t
 alloc_kpages(unsigned npages) {
-
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_acquire(coremap_lock);
+  }
   spinlock_acquire(&stealmem_lock);
   paddr_t pa = make_page_avail(npages);
 	if (pa == 0) {
     spinlock_release(&stealmem_lock);
+    if(is_swap_enabled && coremap_lock != NULL){
+      lock_release(coremap_lock);
+    }
 		return 0;
 	}
   int index = (pa - firstpaddr) / PAGE_SIZE;
@@ -149,6 +154,9 @@ alloc_kpages(unsigned npages) {
    coremap[i + index].as    = NULL;
   }
   spinlock_release(&stealmem_lock);
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_release(coremap_lock);
+  }
   return PADDR_TO_KVADDR(pa);
 }
 
@@ -235,7 +243,9 @@ alloc_upage(struct addrspace* as, bool bIsCodeOrStackPage ){
 
 void
 free_kpages(vaddr_t addr) {
-
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_acquire(coremap_lock);
+  }
   spinlock_acquire(&stealmem_lock);
   if(addr <= MIPS_KSEG0){
     panic("Invalid address");
@@ -250,6 +260,9 @@ free_kpages(vaddr_t addr) {
   numPagesAllocated -= pgCount;
   coremap_used_size = coremap_used_size - (pgCount * PAGE_SIZE);
   spinlock_release(&stealmem_lock);
+  if(is_swap_enabled && coremap_lock != NULL){
+    lock_release(coremap_lock);
+  }
 }
 
 

@@ -35,6 +35,7 @@
 
 struct vnode *swap_file;
 struct bitmap *swap_bitmap;
+bool is_swap_enabled;
 
 /*
  *  For now, we are using the MAX SWAP count, but we should actually get the file size and do it

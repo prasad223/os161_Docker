@@ -42,18 +42,20 @@
  #include <bitmap.h>
 
 static int swap_num_pages = 0;
-static bool is_swap_enabled = false;
+
 /**/
 void
 swap_bootstrap(){
   int error = vfs_open((char *)"lhd0raw:",O_RDWR,0664,&swap_file);
   if(error){
+    is_swap_enabled = false;
     kprintf("vfs file creation failure:%d\n",error);
     return;
   }
   struct stat file_stat;
   error = VOP_STAT(swap_file, &file_stat);
   if(error){
+    is_swap_enabled = false;
     kprintf("error in reading swap file size");
     return;
   }

@@ -131,13 +131,13 @@ boot(void)
 	thread_start_cpus();
 	test161_bootstrap();
 	swap_bootstrap();
+  	coremap_lock = lock_create("coremap_lock");
 
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
 
-  	coremap_lock = lock_create("coremap_lock");
   	/*
 	 * Make sure various things aren't screwed up.
 	 */
