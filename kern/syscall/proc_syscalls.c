@@ -237,8 +237,7 @@ sys_execv(const char *program, char **uargs){
 	
 	for(;uargs[i] != NULL; i++);
 	const int argc = i;
-  kprintf("execv: argc: %d\n",argc);
-
+  
   char **args = kmalloc(argc * sizeof(char *));
   size_t* arg_lengths = (size_t *)kmalloc((argc * sizeof(size_t)));
   
