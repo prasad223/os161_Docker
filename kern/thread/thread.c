@@ -1152,6 +1152,12 @@ ipi_broadcast(int code)
 }
 
 void
+ipi_tlbshootdown_cpu(const int cpu_index, const struct tlbshootdown* tlb_entry){
+	struct cpu *c = cpuarray_get(&allcpus, cpu_index);
+	ipi_tlbshootdown(c, tlb_entry);
+}
+
+void
 ipi_tlbshootdown(struct cpu *target, const struct tlbshootdown *mapping)
 {
 	int n;

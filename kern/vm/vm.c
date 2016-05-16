@@ -348,6 +348,9 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
       elo = tempNew->pa | TLBLO_DIRTY | TLBLO_VALID;
       KASSERT(tlb_probe(ehi,0) == -1);
       tlb_random(ehi,elo);
+      int coremap_index = (tempNew->pa - firstpaddr) / PAGE_SIZE;
+      coremap[coremap_index].cpu_index = curcpu->c_number;
+      coremap[coremap_index].tlb_index = tlb_probe(ehi,0);
       splx(spl);
 
   } else if (faulttype == VM_FAULT_READONLY) {
@@ -400,14 +403,17 @@ vm_tlbshootdown_all(void)
 void
 vm_tlbshootdown(const struct tlbshootdown *ts)
 {
-	(void)ts;
-	panic("dumbvm tried to do tlb shootdown?!\n");
+  int spl = splhigh();
+  KASSERT(ts->ts_placeholder >= 0);
+  tlb_write(TLBHI_INVALID(ts->ts_placeholder),TLBLO_INVALID(),ts->ts_placeholder);
+  splx(spl);
 }
 
 /*Shoot down a TLB entry based on given virtual address*/
 // TODO: This function is not being used , we can change it to do in a faster way and use it
 void
-tlb_shootdown_page_table_entry(vaddr_t va) {
+tlb_shootdown_page_table_entry(vaddr_t va){
+
   int i;
   int spl = splhigh();
   KASSERT((va & PAGE_FRAME ) == va); //assert that va is a valid virtual address

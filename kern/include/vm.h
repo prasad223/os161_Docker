@@ -32,6 +32,7 @@
 #include <addrspace.h>
 #include <machine/vm.h>
 #include <spinlock.h>
+#include <cpu.h>
 /*
  * VM system-related definitions.
  *
@@ -60,6 +61,8 @@
    struct page_table_entry* pte;
    int allocPageCount;
    char state;
+   unsigned cpu_index;
+   int tlb_index;
    paddr_t phyAddr;
  };
 

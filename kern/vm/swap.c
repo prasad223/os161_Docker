@@ -82,11 +82,14 @@ int page_swapout(int indexToSwap){
   if(!is_swap_enabled){
     return -1;
   }
-
-  tlb_shootdown_page_table_entry(coremap[indexToSwap].pte->va);
-
-  /* Also, shootdown other TLB entries from different cores*/
-	ipi_broadcast(IPI_TLBSHOOTDOWN);
+  int tlb_index = coremap[indexToSwap].tlb_index;
+  if(coremap[indexToSwap].cpu_index == curcpu->c_number){
+    tlb_write(TLBHI_INVALID(tlb_index),TLBLO_INVALID(),tlb_index);
+  }else{
+    struct tlbshootdown tlb_entry;
+    tlb_entry.ts_placeholder = tlb_index;
+    ipi_tlbshootdown_cpu(coremap[indexToSwap].cpu_index, &tlb_entry);
+  }
 
   unsigned index = 0;
   bitmap_alloc(swap_bitmap, &index);

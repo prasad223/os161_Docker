@@ -30,7 +30,7 @@
 #include <types.h>
 #include <addrspace.h>
 #include <bitmap.h>
-
+#include <mips/tlb.h>
 #define MAX_SWAP_COUNT 4096
 
 struct vnode *swap_file;
