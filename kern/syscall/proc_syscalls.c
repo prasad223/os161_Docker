@@ -28,8 +28,7 @@
 /*
  * Largely inspired from jinghao's blog
  */
-#define MAX_ARG_NUM 100
-#define MAX_ARG_LENGTH 2048
+
 int
 sys_sbrk(int amount, int *retval){
 
@@ -213,192 +212,83 @@ sys_waitpid(pid_t pid, int* status, int options, int *retval){
 	return 0;
 }
 
+/*
+ Steps to solve bigexec:
+ 1) There is no limit on the number of args or the length of an individual arg
+ 2) Key is to get the total length of all args within 64k
+ 
+ 3) Get the total number of arguments and their individual lengths
+ 4) Create 2 temp pointer arrays to store strings and their lenghts 
+ */
+
 int
 sys_execv(const char *program, char **uargs){
-
- 	int error = 0;
+	int error = 0, i = 0;
+	char *program_name = kmalloc(NAME_MAX);
+  size_t size = 0;
+	
 	if (program == NULL || uargs == NULL) {
-		// is the explicit address check required , won't copy in & out take care of it ,
 		return EFAULT;
 	}
 
-	char *program_name = (char *)kmalloc(PATH_MAX);
-	size_t prog_name_size;
+	error = copyinstr((const userptr_t) program, program_name, NAME_MAX, &size);
+	if(error){ kfree(program_name);	return EFAULT; }
+ 	if(size == 1){ kfree(program_name);	return EINVAL;	}
+	
+	for(;uargs[i] != NULL; i++);
+	const int argc = i;
+  kprintf("execv: argc: %d\n",argc);
 
-	// Copy program name from userspace and check for errors
-	error = copyinstr((const userptr_t) program, program_name, PATH_MAX, &prog_name_size);
-	if (error){
-		return EFAULT;
-	}
- 	if (prog_name_size == 1) { // see if you should increase this to 1
-		return EINVAL;
-	}
+  char **args = kmalloc(argc * sizeof(char *));
+  size_t* arg_lengths = (size_t *)kmalloc((argc * sizeof(size_t)));
+  
+  for(i = 0 ;i < argc; i++){
+  	char* arg = kmalloc(ARG_MAX);
+  	error = copyinstr((const userptr_t)uargs[i], arg, ARG_MAX, &size);
+  	if(error){ return EFAULT;}
+  	*(arg_lengths + i) = size;
+  	args[i] = kstrdup(arg);
+  	kfree(arg);
+  }
 
-	//kprintf("program_name: %s , length: %d\n",program_name,prog_name_size);
-
-	//char **args = (char **) kmalloc(sizeof(char **));
-	char *tempKernelBuffer[MAX_ARG_NUM];
-
-	error = copyin((const_userptr_t)uargs, tempKernelBuffer,MAX_ARG_NUM);
-	if (error) {
-		// /kfree(program_name);
-		return error;
-	}
-	char *args[MAX_ARG_NUM];
-	int argc =0;
-	// if(copyin((const_userptr_t) tempKernelBuffer, args, sizeof(char **))){
-	// 	kprintf("error in copying in args\n");
-	// 	kfree(program_name);
-	// 	kfree(args);
-	// 	return EFAULT;
-	// }
-
-	int i=0;
-	//size_t size=0;
-	while (tempKernelBuffer[i] != NULL ) {
-		args[i] = kmalloc(MAX_ARG_LENGTH);
-		if (args[i] == NULL) {
-			return ENOMEM;
-		}
-		error = copyin((const_userptr_t) tempKernelBuffer[i], args[i], (size_t)MAX_ARG_LENGTH);
-		if (error) {
-			kprintf("error in copying individual args: error: %d\n",error);
-			//kfree(program_name);
-
-			//kfree(args);
-			return EFAULT;
-		}
-		i++;
-	}
-	argc = i;
-	args[i] = NULL;
-	//kprintf("count of args:%d\n",i);
-	//	 Open the file.
-	struct vnode *v_node;
+  struct vnode *v_node;
 	vaddr_t entry_point, stack_ptr;
-
+	
 	error = vfs_open(program_name, O_RDONLY, 0, &v_node);
-	if (error) {
-		kprintf("error in vfs open\n");
-		//kfree(program_name);
-		//kfree(args);
-		vfs_close(v_node);
-		return error;
-	}
+	if(error){ return EFAULT;}
 	kfree(program_name);
-	if(curproc->p_addrspace != NULL){
-		as_destroy(curproc->p_addrspace);
-		curproc->p_addrspace = NULL;
-	}
 
-	KASSERT(curproc->p_addrspace == NULL);
-
-	curproc->p_addrspace = as_create();
-	if (curproc->p_addrspace == NULL) {
-		kprintf("error in clearning curproc addressspace\n");
-		//kfree(program_name);
-		//kfree(args);
-		vfs_close(v_node);
-		return ENOMEM;
-	}
-
+	struct addrspace* old_as = proc_setas(as_create());
+	as_destroy(old_as);
 	as_activate();
 
 	error = load_elf(v_node, &entry_point);
-	if (error) {
-		kprintf("error in loading elf\n");
-		//kfree(program_name);
-		//kfree(args);
-		vfs_close(v_node);
-		return error;
-	}
-
+	if(error){ return EFAULT;}
 	vfs_close(v_node);
-
-	error = as_define_stack(curproc->p_addrspace, &stack_ptr);
-	if (error) {
-		kprintf("error in defiingin stack\n");
-		//kfree(program_name);
-		//kfree(args);
-		return error;
-	}
-
-	int j = 0 , arg_length=0;
-	char *final_buf[100];
-	while (args[j] != NULL ) {
-		char * arg;
-		arg_length = strlen(args[j])+1; // 1 for NULL
-
-		int pad_length = arg_length;
-		if (arg_length % 4 != 0) {
-			arg_length = arg_length + (4 - arg_length % 4);
+	as_define_stack(curproc->p_addrspace, &stack_ptr);
+	for( i = argc - 1; i >= 0; i--){
+		int arg_len = *(arg_lengths + i);
+		int pad_length = 0;
+		if((arg_len + 1) %4 != 0){
+			pad_length = 4 - (arg_len + 1) % 4;
 		}
-
-	//	kprintf("new_length: %d , pad_length: %d \n",arg_length, pad_length);
-		//arg = (char *)kmalloc(sizeof(arg_length));
-		arg = kstrdup(args[j]);
-		for (int i = 0; i < arg_length; i++) {
-
-			if (i >= pad_length)
-				arg[i] = '\0';
-			else
-				arg[i] = args[j][i];
-		}
-
-		stack_ptr -= arg_length;
-
-		error = copyout((const void *) arg, (userptr_t) stack_ptr,
-				(size_t) arg_length);
-	//	kprintf("copyout error stat: %d\n", error);
-		if (error) {
-			//kfree(program_name);
-			//kfree(args);
-			kfree(arg);
-			return error;
-		}
-		kfree(arg);
-		final_buf[j] = (char *)stack_ptr;
-		//args[j] = (char *) stack_ptr;
-		j++;
+		stack_ptr -= (arg_len + 1 + pad_length);
+		error = copyout((const void*)args[i],(userptr_t)stack_ptr, (size_t)arg_len);
+		if(error){ return EFAULT;}
+		*(arg_lengths + i) = stack_ptr;
+		kfree(args[i]);
 	}
+	stack_ptr -= 4;
+	vaddr_t addr = (vaddr_t) NULL;
+	copyout((const void*) &addr, (userptr_t) stack_ptr, 4);
 
-	if (args[j] == NULL ) {
-		stack_ptr -= 4 * sizeof(char);
+	for (i = argc - 1; i >= 0; --i) {
+		stack_ptr -= 4;
+		addr = *(arg_lengths + i);
+		copyout((const void*) &addr, (userptr_t) stack_ptr, 4);
 	}
-
-	for (int i = (j - 1); i >= 0; i--) {
-		stack_ptr = stack_ptr - sizeof(char*);
-		error = copyout((const void *) (final_buf + i), (userptr_t) stack_ptr,
-				(sizeof(char *)));
-		if (error) {
-			kprintf("error in setting args to stack\n");
-			//kfree(program_name);
-			//kfree(args);
-			return error;
-		}
-	}
-	//kfree(program_name);
-	for(int k=0; k < argc; k++) {
-		if (args[k] != NULL) {
-			//kfree(args[k]);
-			vaddr_t va = (vaddr_t)args[k];
-			if (va % PAGE_SIZE == 0) {
-				kfree(args[k]);
-			} else {
-				kprintf("\nVADDR %p\n",(void *)va);
-			}
-		}
-	}
-
-	//kfree(args);
-
-	//kprintf("passing following args: argc: %d, stack:%p  entry:%p\n",j,(void *)stack_ptr, (void *)entry_point);
-	enter_new_process(j /*argc*/,
-			(userptr_t) stack_ptr /*userspace addr of argv*/, NULL, stack_ptr,
-			entry_point);
-
-	//enter_new_process should not return.
-	panic("execv- problem in enter_new_process\n");
-	return EINVAL;
-
+	kfree(arg_lengths);
+	kfree(args);
+	enter_new_process(argc, (userptr_t) stack_ptr, NULL, stack_ptr, entry_point);
+	return 0;
 }
